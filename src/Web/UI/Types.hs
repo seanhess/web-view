@@ -16,10 +16,8 @@ type Attributes = Map Name AttValue
 
 data Class = Class
   { className :: ClassName
-  , classProperties :: ClassProps
+  , classProperties :: Map Name StyleValue
   }
-
-type ClassProps = Map Text Style
 
 className :: Class -> Text
 className c = classNameText c.className
@@ -54,32 +52,24 @@ data Pseudo
   = Hover
   deriving (Show, Eq)
 
-data Style = Style
-  { units :: Units
-  , value :: String
-  }
+data StyleValue
+  = Px Int
+  | Rem Float
+  | Hex String
+  | RGB String
+  | Value String
 
-instance Show Style where
-  show cv = unitsValue cv.units cv.value
+instance IsString StyleValue where
+  fromString = Value
 
-instance IsString Style where
-  fromString = Style None
-
-data Units
-  = None
-  | Px
-  | Rem
-  | Hex
-  | RGB
-
-unitsValue :: Units -> String -> String
-unitsValue None s = s
-unitsValue Px s = s <> "px"
-unitsValue Rem s = s <> "rem"
-unitsValue Hex s = "#" <> s
--- it needs to have a string?
--- this might need to get more complicated
-unitsValue RGB s = "rgb(" <> s <> ")"
+instance Show StyleValue where
+  show (Value s) = s
+  show (Px n) = show n <> "px"
+  show (Rem s) = show s <> "rem"
+  show (Hex s) = "#" <> s
+  -- it needs to have a string?
+  -- this might need to get more complicated
+  show (RGB s) = "rgb(" <> s <> ")"
 
 attribute :: Name -> AttValue -> Attribute
 attribute n v = (n, v)
@@ -109,7 +99,7 @@ newtype View a x = View
 
 data ViewState = ViewState
   { contents :: [Content]
-  , classStyles :: Map ClassName ClassProps
+  , classStyles :: Map ClassName (Map Name StyleValue)
   }
 
 instance IsString (View Content ()) where
@@ -119,7 +109,7 @@ viewContents :: View a x -> [Content]
 viewContents (View wts) = (.contents) $ execState wts (ViewState [] [])
 
 -- | All classes contained anywhere in the view
-viewClasses :: View a () -> Map ClassName ClassProps
+viewClasses :: View a () -> Map ClassName (Map Name StyleValue)
 viewClasses (View st) = do
   (.classStyles) $ execState st (ViewState [] [])
 

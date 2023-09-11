@@ -82,7 +82,7 @@ showContent :: Content -> [Text]
 showContent (Node t) = htmlTag indent 0 t
 showContent (Text t) = [t]
 
-renderCSS :: Map ClassName ClassProps -> [Text]
+renderCSS :: Map ClassName (Map Name StyleValue) -> [Text]
 renderCSS m = map renderClass $ toClasses m
  where
   toClasses = map toClass . M.toList
@@ -92,11 +92,11 @@ renderCSS m = map renderClass $ toClasses m
   renderClass (Class n p) =
     "." <> classNameSelector n <> " " <> "{" <> T.intercalate "; " (map renderProp $ M.toList p) <> "}"
 
-  renderProp :: (Text, Style) -> Text
+  renderProp :: (Text, StyleValue) -> Text
   renderProp (p, cv) = p <> ":" <> renderStyle cv
 
-renderStyle :: Style -> Text
-renderStyle (Style v u) = pack $ unitsValue v u
+renderStyle :: StyleValue -> Text
+renderStyle v = pack $ show v
 
 flatAttributes :: Element -> FlatAttributes
 flatAttributes t =

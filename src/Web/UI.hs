@@ -13,6 +13,7 @@ module Web.UI
   , col
   , col_
   , space
+  , button
 
     -- * Mods
   , att

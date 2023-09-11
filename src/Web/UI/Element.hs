@@ -21,7 +21,7 @@ addClasses clss = do
       { classStyles = foldr addClsDef vs.classStyles clss
       }
  where
-  addClsDef :: Class -> Map ClassName ClassProps -> Map ClassName ClassProps
+  addClsDef :: Class -> Map ClassName (Map Name StyleValue) -> Map ClassName (Map Name StyleValue)
   addClsDef c = M.insert c.className c.classProperties
 
 addContent :: Content -> View a ()
@@ -31,7 +31,7 @@ addContent ct = do
       { contents = vs.contents <> [ct]
       }
 
-classList :: Map ClassName ClassProps -> [Class]
+classList :: Map ClassName (Map Name StyleValue) -> [Class]
 classList m = map (uncurry Class) $ M.toList m
 
 -- | Set an attribute, replacing existing value
@@ -45,6 +45,9 @@ el = mkElement "div"
 -- | A basic element, with no modifiers
 el_ :: View Content () -> View Content ()
 el_ = mkElement "div" id
+
+button :: Mod a -> View Content () -> View Content ()
+button = mkElement "button"
 
 -- | Convert from text directly to view. You should not have to use this. Use `text` instead
 text :: Text -> View a ()

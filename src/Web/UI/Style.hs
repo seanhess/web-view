@@ -1,6 +1,8 @@
+{-# LANGUAGE DefaultSignatures #-}
+
 module Web.UI.Style where
 
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, toLower)
 import Web.UI.Types
 
 -- Px, converted to Rem
@@ -116,20 +118,22 @@ hover = Hover
 
 infixr 9 |:
 
-pxRem :: PxRem -> Style
-pxRem 0 = Style Px "0"
-pxRem 1 = Style Px "1"
-pxRem n = Style Rem (show (fromIntegral n / 16.0 :: Float))
+pxRem :: PxRem -> StyleValue
+pxRem 0 = Px 0
+pxRem 1 = Px 1
+pxRem n = Rem (fromIntegral n / 16.0)
 
-rgb :: Int -> Int -> Int -> Style
-rgb rd gr bl = Style RGB $ mconcat [show rd, " ", show gr, " ", show bl]
+rgb :: Int -> Int -> Int -> StyleValue
+rgb rd gr bl = RGB $ mconcat [show rd, " ", show gr, " ", show bl]
 
 class ToColor a where
-  colorValue :: a -> Style
+  colorValue :: a -> StyleValue
   colorName :: a -> Text
+  default colorName :: Show a => a -> Text
+  colorName = toLower . pack . show
 
 newtype HexColor = HexColor String
 
 instance ToColor HexColor where
-  colorValue (HexColor a) = Style Hex a
+  colorValue (HexColor a) = Hex a
   colorName (HexColor a) = pack a
