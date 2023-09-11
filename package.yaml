@@ -1,0 +1,47 @@
+name:               lucid-ui
+version:            0.1.0
+synopsis:           Easy, typed user interfaces for Lucid
+homepage:           https://github.com/seanhess/lucid-ui
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             Sean Hess
+maintainer:         seanhess@gmail.com
+category:           Web
+
+extra-source-files:
+  - README.md
+  - CHANGELOG.md
+
+language: GHC2021
+
+ghc-options:
+  - -Wall
+
+default-extensions:
+  - TypeFamilies
+  - DataKinds
+  - DeriveAnyClass
+  - DerivingStrategies
+  - OverloadedRecordDot
+  - QuasiQuotes
+  - DuplicateRecordFields
+
+dependencies:
+  - base >=4.16.4.0
+  - text
+  - lucid2
+
+library:
+  source-dirs: src
+
+executables:
+  example:
+    main:                Example.hs
+    source-dirs:         example
+    dependencies:
+    - lucid-ui
+
+tests:
+  tests:
+    main:                Test.hs
+    source-dirs:         test

@@ -1,0 +1,91 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.35.3.
+--
+-- see: https://github.com/sol/hpack
+
+name:               lucid-ui
+version:            0.1.0
+synopsis:           Easy, typed user interfaces for Lucid
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             Sean Hess
+maintainer:         seanhess@gmail.com
+category:           Web
+homepage:           https://github.com/seanhess/lucid-ui
+build-type:         Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+library
+  exposed-modules:
+      MyLib
+  other-modules:
+      Paths_lucid_ui
+  autogen-modules:
+      Paths_lucid_ui
+  hs-source-dirs:
+      src
+  default-extensions:
+      TypeFamilies
+      DataKinds
+      DeriveAnyClass
+      DerivingStrategies
+      OverloadedRecordDot
+      QuasiQuotes
+      DuplicateRecordFields
+  ghc-options: -Wall
+  build-depends:
+      base >=4.16.4.0
+    , lucid2
+    , text
+  default-language: GHC2021
+
+executable example
+  main-is: Example.hs
+  other-modules:
+      Paths_lucid_ui
+  autogen-modules:
+      Paths_lucid_ui
+  hs-source-dirs:
+      example
+  default-extensions:
+      TypeFamilies
+      DataKinds
+      DeriveAnyClass
+      DerivingStrategies
+      OverloadedRecordDot
+      QuasiQuotes
+      DuplicateRecordFields
+  ghc-options: -Wall
+  build-depends:
+      base >=4.16.4.0
+    , lucid-ui
+    , lucid2
+    , text
+  default-language: GHC2021
+
+test-suite tests
+  type: exitcode-stdio-1.0
+  main-is: Main.hs
+  other-modules:
+      Paths_lucid_ui
+  autogen-modules:
+      Paths_lucid_ui
+  hs-source-dirs:
+      test
+  default-extensions:
+      TypeFamilies
+      DataKinds
+      DeriveAnyClass
+      DerivingStrategies
+      OverloadedRecordDot
+      QuasiQuotes
+      DuplicateRecordFields
+  ghc-options: -Wall
+  build-depends:
+      base >=4.16.4.0
+    , lucid2
+    , text
+  default-language: GHC2021
