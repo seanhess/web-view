@@ -6,6 +6,7 @@ import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Text (Text, pack)
 import Data.Text qualified as T
+import Data.Text.Lazy qualified as L
 import Web.UI.Types
 
 type Indent = Int
@@ -56,17 +57,14 @@ indent i' = fmap ind
 noIndent :: Indent -> [Text] -> [Text]
 noIndent _ ts = ts
 
-htmlDocument :: View Document () -> Text
-htmlDocument u =
+renderText :: View Document () -> Text
+renderText u =
   case viewContents u of
     [Node d] -> mconcat $ htmlTag noIndent 0 d
     _ -> error "Should not be possible to create document with multiple tags. Use document function."
 
-toHtmlText :: View Document () -> Text
-toHtmlText = htmlDocument
-
--- toHtmlLazyText :: View Document () -> L.Text
--- toHtmlLazyText = L.pack . htmlDocument
+renderLazyText :: View Document () -> L.Text
+renderLazyText = L.fromStrict . renderText
 
 showView :: View a () -> Text
 showView v = T.unlines $ mconcat $ map showContent $ viewContents v
