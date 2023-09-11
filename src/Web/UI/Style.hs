@@ -1,7 +1,7 @@
-module Htmx.View.Style where
+module Web.UI.Style where
 
 import Data.Text (Text, pack)
-import Htmx.View.Types
+import Web.UI.Types
 
 -- Px, converted to Rem
 type PxRem = Int
@@ -107,7 +107,7 @@ hover = Hover
         (new : cx) ->
           -- this is a bit of a hack
           -- we know that the last class added is the one to be modified
-          t'{classes = (map prefixClass new) : cx}
+          t'{classes = map prefixClass new : cx}
  where
   prefixClass (Class (ClassName _ n) v) =
     Class (ClassName (Just p) n) v
@@ -117,10 +117,10 @@ infixr 9 |:
 pxRem :: PxRem -> Style
 pxRem 0 = Style Px "0"
 pxRem 1 = Style Px "1"
-pxRem n = Style Rem (show $ (fromIntegral n / 16.0 :: Float))
+pxRem n = Style Rem (show (fromIntegral n / 16.0 :: Float))
 
 rgb :: Int -> Int -> Int -> Style
-rgb rd gr bl = Style RGB $ mconcat [(show rd), " ", (show gr), " ", (show bl)]
+rgb rd gr bl = Style RGB $ mconcat [show rd, " ", show gr, " ", show bl]
 
 class ToColor a where
   colorValue :: a -> Style

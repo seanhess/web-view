@@ -4,15 +4,15 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 
-name:               htmx-ui
+name:               web-ui
 version:            0.1.0
-synopsis:           Easy typed web UIs using HTMX
+synopsis:           Typed HTML UIs with simplified layout, and ergonomic composition of styles. Inspired by Tailwindcss
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Sean Hess
 maintainer:         seanhess@gmail.com
 category:           Web
-homepage:           https://github.com/seanhess/htmx-ui
+homepage:           https://github.com/seanhess/web-ui
 build-type:         Simple
 extra-source-files:
     README.md
@@ -20,16 +20,15 @@ extra-source-files:
 
 library
   exposed-modules:
-      Htmx
-      Htmx.View
-      Htmx.View.Element
-      Htmx.View.Render
-      Htmx.View.Style
-      Htmx.View.Types
+      Web.UI
+      Web.UI.Element
+      Web.UI.Render
+      Web.UI.Style
+      Web.UI.Types
   other-modules:
-      Paths_htmx_ui
+      Paths_web_ui
   autogen-modules:
-      Paths_htmx_ui
+      Paths_web_ui
   hs-source-dirs:
       src
   default-extensions:
@@ -56,9 +55,9 @@ executable example
   main-is: Example.hs
   other-modules:
       Views.Counter
-      Paths_htmx_ui
+      Paths_web_ui
   autogen-modules:
-      Paths_htmx_ui
+      Paths_web_ui
   hs-source-dirs:
       example
   default-extensions:
@@ -76,11 +75,11 @@ executable example
   build-depends:
       base >=4.16.4.0
     , containers
-    , htmx-ui
     , lucid2
     , mtl
     , scotty
     , text
+    , web-ui
   default-language: GHC2021
 
 test-suite tests
@@ -88,9 +87,9 @@ test-suite tests
   main-is: Test.hs
   other-modules:
       Main
-      Paths_htmx_ui
+      Paths_web_ui
   autogen-modules:
-      Paths_htmx_ui
+      Paths_web_ui
   hs-source-dirs:
       test
   default-extensions:

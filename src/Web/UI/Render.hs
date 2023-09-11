@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedLists #-}
 
-module Htmx.View.Render where
+module Web.UI.Render where
 
 import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Text (Text, pack)
 import Data.Text qualified as T
-import Htmx.View.Types
+import Web.UI.Types
 
 type Indent = Int
 

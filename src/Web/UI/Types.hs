@@ -1,4 +1,4 @@
-module Htmx.View.Types where
+module Web.UI.Types where
 
 import Control.Monad.State.Strict (MonadState, State, StateT, execState, modify)
 import Data.Map (Map)

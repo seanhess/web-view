@@ -1,11 +1,11 @@
-module Htmx.View.Element where
+module Web.UI.Element where
 
 import Control.Monad.State.Strict (modify)
 import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Text (Text)
-import Htmx.View.Style
-import Htmx.View.Types
+import Web.UI.Style
+import Web.UI.Types
 
 mkElement :: Text -> Mod a -> View a () -> View b ()
 mkElement nm f ct = do
