@@ -4,15 +4,15 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 
-name:               lucid-ui
+name:               htmx-ui
 version:            0.1.0
-synopsis:           Easy, typed user interfaces for Lucid
+synopsis:           Easy typed web UIs using HTMX
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Sean Hess
 maintainer:         seanhess@gmail.com
 category:           Web
-homepage:           https://github.com/seanhess/lucid-ui
+homepage:           https://github.com/seanhess/htmx-ui
 build-type:         Simple
 extra-source-files:
     README.md
@@ -20,11 +20,16 @@ extra-source-files:
 
 library
   exposed-modules:
-      MyLib
+      Htmx
+      Htmx.View
+      Htmx.View.Element
+      Htmx.View.Render
+      Htmx.View.Style
+      Htmx.View.Types
   other-modules:
-      Paths_lucid_ui
+      Paths_htmx_ui
   autogen-modules:
-      Paths_lucid_ui
+      Paths_htmx_ui
   hs-source-dirs:
       src
   default-extensions:
@@ -33,21 +38,27 @@ library
       DeriveAnyClass
       DerivingStrategies
       OverloadedRecordDot
+      OverloadedStrings
+      OverloadedLists
       QuasiQuotes
       DuplicateRecordFields
+      NoFieldSelectors
   ghc-options: -Wall
   build-depends:
       base >=4.16.4.0
+    , containers
     , lucid2
+    , mtl
     , text
   default-language: GHC2021
 
 executable example
   main-is: Example.hs
   other-modules:
-      Paths_lucid_ui
+      Views.Counter
+      Paths_htmx_ui
   autogen-modules:
-      Paths_lucid_ui
+      Paths_htmx_ui
   hs-source-dirs:
       example
   default-extensions:
@@ -56,23 +67,30 @@ executable example
       DeriveAnyClass
       DerivingStrategies
       OverloadedRecordDot
+      OverloadedStrings
+      OverloadedLists
       QuasiQuotes
       DuplicateRecordFields
+      NoFieldSelectors
   ghc-options: -Wall
   build-depends:
       base >=4.16.4.0
-    , lucid-ui
+    , containers
+    , htmx-ui
     , lucid2
+    , mtl
+    , scotty
     , text
   default-language: GHC2021
 
 test-suite tests
   type: exitcode-stdio-1.0
-  main-is: Main.hs
+  main-is: Test.hs
   other-modules:
-      Paths_lucid_ui
+      Main
+      Paths_htmx_ui
   autogen-modules:
-      Paths_lucid_ui
+      Paths_htmx_ui
   hs-source-dirs:
       test
   default-extensions:
@@ -81,11 +99,16 @@ test-suite tests
       DeriveAnyClass
       DerivingStrategies
       OverloadedRecordDot
+      OverloadedStrings
+      OverloadedLists
       QuasiQuotes
       DuplicateRecordFields
+      NoFieldSelectors
   ghc-options: -Wall
   build-depends:
       base >=4.16.4.0
+    , containers
     , lucid2
+    , mtl
     , text
   default-language: GHC2021

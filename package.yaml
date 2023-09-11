@@ -1,7 +1,7 @@
-name:               lucid-ui
+name:               htmx-ui
 version:            0.1.0
-synopsis:           Easy, typed user interfaces for Lucid
-homepage:           https://github.com/seanhess/lucid-ui
+synopsis:           Easy typed web UIs using HTMX
+homepage:           https://github.com/seanhess/htmx-ui
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Sean Hess
@@ -23,13 +23,18 @@ default-extensions:
   - DeriveAnyClass
   - DerivingStrategies
   - OverloadedRecordDot
+  - OverloadedStrings
+  - OverloadedLists
   - QuasiQuotes
   - DuplicateRecordFields
+  - NoFieldSelectors
 
 dependencies:
   - base >=4.16.4.0
   - text
   - lucid2
+  - containers
+  - mtl
 
 library:
   source-dirs: src
@@ -39,7 +44,8 @@ executables:
     main:                Example.hs
     source-dirs:         example
     dependencies:
-    - lucid-ui
+    - htmx-ui
+    - scotty
 
 tests:
   tests:
