@@ -45,6 +45,7 @@ executables:
     dependencies:
     - web-ui
     - scotty
+    - string-interpolate
 
 tests:
   tests:

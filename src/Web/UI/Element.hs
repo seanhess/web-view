@@ -85,3 +85,26 @@ col_ = col id
 
 space :: View Content ()
 space = el grow $ pure ()
+
+label :: Mod a -> View Content () -> View Content ()
+label = mkElement "label"
+
+form :: Mod a -> View Content () -> View Content ()
+form = mkElement "form"
+
+input :: Mod a -> View Content ()
+input m = mkElement "input" (m . att "type" "text") none
+
+name :: Text -> Mod Attribute
+name = att "name"
+
+value :: Text -> Mod Attribute
+value = att "value"
+
+script :: Text -> View b ()
+script src = mkElement "script" (att "type" "text/javascript" . att "src" src) none
+
+-- script (Code code) = mkElement "script" (att "type" "text/javascript") $ fromText code
+
+-- stylesheet :: Text -> View b ()
+-- stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none

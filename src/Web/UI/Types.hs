@@ -3,7 +3,7 @@ module Web.UI.Types where
 import Control.Monad.State.Strict (MonadState, State, execState, modify)
 import Data.Map (Map)
 import Data.String (IsString (..))
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, unpack)
 import Data.Text qualified as T
 
 -- import Data.Text.Lazy qualified as L
@@ -55,7 +55,7 @@ data Pseudo
 data StyleValue
   = Px Int
   | Rem Float
-  | Hex String
+  | Hex HexColor
   | RGB String
   | Value String
 
@@ -66,10 +66,12 @@ instance Show StyleValue where
   show (Value s) = s
   show (Px n) = show n <> "px"
   show (Rem s) = show s <> "rem"
-  show (Hex s) = "#" <> s
+  show (Hex (HexColor s)) = "#" <> unpack (T.dropWhile (== '#') s)
   -- it needs to have a string?
   -- this might need to get more complicated
   show (RGB s) = "rgb(" <> s <> ")"
+
+newtype HexColor = HexColor Text
 
 attribute :: Name -> AttValue -> Attribute
 attribute n v = (n, v)

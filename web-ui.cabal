@@ -20,6 +20,8 @@ extra-source-files:
 
 library
   exposed-modules:
+      Boop
+      Htmx
       Web.UI
       Web.UI.Element
       Web.UI.Render
@@ -75,6 +77,7 @@ executable example
     , containers
     , mtl
     , scotty
+    , string-interpolate
     , text
     , web-ui
   default-language: GHC2021

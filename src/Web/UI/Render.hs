@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Web.UI.Render where
 
@@ -7,31 +8,35 @@ import Data.Map qualified as M
 import Data.Text (Text, pack)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as L
+
+-- import Debug.Trace
 import Web.UI.Types
 
 type Indent = Int
 
-htmlTag :: (Indent -> [Text] -> [Text]) -> Indent -> Element -> [Text]
-htmlTag indent' i tag =
+htmlTag :: ([Text] -> [Text]) -> Element -> [Text]
+htmlTag ind tag =
   case tag.children of
     [] ->
       -- autoClosing creates a bug in chrome. An auto-closed div
       -- absorbs the next children
       [open <> htmlAtts (flatAttributes tag) <> ">" <> close]
+    -- single text node
     [Text t] ->
+      -- SINGLE text node, just display it indented
       [open <> htmlAtts (flatAttributes tag) <> ">" <> t <> close]
     _ ->
       mconcat
         [ [open <> htmlAtts (flatAttributes tag) <> ">"]
-        , indent' (i + 1) $ htmlChildren tag.children
-        , ["\n", close]
+        , ind $ htmlChildren tag.children
+        , [close]
         ]
  where
   open = "<" <> tag.name
   close = "</" <> tag.name <> ">"
 
   htmlContent :: Content -> [Text]
-  htmlContent (Node t) = htmlTag indent' i t
+  htmlContent (Node t) = htmlTag ind t
   htmlContent (Text t) = [t]
 
   htmlChildren :: [Content] -> [Text]
@@ -48,14 +53,14 @@ htmlTag indent' i tag =
     htmlAtt (k, v) =
       k <> "=" <> "'" <> v <> "'"
 
-indent :: Indent -> [Text] -> [Text]
-indent i' = fmap (line . ind)
- where
-  line :: Text -> Text
-  line = ("\n" <>)
+indentation :: Text
+indentation = "  "
 
-  ind :: Text -> Text
-  ind t = T.replicate (2 * i') " " <> t
+indentAll :: [Text] -> [Text]
+indentAll = fmap indent
+
+indent :: Text -> Text
+indent t = indentation <> t
 
 noIndent :: Indent -> [Text] -> [Text]
 noIndent _ ts = ts
@@ -72,14 +77,14 @@ renderLazyText :: View a () -> L.Text
 renderLazyText = L.fromStrict . renderText
 
 renderContent :: Content -> Text
-renderContent (Node d) = mconcat $ htmlTag indent 0 d
+renderContent (Node d) = T.unlines $ htmlTag indentAll d
 renderContent (Text t) = t
 
 showView :: View a () -> Text
 showView v = T.unlines $ mconcat $ map showContent $ viewContents v
 
 showContent :: Content -> [Text]
-showContent (Node t) = htmlTag indent 0 t
+showContent (Node t) = htmlTag indentAll t
 showContent (Text t) = [t]
 
 renderCSS :: Map ClassName (Map Name StyleValue) -> [Text]

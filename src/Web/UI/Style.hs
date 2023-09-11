@@ -3,6 +3,7 @@
 module Web.UI.Style where
 
 import Data.Text (Text, pack, toLower)
+import Data.Text qualified as T
 import Web.UI.Types
 
 -- Px, converted to Rem
@@ -74,7 +75,7 @@ bg c =
   cls1 $
     Class
       (ClassName Nothing $ "bg-" <> colorName c)
-      [ ("background-color", colorValue c)
+      [ ("background-color", Hex $ colorValue c)
       ]
 
 color :: ToColor c => c -> Mod Class
@@ -82,7 +83,7 @@ color c =
   cls1 $
     Class
       (ClassName Nothing $ "clr-" <> colorName c)
-      [("color", colorValue c)]
+      [("color", Hex $ colorValue c)]
 
 bold :: Mod Class
 bold = cls1 $ Class "bold" [("font-weight", "bold")]
@@ -127,13 +128,11 @@ rgb :: Int -> Int -> Int -> StyleValue
 rgb rd gr bl = RGB $ mconcat [show rd, " ", show gr, " ", show bl]
 
 class ToColor a where
-  colorValue :: a -> StyleValue
+  colorValue :: a -> HexColor
   colorName :: a -> Text
   default colorName :: Show a => a -> Text
   colorName = toLower . pack . show
 
-newtype HexColor = HexColor String
-
 instance ToColor HexColor where
-  colorValue (HexColor a) = Hex a
-  colorName (HexColor a) = pack a
+  colorValue c = c
+  colorName (HexColor a) = T.dropWhile (== '#') a
