@@ -85,12 +85,14 @@ color c =
 bold :: Mod Class
 bold = cls1 $ Class "bold" [("font-weight", "bold")]
 
-border :: Int -> Mod Class
+border :: PxRem -> Mod Class
 border p =
   cls1 $
     Class
       ("border" -. p)
-      [("border", Style Px (show p))]
+      [ ("border", pxRem p)
+      , ("border-style", "solid")
+      ]
 
 pointer :: Mod Class
 pointer = cls1 $ Class "pointer" [("cursor", "pointer")]
@@ -125,3 +127,9 @@ rgb rd gr bl = Style RGB $ mconcat [show rd, " ", show gr, " ", show bl]
 class ToColor a where
   colorValue :: a -> Style
   colorName :: a -> Text
+
+newtype HexColor = HexColor String
+
+instance ToColor HexColor where
+  colorValue (HexColor a) = Style Hex a
+  colorName (HexColor a) = pack a

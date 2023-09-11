@@ -4,7 +4,6 @@ module Web.UI
   , renderLazyText
 
     -- * Element
-  , att
   , el
   , el_
   , text
@@ -15,9 +14,12 @@ module Web.UI
   , col_
   , space
 
-    -- * Style
+    -- * Mods
+  , att
   , cls
   , cls1
+
+    -- * Style
   , pad
   , padY
   , padX
@@ -30,6 +32,7 @@ module Web.UI
   , pointer
   , color
   , ToColor (..)
+  , HexColor (..)
   , (|:)
   , hover
 

@@ -32,7 +32,6 @@ default-extensions:
 dependencies:
   - base >=4.16.4.0
   - text
-  - lucid2
   - containers
   - mtl
 

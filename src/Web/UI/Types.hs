@@ -1,6 +1,6 @@
 module Web.UI.Types where
 
-import Control.Monad.State.Strict (MonadState, State, StateT, execState, modify)
+import Control.Monad.State.Strict (MonadState, State, execState, modify)
 import Data.Map (Map)
 import Data.String (IsString (..))
 import Data.Text (Text, pack)

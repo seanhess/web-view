@@ -11,8 +11,8 @@ mkElement :: Text -> Mod a -> View a () -> View b ()
 mkElement nm f ct = do
   let t = f $ Element nm [] [] (viewContents ct)
   addContent $ Node t
-  addClasses $ mconcat $ t.classes
   addClasses $ classList $ viewClasses ct
+  addClasses $ mconcat $ t.classes
 
 addClasses :: [Class] -> View a ()
 addClasses clss = do

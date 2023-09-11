@@ -46,7 +46,6 @@ library
   build-depends:
       base >=4.16.4.0
     , containers
-    , lucid2
     , mtl
     , text
   default-language: GHC2021
@@ -54,7 +53,6 @@ library
 executable example
   main-is: Example.hs
   other-modules:
-      Views.Counter
       Paths_web_ui
   autogen-modules:
       Paths_web_ui
@@ -75,7 +73,6 @@ executable example
   build-depends:
       base >=4.16.4.0
     , containers
-    , lucid2
     , mtl
     , scotty
     , text
@@ -107,7 +104,6 @@ test-suite tests
   build-depends:
       base >=4.16.4.0
     , containers
-    , lucid2
     , mtl
     , text
   default-language: GHC2021

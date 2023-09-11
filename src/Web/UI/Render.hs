@@ -24,7 +24,7 @@ htmlTag indent' i tag =
       mconcat
         [ [open <> htmlAtts (flatAttributes tag) <> ">"]
         , indent' (i + 1) $ htmlChildren tag.children
-        , [close]
+        , ["\n", close]
         ]
  where
   open = "<" <> tag.name
@@ -49,22 +49,31 @@ htmlTag indent' i tag =
       k <> "=" <> "'" <> v <> "'"
 
 indent :: Indent -> [Text] -> [Text]
-indent i' = fmap ind
+indent i' = fmap (line . ind)
  where
+  line :: Text -> Text
+  line = ("\n" <>)
+
   ind :: Text -> Text
   ind t = T.replicate (2 * i') " " <> t
 
 noIndent :: Indent -> [Text] -> [Text]
 noIndent _ ts = ts
 
-renderText :: View Document () -> Text
+renderText :: View a () -> Text
 renderText u =
-  case viewContents u of
-    [Node d] -> mconcat $ htmlTag noIndent 0 d
-    _ -> error "Should not be possible to create document with multiple tags. Use document function."
+  T.intercalate "\n" (content <> style css)
+ where
+  content = map renderContent $ viewContents u
+  css = renderCSS $ viewClasses u
+  style cs = ["<style type='text/css'>"] <> cs <> ["</style>"]
 
-renderLazyText :: View Document () -> L.Text
+renderLazyText :: View a () -> L.Text
 renderLazyText = L.fromStrict . renderText
+
+renderContent :: Content -> Text
+renderContent (Node d) = mconcat $ htmlTag indent 0 d
+renderContent (Text t) = t
 
 showView :: View a () -> Text
 showView v = T.unlines $ mconcat $ map showContent $ viewContents v
