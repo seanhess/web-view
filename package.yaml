@@ -34,6 +34,7 @@ dependencies:
   - text
   - containers
   - mtl
+  - effectful
 
 library:
   source-dirs: src
@@ -46,6 +47,8 @@ executables:
     - web-ui
     - scotty
     - string-interpolate
+    - filepath
+    - http-types
 
 tests:
   tests:

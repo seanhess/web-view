@@ -1,33 +1,75 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -Wno-unused-imports #-}
 
 module Main where
 
 import Boop
+import Contact
 import Control.Concurrent (MVar, modifyMVar_, newMVar, readMVar)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader
+import Data.List
 import Data.Map (Map)
 import Data.Map qualified as M
+import Data.Maybe (fromMaybe)
 import Data.String.Interpolate (i)
 import Data.Text (Text)
+import Data.Text.Lazy qualified as L
 import Htmx
+import System.FilePath ((</>))
 import Web.Scotty hiding (text)
+import Web.Scotty.Internal.Types
 import Web.UI
 import Web.UI.Element hiding (html)
 import Web.UI.Style (flexCol, flexRow)
-
--- import Web.UI.Types
-
-data User = User
-  { id :: Int
-  , firstName :: Text
-  , lastName :: Text
-  , email :: Text
-  }
 
 document :: View a () -> View a ()
 document cnt = do
   script "https://unpkg.com/htmx.org@1.9.5"
   cnt
+
+-- -- TODO: custom monad
+-- newtype Page inp a = Page {runPage :: inp -> ActionM a}
+--
+-- instance Functor (Page inp) where
+--   fmap f (Page ima) = Page $ \inp -> do
+--     a <- ima inp
+--     pure $ f a
+--
+-- instance Applicative (Page inp) where
+--   pure a = Page $ \_ -> pure a
+--
+--   pf <*> fa = Page $ \inp -> do
+--     f <- pf.runPage inp
+--     a <- fa.runPage inp
+--     pure $ f a
+--
+-- instance Monad (Page inp) where
+--   ma >>= amb = Page $ \inp -> do
+--     a <- ma.runPage inp
+--     (amb a).runPage inp
+
+-- page :: RoutePattern -> ActionM inp -> Page inp a -> ScottyM ()
+-- page rp input page = do
+--   matchAny rp
+
+page :: L.Text -> ActionM (View a ()) -> ScottyM ()
+page cap handler = do
+  matchAny (Capture cap) handle
+  matchAny (Capture $ cap <> "/:action") handle
+ where
+  handle = do
+    view <- handler
+    mhr <- header "HX-Request"
+    html $ renderLazyText $ addDocument mhr view
+
+  addDocument Nothing v = document v
+  addDocument (Just _) v = v
+
+loadUser :: MVar (Map Int User) -> Int -> ActionM User
+loadUser users uid = do
+  us <- liftIO $ readMVar users
+  maybe next pure $ M.lookup uid us
 
 main :: IO ()
 main = do
@@ -41,70 +83,19 @@ main = do
           text beam
           button (bg Green . hover |: bg GreenLight . pointer) "CLICK ME"
 
-    get "/contact/:cid" $ do
-      cid <- param "cid"
-      us <- liftIO $ readMVar users
-      u <- maybe next pure $ M.lookup cid us
+    -- 1. what do we need scotty for?  You might want to implement security, or something...
+    -- but once we're inside the handler, we aren't scotty specific any more
+    -- a warp-handler would be
+    page "/contact/:id" $ do
+      -- could be served with a simple load transformer...
+      -- but...
+      -- we aren't running in our effect here. We need to escape it?
+      uid <- param "id"
+      -- TODO: unifying effect, use scotty trans
+      -- nothing fancy, just load it here!
+      user <- loadUser users uid
 
-      html $ renderLazyText $ document $ viewUser u
-
-    get "/contact/:cid/edit" $ do
-      cid <- param "cid"
-      us <- liftIO $ readMVar users
-      u <- maybe next pure $ M.lookup cid us
-
-      html $ renderLazyText $ do
-        form (flexCol . hxPut (Url [i|/contact/#{cid}|]) . hxSwap OuterHTML . hxTarget This) $ do
-          label id $ do
-            text "First Name"
-            input (name "firstName" . value u.firstName)
-
-          label id $ do
-            text "Last Name"
-            input (name "lastName" . value u.lastName)
-
-          label id $ do
-            text "Email"
-            input (name "email" . value u.email)
-
-          button id "Submit"
-
-          button (hxGet $ Url [i|/contact/#{cid}|]) "Cancel"
-        space
-
-    put "/contact/:cid" $ do
-      ps <- params
-      liftIO $ print (ps)
-      cid <- param "cid"
-      liftIO $ print cid
-      us <- liftIO $ readMVar users
-      u <- maybe next pure $ M.lookup cid us
-      fn <- param "firstName"
-      ln <- param "lastName"
-      em <- param "email"
-      let u' = u{firstName = fn, lastName = ln, email = em}
-      liftIO $ modifyMVar_ users (\us' -> pure $ M.insert cid u' us')
-      html $ renderLazyText $ viewUser u'
-
-viewUser :: User -> View Content ()
-viewUser u = do
-  el flexRow $ do
-    el (flexCol . hxTarget This . hxSwap OuterHTML . pad 10 . gap 10) $ do
-      el_ $ do
-        label id "First Name:"
-        text u.firstName
-
-      el_ $ do
-        label id "Last Name:"
-        text u.lastName
-
-      el_ $ do
-        label id "Email"
-        text u.email
-
-      let cid = u.id
-      button (hxGet (Url [i|/contact/#{cid}/edit|])) "Click to Edit"
-    space
+      Contact.contactPage users user
 
 data AppColor
   = Green
@@ -114,32 +105,3 @@ data AppColor
 instance ToColor AppColor where
   colorValue Green = HexColor "080"
   colorValue GreenLight = HexColor "0F0"
-
-{--
- <div hx-target="this" hx-swap="outerHTML">
-    <div><label>First Name</label>: Joe</div>
-    <div><label>Last Name</label>: Blow</div>
-    <div><label>Email</label>: joe@blow.com</div>
-    <button hx-get="/contact/1/edit" class="btn btn-primary">
-    Click To Edit
-    </button>
-</div>
-
-<form hx-put="/contact/1" hx-target="this" hx-swap="outerHTML">
-  <div>
-    <label>First Name</label>
-    <input type="text" name="firstName" value="Joe">
-  </div>
-  <div class="form-group">
-    <label>Last Name</label>
-    <input type="text" name="lastName" value="Blow">
-  </div>
-  <div class="form-group">
-    <label>Email Address</label>
-    <input type="email" name="email" value="joe@blow.com">
-  </div>
-  <button class="btn">Submit</button>
-  <button class="btn" hx-get="/contact/1">Cancel</button>
-</form>
-
---}
