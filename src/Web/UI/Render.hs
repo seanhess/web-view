@@ -8,6 +8,7 @@ import Data.Map qualified as M
 import Data.Text (Text, pack)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as L
+import Web.UI.Element (insertContents, style)
 
 -- import Debug.Trace
 import Web.UI.Types
@@ -66,12 +67,14 @@ noIndent :: Indent -> [Text] -> [Text]
 noIndent _ ts = ts
 
 renderText :: View a () -> Text
-renderText u =
-  T.intercalate "\n" (content <> style css)
+renderText u = T.intercalate "\n" content
  where
-  content = map renderContent $ viewContents u
+  -- T.intercalate "\n" (content <> style css)
+  content = map renderContent $ viewContents $ do
+    u
+    insertContents $ viewContents styles
   css = renderCSS $ viewClasses u
-  style cs = ["<style type='text/css'>"] <> cs <> ["</style>"]
+  styles = style (T.intercalate "\n" css)
 
 renderLazyText :: View a () -> L.Text
 renderLazyText = L.fromStrict . renderText

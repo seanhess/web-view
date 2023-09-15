@@ -5,7 +5,7 @@ import Effectful.Dispatch.Dynamic
 import Example.Users
 import Web.Hyperbole
 import Web.UI
-import Web.UI.Style (flexCol, flexRow)
+import Web.UI.Style (flexCol)
 
 data Action
   = Edit
@@ -17,19 +17,26 @@ instance Default Action where
   def = Load
 
 handle :: (Users :> es, Page :> es) => Action -> User -> Eff es (View Content ())
-handle Load u = do
-  pure $ viewContact u
-handle Edit u = do
-  pure $ editContact u
-handle Save u = do
+handle Load = load
+handle Edit = edit
+handle Save = save
+
+load :: Monad m => User -> m (View Content ())
+load u = pure $ viewContact u
+
+edit :: Monad m => User -> m (View Content ())
+edit u = pure $ editContact u
+
+save :: (Users :> es, Page :> es) => User -> Eff es (View Content ())
+save u = do
   user <- userFormData u.id
   send $ SaveUser user
   pure $ viewContact user
 
 viewContact :: User -> View Content ()
 viewContact u = do
-  el flexRow $ do
-    el (flexCol . hxTarget This . hxSwap OuterHTML . pad 10 . gap 10) $ do
+  row (hxTarget This . hxSwap OuterHTML) $ do
+    col (pad 10 . gap 10) $ do
       el_ $ do
         label id "First Name:"
         text u.firstName
@@ -47,25 +54,25 @@ viewContact u = do
 
 editContact :: User -> View Content ()
 editContact u = do
-  form (flexCol . action Save . hxSwap OuterHTML . hxTarget This) $ do
-    label id $ do
-      text "First Name"
-      input (name "firstName" . value u.firstName)
+  row (hxTarget This . hxSwap OuterHTML) $ do
+    form (flexCol . action Save) $ do
+      label id $ do
+        text "First Name"
+        input (name "firstName" . value u.firstName)
 
-    label id $ do
-      text "Last Name"
-      input (name "lastName" . value u.lastName)
+      label id $ do
+        text "Last Name"
+        input (name "lastName" . value u.lastName)
 
-    label id $ do
-      text "Email"
-      input (name "email" . value u.email)
+      label id $ do
+        text "Email"
+        input (name "email" . value u.email)
 
-    button id "Submit"
+      button id "Submit"
 
-    button (action Load) "Cancel"
-  space
+      button (action Load) "Cancel"
+    space
 
--- TODO: typeclass or something
 userFormData :: Page :> es => Int -> Eff es User
 userFormData n = do
   firstName <- param "firstName"

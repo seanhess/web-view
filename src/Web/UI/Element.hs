@@ -31,6 +31,15 @@ addContent ct = do
       { contents = vs.contents <> [ct]
       }
 
+-- Inserts into first child
+insertContents :: [Content] -> View b ()
+insertContents cs = do
+  modify $ \vs -> vs{contents = insert vs.contents}
+ where
+  insert [Node e] = [Node $ insertEl e]
+  insert cnt = cnt <> cs
+  insertEl e = e{children = e.children <> cs}
+
 classList :: Map ClassName (Map Name StyleValue) -> [Class]
 classList m = map (uncurry Class) $ M.toList m
 
@@ -103,6 +112,9 @@ value = att "value"
 
 script :: Text -> View b ()
 script src = mkElement "script" (att "type" "text/javascript" . att "src" src) none
+
+style :: Text -> View b ()
+style cnt = mkElement "style" (att "type" "text/css") (text $ "\n" <> cnt <> "\n")
 
 -- script (Code code) = mkElement "script" (att "type" "text/javascript") $ fromText code
 
