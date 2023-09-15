@@ -1,4 +1,4 @@
-module Htmx where
+module Web.Htmx where
 
 import Data.Text (Text, pack, toLower)
 

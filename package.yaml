@@ -31,26 +31,27 @@ default-extensions:
 
 dependencies:
   - base >=4.16.4.0
-  - text
   - containers
-  - mtl
+  - data-default
   - effectful
+  - filepath
+  - http-types
+  - mtl
+  - scotty
+  - string-interpolate
+  - text
 
 library:
   source-dirs: src
 
 executables:
   example:
-    main:                Example.hs
+    main:                Main.hs
     source-dirs:         example
     dependencies:
     - web-ui
-    - scotty
-    - string-interpolate
-    - filepath
-    - http-types
 
 tests:
   tests:
-    main:                Test.hs
+    main:                Tests.hs
     source-dirs:         test

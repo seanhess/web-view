@@ -20,8 +20,12 @@ extra-source-files:
 
 library
   exposed-modules:
-      Boop
-      Htmx
+      Web.Htmx
+      Web.Hyperbole
+      Web.Hyperbole.Action
+      Web.Hyperbole.Htmx
+      Web.Hyperbole.Page
+      Web.Hyperbole.Scotty
       Web.UI
       Web.UI.Element
       Web.UI.Render
@@ -48,15 +52,21 @@ library
   build-depends:
       base >=4.16.4.0
     , containers
+    , data-default
     , effectful
+    , filepath
+    , http-types
     , mtl
+    , scotty
+    , string-interpolate
     , text
   default-language: GHC2021
 
 executable example
-  main-is: Example.hs
+  main-is: Main.hs
   other-modules:
       Contact
+      Example.Users
       Paths_web_ui
   autogen-modules:
       Paths_web_ui
@@ -77,6 +87,7 @@ executable example
   build-depends:
       base >=4.16.4.0
     , containers
+    , data-default
     , effectful
     , filepath
     , http-types
@@ -89,9 +100,8 @@ executable example
 
 test-suite tests
   type: exitcode-stdio-1.0
-  main-is: Test.hs
+  main-is: Tests.hs
   other-modules:
-      Main
       Paths_web_ui
   autogen-modules:
       Paths_web_ui
@@ -112,7 +122,12 @@ test-suite tests
   build-depends:
       base >=4.16.4.0
     , containers
+    , data-default
     , effectful
+    , filepath
+    , http-types
     , mtl
+    , scotty
+    , string-interpolate
     , text
   default-language: GHC2021

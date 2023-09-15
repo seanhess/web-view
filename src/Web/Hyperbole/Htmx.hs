@@ -1,12 +1,11 @@
-module Boop where
+module Web.Hyperbole.Htmx where
 
 import Data.Text (Text)
 import Data.Text qualified as T
-import Htmx
+import Web.Htmx
+import Web.Hyperbole.Action
 import Web.UI
 import Web.UI.Types (Attribute)
-
--- TODO: modifiers to swap: innerHTML swap:1s, innerHTML settle:1s
 
 hxTarget :: HxTarget -> Mod Attribute
 hxTarget t = att "hx-target" (toAtt t)
@@ -27,3 +26,10 @@ newtype Url = Url Text
 
 (</>) :: Url -> Text -> Url
 (Url u) </> t = Url $ T.dropWhileEnd (== '/') u <> "/" <> t
+
+action :: PageAction action => action -> Mod Attribute
+action act = hxPost $ actionUrl act
+
+actionUrl :: PageAction action => action -> Url
+actionUrl a =
+  Url $ "?action=" <> actionName a
