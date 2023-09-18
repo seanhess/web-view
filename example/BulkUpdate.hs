@@ -22,17 +22,17 @@ viewUsers :: [User] -> View Content ()
 viewUsers users = do
   form (pad 10) $ do
     table (border 1) users $ do
-      tcol (width 20) none $ const $ do
-        el (cell . padX 10) $ input (att "type" "checkbox")
+      tcol (cell . width 20) none $ const $ do
+        input (att "type" "checkbox")
 
-      tcol (border 1) (el th "First Name") $ \u -> do
-        el cell $ text u.firstName
+      tcol cell (th "First Name") $ \u -> do
+        text u.firstName
 
-      tcol (border 1) (el th "Last Name") $ \u -> do
-        el cell $ text u.lastName
+      tcol cell (th "Last Name") $ \u -> do
+        text u.lastName
 
-      tcol (border 1) (el th "Email") $ \u -> do
-        el cell $ text u.email
+      tcol cell (th "Email") $ \u -> do
+        text u.email
  where
-  cell = bg GreenLight . pad 2
-  th = cell . bold
+  cell = bg GreenLight . pad 2 . border 1
+  th = el bold
