@@ -50,11 +50,11 @@ att :: Name -> AttValue -> Mod Attribute
 att n v t = t{attributes = M.insert n v t.attributes}
 
 -- | A basic element
-el :: Mod a -> View Content () -> View Content ()
+el :: Mod a -> View Content () -> View a ()
 el = mkElement "div"
 
 -- | A basic element, with no modifiers
-el_ :: View Content () -> View Content ()
+el_ :: View Content () -> View a ()
 el_ = mkElement "div" id
 
 button :: Mod a -> View Content () -> View Content ()
@@ -106,7 +106,7 @@ label :: Mod a -> View Content () -> View Content ()
 label = mkElement "label"
 
 form :: Mod a -> View Content () -> View Content ()
-form = mkElement "form"
+form f = mkElement "form" (f . flexCol)
 
 input :: Mod a -> View Content ()
 input m = mkElement "input" (m . att "type" "text") none
@@ -124,25 +124,27 @@ script src = mkElement "script" (att "type" "text/javascript" . att "src" src) n
 style :: Text -> View b ()
 style cnt = mkElement "style" (att "type" "text/css") (text $ "\n" <> cnt <> "\n")
 
--- stylesheet :: Text -> View b ()
--- stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
+stylesheet :: Text -> View b ()
+stylesheet href = mkElement "link" (att "rel" "stylesheet" . att "href" href) none
 
-data Table dt
-table :: Mod a -> [dt] -> Writer [Column dt] () -> View (Table dt) ()
+table :: Mod a -> [dt] -> Writer [Column dt] () -> View Content ()
 table f dts wcs = do
   let cols = execWriter wcs
-  mkElement "table" f $ do
+  mkElement "table" (f . borderCollapse) $ do
     mkElement "thead" id $ do
       mkElement "tr" id $ do
-        forM_ cols $ \(Column _ h _) -> do
-          h
+        forM_ cols $ \(Column mtd h _) -> do
+          mkElement "th" mtd h
     mkElement "tbody" id $ do
       forM_ dts $ \dt -> do
         mkElement "tr" id $ do
-          forM_ cols $ \(Column md _ view) -> do
-            mkElement "td" md $ view dt
+          forM_ cols $ \(Column mtd _ view) -> do
+            mkElement "td" mtd $ view dt
+ where
+  borderCollapse :: Mod Class
+  borderCollapse = cls1 $ Class "brd-cl" [("border-collapse", "collapse")]
 
-tcol :: Mod a -> View Header () -> (dt -> View Content ()) -> Writer [Column dt] ()
+tcol :: Mod Class -> View Header () -> (dt -> View Content ()) -> Writer [Column dt] ()
 tcol f hd view = tell [Column f hd view]
 
 data Column dt = Column (Mod Class) (View Header ()) (dt -> View Content ())
@@ -153,18 +155,3 @@ thead f = mkElement "th" (f . bold)
 
 thead_ :: View Content () -> View Header ()
 thead_ = thead id
-
-data Asdf = Asdf
-  { firstName :: Text
-  , lastName :: Text
-  , email :: Text
-  }
-usage :: View (Table Asdf) ()
-usage =
-  table id [Asdf "john" "doe" "john@email.com"] $ do
-    tcol id (thead_ "First Name") firstName
-    tcol id (thead_ "Last Name") lastName
-    tcol id (thead_ "Email") $ \u -> text u.email
- where
-  firstName user = text user.firstName
-  lastName user = text user.lastName

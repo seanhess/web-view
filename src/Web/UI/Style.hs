@@ -22,6 +22,13 @@ cls cx t =
 cls1 :: Class -> Mod Class
 cls1 c = cls [c]
 
+width :: PxRem -> Mod Class
+width n =
+  cls1 $
+    Class
+      ("w" -. n)
+      [("width", pxRem n)]
+
 pad :: PxRem -> Mod Class
 pad n =
   cls1 $
@@ -92,10 +99,39 @@ border :: PxRem -> Mod Class
 border p =
   cls1 $
     Class
-      ("border" -. p)
+      ("brd" -. p)
       [ ("border", pxRem p)
       , ("border-style", "solid")
       ]
+
+borderY :: PxRem -> Mod Class
+borderY p =
+  cls1 $
+    Class
+      ("brdy" -. p)
+      [ ("border-top", pxRem p)
+      , ("border-bottom", pxRem p)
+      , ("border-style", "solid")
+      ]
+
+borderX :: PxRem -> Mod Class
+borderX p =
+  cls1 $
+    Class
+      ("brdx" -. p)
+      [ ("border-left", pxRem p)
+      , ("border-right", pxRem p)
+      , ("border-style", "solid")
+      ]
+
+-- border :: PxRem -> Mod Class
+-- borderX p =
+--   cls1 $
+--     Class
+--       ("brdx" -. p)
+--       [ ("border", pxRem p)
+--       , ("border-style", "solid")
+--       ]
 
 pointer :: Mod Class
 pointer = cls1 $ Class "pointer" [("cursor", "pointer")]

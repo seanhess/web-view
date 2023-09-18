@@ -8,26 +8,10 @@ module Web.UI
 
     -- * Mods
 
-  -- , att
-  , cls
-  , cls1
-
     -- * Style
-  , pad
-  , padY
-  , padX
-  , gap
-  , grow
-  , shadow
-  , bg
-  , bold
-  , border
-  , pointer
-  , color
+  , module Web.UI.Style
   , ToColor (..)
   , HexColor (..)
-  , (|:)
-  , hover
 
     -- * Types
   , View

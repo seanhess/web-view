@@ -67,6 +67,7 @@ executable example
   other-modules:
       BulkUpdate
       Contact
+      Example.Colors
       Example.Users
       Paths_web_ui
   autogen-modules:

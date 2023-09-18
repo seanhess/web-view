@@ -3,6 +3,7 @@
 
 module Main where
 
+import BulkUpdate
 import Contact
 import Contact qualified
 import Control.Concurrent (MVar, modifyMVar_, newMVar, readMVar)
@@ -34,28 +35,22 @@ main = do
 server :: UserStore -> IO ()
 server users = do
   scotty 3000 $ do
-    get "/:word" $ do
-      beam <- param "word"
-      html $ renderLazyText $ do
-        col (pad 10 . gap 5 . border 1 . shadow . bg (HexColor "#F00")) $ do
-          el bold $ text "Hello"
-          text beam
-          button (bg Green . hover |: bg GreenLight . pointer) "CLICK ME"
+    -- get "/:word" $ do
+    --   beam <- param "word"
+    --   html $ renderLazyText $ do
+    --     col (pad 10 . gap 5 . border 1 . shadow . bg (HexColor "#F00")) $ do
+    --       el bold $ text "Hello"
+    --       text beam
+    --       button (bg Green . hover |: bg GreenLight . pointer) "CLICK ME"
 
     page "/contact/:id" $ \act -> do
       uid <- param "id"
       mu <- run $ loadUser uid
       user <- maybe next pure mu
       run $ Contact.handle act user
+
+    page "/bulk" $ \act -> do
+      run $ BulkUpdate.handle act
  where
   run :: Eff [Users, Page, Error PageError, IOE] a -> ActionM a
   run = runEffAction . runUsersIO users
-
-data AppColor
-  = Green
-  | GreenLight
-  deriving (Show)
-
-instance ToColor AppColor where
-  colorValue Green = HexColor "080"
-  colorValue GreenLight = HexColor "0F0"

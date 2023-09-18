@@ -53,4 +53,9 @@ type UserStore = MVar (Map Int User)
 
 initUsers :: MonadIO m => m UserStore
 initUsers =
-  liftIO $ newMVar [(1, User 1 "Joe" "Blow" "joe@blow.com")]
+  liftIO $ newMVar $ M.fromList $ map (\u -> (u.id, u)) users
+ where
+  users =
+    [ User 1 "Joe" "Blow" "joe@blow.com"
+    , User 2 "Sara" "Dane" "sara@dane.com"
+    ]

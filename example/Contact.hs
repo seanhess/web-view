@@ -5,7 +5,6 @@ import Effectful.Dispatch.Dynamic
 import Example.Users
 import Web.Hyperbole
 import Web.UI
-import Web.UI.Style (flexCol)
 
 data Action
   = Edit
@@ -55,7 +54,7 @@ viewContact u = do
 editContact :: User -> View Content ()
 editContact u = do
   row (hxTarget This . hxSwap OuterHTML) $ do
-    form (flexCol . action Save . pad 10 . gap 10) $ do
+    form (action Save . pad 10 . gap 10) $ do
       label id $ do
         text "First Name"
         input (name "firstName" . value u.firstName)

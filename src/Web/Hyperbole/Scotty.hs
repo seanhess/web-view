@@ -56,7 +56,10 @@ page cap handler = do
   addDocument (Just _) v = v
 
 -- TODO: custom top-level document
+-- TODO: embed js
 document :: View a () -> View a ()
 document cnt = do
   script "https://unpkg.com/htmx.org@1.9.5"
+  stylesheet "https://unpkg.com/modern-normalize@2.0.0/modern-normalize.css"
+  style "table tr td, table tr th { padding: 0; }"
   cnt
