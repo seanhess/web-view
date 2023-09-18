@@ -70,10 +70,10 @@ renderText :: View a () -> Text
 renderText u = T.intercalate "\n" content
  where
   -- T.intercalate "\n" (content <> style css)
-  content = map renderContent $ viewContents $ do
+  content = map renderContent $ (.contents) $ runView $ do
     u
-    insertContents $ viewContents styles
-  css = renderCSS $ viewClasses u
+    insertContents $ (.contents) $ runView styles
+  css = renderCSS $ (.classStyles) $ runView u
   styles = style (T.intercalate "\n" css)
 
 renderLazyText :: View a () -> L.Text
@@ -84,7 +84,7 @@ renderContent (Node d) = T.unlines $ htmlTag indentAll d
 renderContent (Text t) = t
 
 showView :: View a () -> Text
-showView v = T.unlines $ mconcat $ map showContent $ viewContents v
+showView v = T.unlines $ mconcat $ map showContent $ (.contents) $ runView v
 
 showContent :: Content -> [Text]
 showContent (Node t) = htmlTag indentAll t

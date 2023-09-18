@@ -48,7 +48,7 @@ library
       QuasiQuotes
       DuplicateRecordFields
       NoFieldSelectors
-  ghc-options: -Wall
+  ghc-options: -Wall -fdefer-typed-holes
   build-depends:
       base >=4.16.4.0
     , containers
@@ -65,6 +65,7 @@ library
 executable example
   main-is: Main.hs
   other-modules:
+      BulkUpdate
       Contact
       Example.Users
       Paths_web_ui
@@ -83,7 +84,7 @@ executable example
       QuasiQuotes
       DuplicateRecordFields
       NoFieldSelectors
-  ghc-options: -Wall
+  ghc-options: -Wall -fdefer-typed-holes
   build-depends:
       base >=4.16.4.0
     , containers
@@ -118,7 +119,7 @@ test-suite tests
       QuasiQuotes
       DuplicateRecordFields
       NoFieldSelectors
-  ghc-options: -Wall
+  ghc-options: -Wall -fdefer-typed-holes
   build-depends:
       base >=4.16.4.0
     , containers

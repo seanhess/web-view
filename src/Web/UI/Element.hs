@@ -1,6 +1,7 @@
 module Web.UI.Element where
 
 import Control.Monad.State.Strict (modify)
+import Control.Monad.Writer.Strict
 import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Text (Text)
@@ -8,11 +9,12 @@ import Web.UI.Style
 import Web.UI.Types
 
 mkElement :: Text -> Mod a -> View a () -> View b ()
-mkElement nm f ct = do
-  let t = f $ Element nm [] [] (viewContents ct)
-  addContent $ Node t
-  addClasses $ classList $ viewClasses ct
-  addClasses $ mconcat $ t.classes
+mkElement tag f ct = do
+  let st = runView ct
+  let elm = f $ Element tag [] [] st.contents
+  addContent $ Node elm
+  addClasses $ classList $ st.classStyles
+  addClasses $ mconcat $ elm.classes
 
 addClasses :: [Class] -> View a ()
 addClasses clss = do
@@ -59,25 +61,30 @@ button :: Mod a -> View Content () -> View Content ()
 button = mkElement "button"
 
 -- | Convert from text directly to view. You should not have to use this. Use `text` instead
+data Head
+
+data Base
+data Doc
+
 text :: Text -> View a ()
 text t = addContent $ Text t
 
-none :: View Content ()
+none :: View a ()
 none = pure ()
 
-meta :: Mod a -> View a ()
+meta :: Mod a -> View Head ()
 meta f = mkElement "meta" f ("" :: View Content ())
 
-title :: Text -> View Script ()
+title :: Text -> View Head ()
 title = mkElement "title" id . text
 
-head :: View Script () -> View a ()
+head :: View Head () -> View Base ()
 head = mkElement "head" id
 
-html :: View a () -> View a ()
+html :: View Base () -> View Doc ()
 html = mkElement "html" id
 
-body :: View Content () -> View Content ()
+body :: View Content () -> View Base ()
 body = mkElement "body" id
 
 row :: Mod a -> View Content () -> View Content ()
@@ -111,12 +118,53 @@ value :: Text -> Mod Attribute
 value = att "value"
 
 script :: Text -> View b ()
+-- script (Code code) = mkElement "script" (att "type" "text/javascript") $ fromText code
 script src = mkElement "script" (att "type" "text/javascript" . att "src" src) none
 
 style :: Text -> View b ()
 style cnt = mkElement "style" (att "type" "text/css") (text $ "\n" <> cnt <> "\n")
 
--- script (Code code) = mkElement "script" (att "type" "text/javascript") $ fromText code
-
 -- stylesheet :: Text -> View b ()
 -- stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
+
+data Table dt
+table :: Mod a -> [dt] -> Writer [Column dt] () -> View (Table dt) ()
+table f dts wcs = do
+  let cols = execWriter wcs
+  mkElement "table" f $ do
+    mkElement "thead" id $ do
+      mkElement "tr" id $ do
+        forM_ cols $ \(Column _ h _) -> do
+          h
+    mkElement "tbody" id $ do
+      forM_ dts $ \dt -> do
+        mkElement "tr" id $ do
+          forM_ cols $ \(Column md _ view) -> do
+            mkElement "td" md $ view dt
+
+tcol :: Mod a -> View Header () -> (dt -> View Content ()) -> Writer [Column dt] ()
+tcol f hd view = tell [Column f hd view]
+
+data Column dt = Column (Mod Class) (View Header ()) (dt -> View Content ())
+
+data Header
+thead :: Mod a -> View Content () -> View Header ()
+thead f = mkElement "th" (f . bold)
+
+thead_ :: View Content () -> View Header ()
+thead_ = thead id
+
+data Asdf = Asdf
+  { firstName :: Text
+  , lastName :: Text
+  , email :: Text
+  }
+usage :: View (Table Asdf) ()
+usage =
+  table id [Asdf "john" "doe" "john@email.com"] $ do
+    tcol id (thead_ "First Name") firstName
+    tcol id (thead_ "Last Name") lastName
+    tcol id (thead_ "Email") $ \u -> text u.email
+ where
+  firstName user = text user.firstName
+  lastName user = text user.lastName

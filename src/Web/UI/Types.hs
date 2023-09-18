@@ -94,9 +94,7 @@ data Script
   | Code Text
 
 -- | Views contain their contents, and a list of all styles mentioned during their rendering
-newtype View a x = View
-  { runView :: State ViewState x
-  }
+newtype View a x = View (State ViewState x)
   deriving newtype (Functor, Applicative, Monad, MonadState ViewState)
 
 data ViewState = ViewState
@@ -107,13 +105,8 @@ data ViewState = ViewState
 instance IsString (View Content ()) where
   fromString s = modify $ \vs -> vs{contents = [Text (pack s)]}
 
-viewContents :: View a x -> [Content]
-viewContents (View wts) = (.contents) $ execState wts (ViewState [] [])
-
--- | All classes contained anywhere in the view
-viewClasses :: View a () -> Map ClassName (Map Name StyleValue)
-viewClasses (View st) = do
-  (.classStyles) $ execState st (ViewState [] [])
+runView :: View a () -> ViewState
+runView (View st) = execState st (ViewState [] [])
 
 -- | A function that modifies an element. Allows for easy chaining and composition
 type Mod a = Element -> Element

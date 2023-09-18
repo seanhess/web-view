@@ -20,6 +20,7 @@ data User = User
 -- Load a user AND do next if missing?
 data Users :: Effect where
   LoadUser :: Int -> Users m (Maybe User)
+  LoadUsers :: Users m [User]
   SaveUser :: User -> Users m ()
 
 type instance DispatchOf Users = 'Dynamic
@@ -33,11 +34,17 @@ runUsersIO var = interpret $ \_ -> \case
   LoadUser uid -> liftIO $ do
     us <- readMVar var
     pure $ M.lookup uid us
+  LoadUsers -> liftIO $ do
+    us <- readMVar var
+    pure $ M.elems us
   SaveUser u -> liftIO $ do
     modifyMVar_ var $ \us -> pure $ M.insert u.id u us
 
 loadUser :: Users :> es => Int -> Eff es (Maybe User)
 loadUser = send . LoadUser
+
+loadUsers :: Users :> es => Eff es [User]
+loadUsers = send LoadUsers
 
 saveUser :: Users :> es => User -> Eff es ()
 saveUser = send . SaveUser
