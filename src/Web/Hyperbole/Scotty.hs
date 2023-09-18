@@ -7,7 +7,7 @@ import Effectful
 import Effectful.Error.Dynamic
 import Network.HTTP.Types (status400)
 import Web.Hyperbole.Action
-import Web.Hyperbole.Page
+import Web.Hyperbole.Page hiding (params)
 import Web.Scotty as Scotty hiding (text)
 import Web.Scotty.Internal.Types (RoutePattern (..))
 import Web.UI
@@ -26,11 +26,13 @@ runEffAction
    . Eff [Page, Error PageError, IOE] a
   -> ActionM a
 runEffAction m = do
-  ps <- params
+  ps <- fmap strict <$> params
   ea <- liftIO . runEff . runErrorNoCallStack @PageError . runPage ps $ m :: ActionM (Either PageError a)
   case ea of
     Left e@(ParamError _ _) -> raiseStatus status400 $ L.pack $ show e
     Right a -> pure a
+ where
+  strict (a, b) = (L.toStrict a, L.toStrict b)
 
 {- | handle a Hyperbole page in Scotty
 

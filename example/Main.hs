@@ -19,6 +19,7 @@ import Effectful
 import Effectful.Dispatch.Dynamic (send)
 import Effectful.Error.Dynamic (Error)
 import Effectful.Reader.Dynamic
+import Example.Effects.Debug
 import Example.Users
 import System.FilePath ((</>))
 import Web.Hyperbole hiding (param)
@@ -52,5 +53,5 @@ server users = do
     page "/bulk" $ \act -> do
       run $ BulkUpdate.handle act
  where
-  run :: Eff [Users, Page, Error PageError, IOE] a -> ActionM a
-  run = runEffAction . runUsersIO users
+  run :: Eff [Debug, Users, Page, Error PageError, IOE] a -> ActionM a
+  run = runEffAction . runUsersIO users . runDebugIO

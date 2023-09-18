@@ -124,6 +124,13 @@ borderX p =
       , ("border-style", "solid")
       ]
 
+borderColor :: ToColor c => c -> Mod Class
+borderColor c =
+  cls1 $
+    Class
+      (ClassName Nothing $ "brdc-" <> colorName c)
+      [("border-color", Hex $ colorValue c)]
+
 -- border :: PxRem -> Mod Class
 -- borderX p =
 --   cls1 $
