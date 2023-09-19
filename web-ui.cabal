@@ -25,6 +25,7 @@ library
       Web.Hyperbole.Action
       Web.Hyperbole.Htmx
       Web.Hyperbole.Page
+      Web.Hyperbole.Route
       Web.Hyperbole.Scotty
       Web.UI
       Web.UI.Element
@@ -66,8 +67,8 @@ executable example
   main-is: Main.hs
   other-modules:
       BulkUpdate
-      Contact
       Example.Colors
+      Example.Contact
       Example.Effects.Debug
       Example.Users
       Paths_web_ui

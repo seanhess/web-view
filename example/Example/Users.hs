@@ -14,6 +14,7 @@ data User = User
   , firstName :: Text
   , lastName :: Text
   , email :: Text
+  , isActive :: Bool
   }
   deriving (Show)
 
@@ -22,8 +23,11 @@ data Users :: Effect where
   LoadUser :: Int -> Users m (Maybe User)
   LoadUsers :: Users m [User]
   SaveUser :: User -> Users m ()
+  ModifyUser :: Int -> (User -> User) -> Users m ()
 
 type instance DispatchOf Users = 'Dynamic
+
+type UserStore = MVar (Map Int User)
 
 runUsersIO
   :: (IOE :> es)
@@ -31,31 +35,35 @@ runUsersIO
   -> Eff (Users : es) a
   -> Eff es a
 runUsersIO var = interpret $ \_ -> \case
-  LoadUser uid -> liftIO $ do
-    us <- readMVar var
-    pure $ M.lookup uid us
-  LoadUsers -> liftIO $ do
-    us <- readMVar var
-    pure $ M.elems us
-  SaveUser u -> liftIO $ do
-    modifyMVar_ var $ \us -> pure $ M.insert u.id u us
+  LoadUser uid -> Example.Users.load var uid
+  LoadUsers -> Example.Users.all var
+  SaveUser u -> Example.Users.save var u
+  ModifyUser uid f -> Example.Users.modify var uid f
 
-loadUser :: Users :> es => Int -> Eff es (Maybe User)
-loadUser = send . LoadUser
+load :: MonadIO m => UserStore -> Int -> m (Maybe User)
+load var uid = do
+  us <- liftIO $ readMVar var
+  pure $ M.lookup uid us
 
-loadUsers :: Users :> es => Eff es [User]
-loadUsers = send LoadUsers
+save :: MonadIO m => UserStore -> User -> m ()
+save var u = do
+  liftIO $ modifyMVar_ var $ \us -> pure $ M.insert u.id u us
 
-saveUser :: Users :> es => User -> Eff es ()
-saveUser = send . SaveUser
+all :: MonadIO m => UserStore -> m [User]
+all var = do
+  us <- liftIO $ readMVar var
+  pure $ M.elems us
 
-type UserStore = MVar (Map Int User)
+modify :: MonadIO m => UserStore -> Int -> (User -> User) -> m ()
+modify var uid f = liftIO $ do
+  modifyMVar_ var $ \us -> do
+    pure $ M.adjust f uid us
 
 initUsers :: MonadIO m => m UserStore
 initUsers =
   liftIO $ newMVar $ M.fromList $ map (\u -> (u.id, u)) users
  where
   users =
-    [ User 1 "Joe" "Blow" "joe@blow.com"
-    , User 2 "Sara" "Dane" "sara@dane.com"
+    [ User 1 "Joe" "Blow" "joe@blow.com" True
+    , User 2 "Sara" "Dane" "sara@dane.com" False
     ]

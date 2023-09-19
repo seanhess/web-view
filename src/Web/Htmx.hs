@@ -2,11 +2,13 @@ module Web.Htmx where
 
 import Data.Text (Text, pack, toLower)
 
-newtype Selector
+data Selector
   = Class Text
+  | Id Text
 
 selectorText :: Selector -> Text
 selectorText (Class t) = "." <> t
+selectorText (Id t) = "#" <> t
 
 class ToAttribute a where
   toAtt :: a -> Text
@@ -17,6 +19,7 @@ data HxTarget
   | Find Selector
   | Next Selector
   | Previous Selector
+  | Query Selector
 
 instance ToAttribute HxTarget where
   toAtt This = "this"
@@ -24,6 +27,7 @@ instance ToAttribute HxTarget where
   toAtt (Find s) = "find " <> selectorText s
   toAtt (Next s) = "next " <> selectorText s
   toAtt (Previous s) = "previous " <> selectorText s
+  toAtt (Query s) = selectorText s
 
 -- TODO: run into trouble with constructor clashes! Might need to use fns again
 data HxSwap

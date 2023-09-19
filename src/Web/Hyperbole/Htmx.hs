@@ -1,11 +1,16 @@
+{-# LANGUAGE DefaultSignatures #-}
+
 module Web.Hyperbole.Htmx where
 
-import Data.Text (Text)
+import Data.String (IsString (..))
+import Data.Text (Text, pack)
 import Data.Text qualified as T
+import Data.Text.Lazy qualified as L
 import Web.Htmx
-import Web.Hyperbole.Action
 import Web.UI
 import Web.UI.Types (Attribute)
+
+-- import Web.Hyperbole.Action
 
 hxTarget :: HxTarget -> Mod Attribute
 hxTarget t = att "hx-target" (toAtt t)
@@ -14,22 +19,51 @@ hxSwap :: HxSwap -> Mod Attribute
 hxSwap t = att "hx-swap" (toAtt t)
 
 hxGet :: Url -> Mod Attribute
-hxGet (Url u) = att "hx-get" u
+hxGet = att "hx-get" . fromUrl
 
 hxPost :: Url -> Mod Attribute
-hxPost (Url u) = att "hx-post" u
+hxPost = att "hx-post" . fromUrl
 
 hxPut :: Url -> Mod Attribute
-hxPut (Url u) = att "hx-put" u
+hxPut = att "hx-put" . fromUrl
 
-newtype Url = Url Text
+type Segment = Text
+newtype Url = Url [Segment]
+  deriving newtype (Show)
 
-(</>) :: Url -> Text -> Url
-(Url u) </> t = Url $ T.dropWhileEnd (== '/') u <> "/" <> t
+-- what if you want a relative url?
+instance IsString Url where
+  fromString s = Url [cleanSegment $ pack s]
 
-action :: PageAction action => action -> Mod Attribute
-action act = hxPost $ actionUrl act
+fromUrl :: Url -> Text
+fromUrl (Url ss) = "/" <> T.intercalate "/" ss
 
-actionUrl :: PageAction action => action -> Url
-actionUrl a =
-  Url $ "?action=" <> actionName a
+class ToSegment a where
+  segment :: a -> Segment
+  default segment :: Show a => a -> Segment
+  segment = pack . show
+
+instance ToSegment Int
+instance ToSegment Integer
+instance ToSegment Text where
+  segment = id
+instance ToSegment String where
+  segment = pack
+instance ToSegment L.Text where
+  segment = L.toStrict
+
+-- instance ToSegment Url where
+--   segment (Url t) = t
+--
+cleanSegment :: Segment -> Segment
+cleanSegment = T.dropWhileEnd (== '/') . T.dropWhile (== '/')
+
+(//) :: Url -> Segment -> Url
+(Url ss) // t = Url $ ss <> [cleanSegment t]
+
+-- action :: PageAction action => action -> Mod Attribute
+-- action act = hxPost $ actionUrl act
+--
+-- actionUrl :: PageAction action => action -> Url
+-- actionUrl a =
+--   Url $ "?action=" <> actionName a
