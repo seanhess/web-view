@@ -32,6 +32,7 @@ library
       Web.UI.Render
       Web.UI.Style
       Web.UI.Types
+      Web.UI.Url
   other-modules:
       Paths_web_ui
   autogen-modules:
@@ -70,7 +71,7 @@ executable example
       Example.Colors
       Example.Contact
       Example.Effects.Debug
-      Example.Users
+      Example.Effects.Users
       Paths_web_ui
   autogen-modules:
       Paths_web_ui

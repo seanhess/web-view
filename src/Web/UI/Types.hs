@@ -87,14 +87,8 @@ data Content
   = Node Element
   | Text Text
 
-data Document
-data Body
-data Script
-  = Url Text
-  | Code Text
-
 -- | Views contain their contents, and a list of all styles mentioned during their rendering
-newtype View a x = View (State ViewState x)
+newtype View a = View (State ViewState a)
   deriving newtype (Functor, Applicative, Monad, MonadState ViewState)
 
 data ViewState = ViewState
@@ -102,11 +96,11 @@ data ViewState = ViewState
   , classStyles :: Map ClassName (Map Name StyleValue)
   }
 
-instance IsString (View Content ()) where
+instance IsString (View ()) where
   fromString s = modify $ \vs -> vs{contents = [Text (pack s)]}
 
-runView :: View a () -> ViewState
+runView :: View () -> ViewState
 runView (View st) = execState st (ViewState [] [])
 
 -- | A function that modifies an element. Allows for easy chaining and composition
-type Mod a = Element -> Element
+type Mod = Element -> Element

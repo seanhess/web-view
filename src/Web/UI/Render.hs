@@ -66,7 +66,7 @@ indent t = indentation <> t
 noIndent :: Indent -> [Text] -> [Text]
 noIndent _ ts = ts
 
-renderText :: View a () -> Text
+renderText :: View () -> Text
 renderText u = T.intercalate "\n" content
  where
   -- T.intercalate "\n" (content <> style css)
@@ -76,14 +76,14 @@ renderText u = T.intercalate "\n" content
   css = renderCSS $ (.classStyles) $ runView u
   styles = style (T.intercalate "\n" css)
 
-renderLazyText :: View a () -> L.Text
+renderLazyText :: View () -> L.Text
 renderLazyText = L.fromStrict . renderText
 
 renderContent :: Content -> Text
 renderContent (Node d) = T.unlines $ htmlTag indentAll d
 renderContent (Text t) = t
 
-showView :: View a () -> Text
+showView :: View () -> Text
 showView v = T.unlines $ mconcat $ map showContent $ (.contents) $ runView v
 
 showContent :: Content -> [Text]

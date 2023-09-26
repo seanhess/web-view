@@ -7,16 +7,17 @@ import Data.Map qualified as M
 import Data.Text (Text)
 import Web.UI.Style
 import Web.UI.Types
+import Web.UI.Url
 
-mkElement :: Text -> Mod a -> View a () -> View b ()
-mkElement tag f ct = do
+tag :: Text -> Mod -> View () -> View ()
+tag nm f ct = do
   let st = runView ct
-  let elm = f $ Element tag [] [] st.contents
+  let elm = f $ Element nm [] [] st.contents
   addContent $ Node elm
   addClasses $ classList $ st.classStyles
   addClasses $ mconcat $ elm.classes
 
-addClasses :: [Class] -> View a ()
+addClasses :: [Class] -> View ()
 addClasses clss = do
   modify $ \vs ->
     vs
@@ -26,7 +27,7 @@ addClasses clss = do
   addClsDef :: Class -> Map ClassName (Map Name StyleValue) -> Map ClassName (Map Name StyleValue)
   addClsDef c = M.insert c.className c.classProperties
 
-addContent :: Content -> View a ()
+addContent :: Content -> View ()
 addContent ct = do
   modify $ \vs ->
     vs
@@ -34,7 +35,7 @@ addContent ct = do
       }
 
 -- Inserts into first child
-insertContents :: [Content] -> View b ()
+insertContents :: [Content] -> View ()
 insertContents cs = do
   modify $ \vs -> vs{contents = insert vs.contents}
  where
@@ -46,19 +47,19 @@ classList :: Map ClassName (Map Name StyleValue) -> [Class]
 classList m = map (uncurry Class) $ M.toList m
 
 -- | Set an attribute, replacing existing value
-att :: Name -> AttValue -> Mod Attribute
+att :: Name -> AttValue -> Mod
 att n v t = t{attributes = M.insert n v t.attributes}
 
 -- | A basic element
-el :: Mod a -> View Content () -> View a ()
-el = mkElement "div"
+el :: Mod -> View () -> View ()
+el = tag "div"
 
 -- | A basic element, with no modifiers
-el_ :: View Content () -> View a ()
-el_ = mkElement "div" id
+el_ :: View () -> View ()
+el_ = tag "div" id
 
-button :: Mod a -> View Content () -> View Content ()
-button = mkElement "button"
+button :: Mod -> View () -> View ()
+button = tag "button"
 
 -- | Convert from text directly to view. You should not have to use this. Use `text` instead
 data Head
@@ -66,92 +67,93 @@ data Head
 data Base
 data Doc
 
-text :: Text -> View a ()
+text :: Text -> View ()
 text t = addContent $ Text t
 
-none :: View a ()
+none :: View ()
 none = pure ()
 
-meta :: Mod a -> View Head ()
-meta f = mkElement "meta" f ("" :: View Content ())
+meta :: Mod -> View ()
+meta f = tag "meta" f ("" :: View ())
 
-title :: Text -> View Head ()
-title = mkElement "title" id . text
+title :: Text -> View ()
+title = tag "title" id . text
 
-head :: View Head () -> View Base ()
-head = mkElement "head" id
+head :: View () -> View ()
+head = tag "head" id
 
-html :: View Base () -> View Doc ()
-html = mkElement "html" id
+html :: View () -> View ()
+html = tag "html" id
 
-body :: View Content () -> View Base ()
-body = mkElement "body" id
+body :: View () -> View  ()
+body = tag "body" id
 
-row :: Mod a -> View Content () -> View Content ()
+row :: Mod -> View () -> View ()
 row f = el (flexRow . f)
 
-row_ :: View Content () -> View Content ()
+row_ :: View () -> View ()
 row_ = row id
 
-col :: Mod a -> View Content () -> View Content ()
+col :: Mod -> View () -> View ()
 col f = el (flexCol . f)
 
-col_ :: View Content () -> View Content ()
+col_ :: View () -> View ()
 col_ = col id
 
-space :: View Content ()
+space :: View ()
 space = el grow $ pure ()
 
-label :: Mod a -> View Content () -> View Content ()
-label = mkElement "label"
+label :: Mod -> View () -> View ()
+label = tag "label"
 
-form :: Mod a -> View Content () -> View Content ()
-form f = mkElement "form" (f . flexCol)
+form :: Mod -> View () -> View ()
+form f = tag "form" (f . flexCol)
 
-input :: Mod a -> View Content ()
-input m = mkElement "input" (m . att "type" "text") none
+input :: Mod -> View ()
+input m = tag "input" (m . att "type" "text") none
 
-name :: Text -> Mod Attribute
+name :: Text -> Mod
 name = att "name"
 
-value :: Text -> Mod Attribute
+value :: Text -> Mod
 value = att "value"
 
-script :: Text -> View b ()
--- script (Code code) = mkElement "script" (att "type" "text/javascript") $ fromText code
-script src = mkElement "script" (att "type" "text/javascript" . att "src" src) none
+script :: Text -> View ()
+-- script (Code code) = tag "script" (att "type" "text/javascript") $ fromText code
+script src = tag "script" (att "type" "text/javascript" . att "src" src) none
 
-style :: Text -> View b ()
-style cnt = mkElement "style" (att "type" "text/css") (text $ "\n" <> cnt <> "\n")
+style :: Text -> View ()
+style cnt = tag "style" (att "type" "text/css") (text $ "\n" <> cnt <> "\n")
 
-stylesheet :: Text -> View b ()
-stylesheet href = mkElement "link" (att "rel" "stylesheet" . att "href" href) none
+stylesheet :: Text -> View ()
+stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
 
-table :: Mod a -> [dt] -> Writer [Column dt] () -> View Content ()
+table :: Mod -> [dt] -> Writer [TableColumn dt] () -> View ()
 table f dts wcs = do
   let cols = execWriter wcs
-  mkElement "table" (f . borderCollapse) $ do
-    mkElement "thead" id $ do
-      mkElement "tr" id $ do
-        forM_ cols $ \(Column mtd h _) -> do
-          mkElement "th" mtd h
-    mkElement "tbody" id $ do
+  tag "table" (f . borderCollapse) $ do
+    tag "thead" id $ do
+      tag "tr" id $ do
+        forM_ cols $ \(TableColumn mtd h _) -> do
+          tag "th" mtd h
+    tag "tbody" id $ do
       forM_ dts $ \dt -> do
-        mkElement "tr" id $ do
-          forM_ cols $ \(Column mtd _ view) -> do
-            mkElement "td" mtd $ view dt
+        tag "tr" id $ do
+          forM_ cols $ \(TableColumn mtd _ view) -> do
+            tag "td" mtd $ view dt
  where
-  borderCollapse :: Mod Class
+  borderCollapse :: Mod
   borderCollapse = cls1 $ Class "brd-cl" [("border-collapse", "collapse")]
 
-tcol :: Mod Class -> View Header () -> (dt -> View Content ()) -> Writer [Column dt] ()
-tcol f hd view = tell [Column f hd view]
+tcol :: Mod -> View () -> (dt -> View ()) -> Writer [TableColumn dt] ()
+tcol f hd view = tell [TableColumn f hd view]
 
-data Column dt = Column (Mod Class) (View Header ()) (dt -> View Content ())
+data TableColumn dt = TableColumn Mod (View ()) (dt -> View ())
 
-data Header
-thead :: Mod a -> View Content () -> View Header ()
-thead f = mkElement "th" (f . bold)
+link :: Url -> Mod -> View () -> View ()
+link u f = tag "a" (f . att "href" (fromUrl u))
 
-thead_ :: View Content () -> View Header ()
-thead_ = thead id
+
+
+
+

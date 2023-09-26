@@ -8,12 +8,12 @@ import Effectful.Error.Dynamic
 import Network.HTTP.Types (status400)
 import Web.Hyperbole.Action
 import Web.Hyperbole.Page hiding (params)
-import Web.Scotty as Scotty hiding (text)
+import Web.Scotty.Trans as Scotty hiding (text)
 import Web.Scotty.Internal.Types (RoutePattern (..))
 import Web.UI
 
 -- | Read action from the url parameters, default if not found
-getAction :: PageAction a => ActionM a
+getAction :: (PageAction a, Monad m) => ActionT L.Text m a
 getAction = do
   ps <- params
   maybe (pure def) pure $ do
@@ -22,12 +22,13 @@ getAction = do
 
 -- | Run our effects into the ActionM monad
 runEffAction
-  :: forall a
-   . Eff [Page, Error PageError, IOE] a
-  -> ActionM a
+  :: forall a m
+   . (MonadIO m)
+  => Eff [Page, Error PageError, IOE] a
+  -> ActionT L.Text m a
 runEffAction m = do
   ps <- fmap strict <$> params
-  ea <- liftIO . runEff . runErrorNoCallStack @PageError . runPage ps $ m :: ActionM (Either PageError a)
+  ea <- liftIO . runEff . runErrorNoCallStack @PageError . runPage ps $ m :: ActionT L.Text m (Either PageError a)
   case ea of
     Left e@(ParamError _ _) -> raiseStatus status400 $ L.pack $ show e
     Right a -> pure a
@@ -43,15 +44,15 @@ runEffAction m = do
 >   act <- getAction
 >   run $ Contact.handle act user
 -}
-page :: PageAction action => L.Text -> (action -> ActionM (View a ())) -> ScottyM ()
+page :: (MonadIO m, PageAction action) => L.Text -> (action -> ActionT L.Text m (View ())) -> ScottyT L.Text m ()
 page cap handler = do
   matchAny (Capture cap) handle
  where
   handle = do
     act <- getAction
-    view <- handler act
+    vw <- handler act
     mhr <- header "HX-Request"
-    Scotty.html $ renderLazyText $ addDocument mhr view
+    Scotty.html $ renderLazyText $ addDocument mhr vw
 
   -- insert top-level document if it is not an HTMX request
   addDocument Nothing v = document v
@@ -59,9 +60,18 @@ page cap handler = do
 
 -- TODO: custom top-level document
 -- TODO: embed js
-document :: View a () -> View a ()
+document :: View () -> View ()
 document cnt = do
   script "https://unpkg.com/htmx.org@1.9.5"
   stylesheet "https://unpkg.com/modern-normalize@2.0.0/modern-normalize.css"
   style "table tr td, table tr th { padding: 0; }"
   cnt
+
+view :: Monad m => View () -> ActionT L.Text m ()
+view vw = do
+  mhr <- Scotty.header "HX-Request"
+  Scotty.html $ renderLazyText $ addDocument mhr vw
+ where
+  -- insert top-level document if it is not an HTMX request
+  addDocument Nothing v = document v
+  addDocument (Just _) v = v

@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Example.Users where
+module Example.Effects.Users where
 
 import Control.Concurrent.MVar
 import Data.Map.Strict (Map)
@@ -35,10 +35,10 @@ runUsersIO
   -> Eff (Users : es) a
   -> Eff es a
 runUsersIO var = interpret $ \_ -> \case
-  LoadUser uid -> Example.Users.load var uid
-  LoadUsers -> Example.Users.all var
-  SaveUser u -> Example.Users.save var u
-  ModifyUser uid f -> Example.Users.modify var uid f
+  LoadUser uid -> Example.Effects.Users.load var uid
+  LoadUsers -> Example.Effects.Users.all var
+  SaveUser u -> Example.Effects.Users.save var u
+  ModifyUser uid f -> Example.Effects.Users.modify var uid f
 
 load :: MonadIO m => UserStore -> Int -> m (Maybe User)
 load var uid = do
@@ -66,4 +66,6 @@ initUsers =
   users =
     [ User 1 "Joe" "Blow" "joe@blow.com" True
     , User 2 "Sara" "Dane" "sara@dane.com" False
+    , User 3 "Billy" "Bob" "billy@bob.com" False
+    , User 4 "Felicia" "Korvus" "flitty@gmail.com" True
     ]

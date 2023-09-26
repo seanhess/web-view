@@ -19,9 +19,9 @@ import Effectful.Error.Dynamic (Error)
 import Effectful.Reader.Dynamic
 import Example.Contact qualified as Contact
 import Example.Effects.Debug
-import Example.Users
+import Example.Effects.Users
 import System.FilePath ((</>))
-import Web.Hyperbole hiding (param)
+import Web.Hyperbole
 import Web.Scotty hiding (text)
 import Web.Scotty.Internal.Types
 import Web.UI hiding (html)
@@ -38,6 +38,7 @@ server :: UserStore -> IO ()
 server users = do
   scotty 3000 $ do
     Contact.route users
+    BulkUpdate.route users
 
 -- get "/:word" $ do
 --   beam <- param "word"

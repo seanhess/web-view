@@ -29,6 +29,9 @@ instance ToAttribute HxTarget where
   toAtt (Previous s) = "previous " <> selectorText s
   toAtt (Query s) = selectorText s
 
+instance ToAttribute Selector where
+  toAtt = selectorText
+
 -- TODO: run into trouble with constructor clashes! Might need to use fns again
 data HxSwap
   = InnerHTML

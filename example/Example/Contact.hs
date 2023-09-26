@@ -1,11 +1,11 @@
 module Example.Contact where
 
-import Example.Users (User (..), UserStore)
-import Example.Users qualified as Users
+import Example.Effects.Users (User (..), UserStore)
+import Example.Effects.Users qualified as Users
 import Web.Htmx
+import Web.Hyperbole (view)
 import Web.Hyperbole.Htmx
 import Web.Scotty hiding (text)
-import Web.Scotty qualified as Scotty
 import Web.UI
 
 route :: UserStore -> ScottyM ()
@@ -14,7 +14,6 @@ route us = do
     u <- loadUser
     view $ viewContact u
 
-  -- these aren't main things!
   get "/contact/:id/edit" $ do
     u <- loadUser
     view $ editContact u
@@ -38,7 +37,7 @@ route us = do
     email <- param "email"
     pure $ User uid firstName lastName email True
 
-viewContact :: User -> View Content ()
+viewContact :: User -> View ()
 viewContact u = do
   row (hxTarget This . hxSwap OuterHTML) $ do
     col (pad 10 . gap 10) $ do
@@ -58,7 +57,7 @@ viewContact u = do
       button (hxGet ("contact" // segment uid // "edit")) "Click to Edit"
     space
 
-editContact :: User -> View Content ()
+editContact :: User -> View ()
 editContact u = do
   row (hxTarget This . hxSwap OuterHTML) $ do
     form (hxPost ("contact" // segment u.id // "save") . pad 10 . gap 10) $ do
@@ -80,19 +79,3 @@ editContact u = do
       -- yikes
       button (hxGet ("contact" // segment u.id)) "Cancel"
     space
-
-view :: View Content () -> ActionM ()
-view vw = do
-  mhr <- Scotty.header "HX-Request"
-  Scotty.html $ renderLazyText $ addDocument mhr vw
- where
-  -- insert top-level document if it is not an HTMX request
-  addDocument Nothing v = document v
-  addDocument (Just _) v = v
-
-document :: View a () -> View a ()
-document cnt = do
-  script "https://unpkg.com/htmx.org@1.9.5"
-  stylesheet "https://unpkg.com/modern-normalize@2.0.0/modern-normalize.css"
-  style "table tr td, table tr th { padding: 0; }"
-  cnt

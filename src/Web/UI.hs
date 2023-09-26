@@ -16,7 +16,6 @@ module Web.UI
     -- * Types
   , View
   , Content
-  , Document
   , Mod
   ) where
 

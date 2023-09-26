@@ -1,89 +1,66 @@
 module BulkUpdate where
 
--- import Control.Monad (forM_)
--- import Data.Text (pack)
--- import Effectful
--- import Example.Colors
--- import Example.Effects.Debug
--- import Example.Users
--- import GHC.Generics
--- import Web.Hyperbole
--- import Web.UI
---
--- data Action
---   = Load
---   | Activate
---   | Deactivate
---   deriving (Show, Eq, Read, Generic, PageAction)
---
--- instance Default Action where
---   def = Load
---
--- handle :: (Users :> es, Debug :> es, Page :> es) => Action -> Eff es (View Content ())
--- handle Load = load
--- handle Activate = activate
--- handle Deactivate = deactivate
---
--- -- TODO: maybe `view` function instead of pure?
--- load :: (Users :> es) => Eff es (View Content ())
--- load = viewMain <$> loadUsers
---
--- activate :: forall es. (Users :> es, Debug :> es, Page :> es) => Eff es (View Content ())
--- activate = do
---   ids <- param "ids" :: Eff es [Int]
---
---   -- dump "ACTIVATE param" ids
---   forM_ ids $ \uid ->
---     modifyUser uid $ \u -> u{isActive = True}
---
---   us <- loadUsers
---   pure $ viewUsers us
---
--- deactivate :: forall es. (Users :> es, Debug :> es, Page :> es) => Eff es (View Content ())
--- deactivate = do
---   ids <- param "ids" :: Eff es [Int]
---   dump "DEACTIVATE params" ids
---   forM_ ids $ \uid ->
---     modifyUser uid $ \u -> u{isActive = False}
---   us <- loadUsers
---   pure $ viewUsers us
---
--- viewMain :: [User] -> View Content ()
--- viewMain users = do
---   row_ $ do
---     col (pad 20 . width 500) $ do
---       button (action Activate) "Activate"
---       button (action Deactivate) "Deactivate"
---
---     form (grow . pad 10 . hxSwap InnerHTML . hxTarget This . att "id" "swap") $ do
---       viewUsers users
---
--- viewUsers :: [User] -> View Content ()
--- viewUsers users = do
---   table (border 1) users $ do
---     tcol (cell . width 20) none $ \u -> do
---       input (att "type" "checkbox" . name "ids" . value (pack $ show u.id))
---
---     tcol cell (th "First Name") $ \u -> do
---       el (if u.isActive then bold else id) $ text u.firstName
---
---     tcol cell (th "Last Name") $ \u -> do
---       text u.lastName
---
---     tcol cell (th "Email") $ \u -> do
---       text u.email
---  where
---   -- TODO: the issue is that to avoid hxTarget you MUST put the buttons inside the form,
---   -- AND inside the part that will be swapped
---
---   cell = pad 4 . border 1 . borderColor GrayLight
---   th = el bold
---
--- -- REMOTE DOM?
--- -- In HTMX you have to think about which area is reloading
--- -- Much of this would be easier if we always reloaded from the the top
--- -- we might submit a form, or whatever...
--- -- button: submit a form
---
--- -- Make a simple example... fire an event -> server action
+import Control.Monad (forM_)
+import Control.Monad.IO.Class (liftIO)
+import Data.Text (pack)
+import Example.Colors
+import Example.Effects.Users (User (..), UserStore)
+import Example.Effects.Users qualified as Users
+import Web.Htmx
+import Web.Hyperbole (view)
+import Web.Hyperbole.Htmx
+import Web.Scotty hiding (text)
+import Web.UI
+
+route :: UserStore -> ScottyM ()
+route st = do
+  get "/contacts/" $ do
+    us <- Users.all st
+    view $ viewMain us
+
+  -- scotty doesn't support multiple ids :(
+  post "/contacts/activate" $ do
+    ids <- param "ids" :: ActionM [Int]
+    liftIO $ print ids
+    forM_ ids $ \uid ->
+      Users.modify st uid $ \u -> u{isActive = True}
+    us <- Users.all st
+    view $ viewUsers us
+
+  post "/contacts/deactivate" $ do
+    ids <- param "ids" :: ActionM [Int]
+    liftIO $ print ids
+    forM_ ids $ \uid ->
+      Users.modify st uid $ \u -> u{isActive = False}
+    us <- Users.all st
+    view $ viewUsers us
+
+viewMain :: [User] -> View ()
+viewMain users = do
+  row (hxTarget (Query (Id "table")) . hxSwap OuterHTML . hxInclude (Id "form")) $ do
+    col (pad 20 . width 500) $ do
+      button (hxPost ("contacts" // "activate")) "Activate"
+      button (hxPost ("contacts" // "deactivate")) "Deactivate"
+
+    form (grow . pad 10 . att "id" "form") $ do
+      viewUsers users
+
+viewUsers :: [User] -> View ()
+viewUsers users = do
+  table (border 1 . att "id" "table") users $ do
+    tcol (cell . width 20) none $ \u -> do
+      input (att "type" "checkbox" . name "ids" . value (pack $ show u.id))
+
+    tcol cell (hd "First Name") $ \u -> do
+      el (if u.isActive then bold else id) $ text u.firstName
+
+    tcol cell (hd "Last Name") $ \u -> do
+      text u.lastName
+
+    tcol cell (hd "Email") $ \u -> do
+      text u.email
+ where
+  cell = pad 4 . border 1 . borderColor GrayLight
+  hd = el bold
+
 --

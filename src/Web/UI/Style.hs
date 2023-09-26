@@ -14,29 +14,29 @@ type PxRem = Int
 n -. a = ClassName Nothing $ n <> "-" <> pack (show a)
 
 -- | Add class attributes. If they already exist, will combine with spaces
-cls :: [Class] -> Mod Class
+cls :: [Class] -> Mod
 cls cx t =
   t{classes = cx : t.classes}
 
 -- | Add a single class attribute.
-cls1 :: Class -> Mod Class
+cls1 :: Class -> Mod
 cls1 c = cls [c]
 
-width :: PxRem -> Mod Class
+width :: PxRem -> Mod
 width n =
   cls1 $
     Class
       ("w" -. n)
       [("width", pxRem n)]
 
-pad :: PxRem -> Mod Class
+pad :: PxRem -> Mod
 pad n =
   cls1 $
     Class
       ("pad" -. n)
       [("padding", pxRem n)]
 
-padY :: PxRem -> Mod Class
+padY :: PxRem -> Mod
 padY n =
   cls1 $
     Class
@@ -45,7 +45,7 @@ padY n =
       , ("padding-bottom", pxRem n)
       ]
 
-padX :: PxRem -> Mod Class
+padX :: PxRem -> Mod
 padX n =
   cls1 $
     Class
@@ -54,30 +54,38 @@ padX n =
       , ("padding-right", pxRem n)
       ]
 
-gap :: PxRem -> Mod Class
+gap :: PxRem -> Mod
 gap n =
   cls1 $
     Class
       ("gap" -. n)
       [("gap", pxRem n)]
 
-grow :: Mod Class
+grow :: Mod
 grow =
   cls1 $
     Class
       "grow"
       [("flex-grow", "1")]
 
-flexRow :: Mod Class
+fontSize :: PxRem -> Mod
+fontSize n =
+  cls1 $
+    Class
+      ("fs" -. n)
+      [("font-size", pxRem n)]
+
+
+flexRow :: Mod
 flexRow = cls1 $ Class "row" [("display", "flex"), ("flex-direction", "row")]
 
-flexCol :: Mod Class
+flexCol :: Mod
 flexCol = cls1 $ Class "col" [("display", "flex"), ("flex-direction", "column")]
 
-shadow :: Mod Class
+shadow :: Mod
 shadow = cls1 $ Class "shadow" [("box-shadow", "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)")]
 
-bg :: ToColor c => c -> Mod Class
+bg :: ToColor c => c -> Mod
 bg c =
   cls1 $
     Class
@@ -85,17 +93,17 @@ bg c =
       [ ("background-color", Hex $ colorValue c)
       ]
 
-color :: ToColor c => c -> Mod Class
+color :: ToColor c => c -> Mod
 color c =
   cls1 $
     Class
       (ClassName Nothing $ "clr-" <> colorName c)
       [("color", Hex $ colorValue c)]
 
-bold :: Mod Class
+bold :: Mod
 bold = cls1 $ Class "bold" [("font-weight", "bold")]
 
-border :: PxRem -> Mod Class
+border :: PxRem -> Mod
 border p =
   cls1 $
     Class
@@ -104,7 +112,7 @@ border p =
       , ("border-style", "solid")
       ]
 
-borderY :: PxRem -> Mod Class
+borderY :: PxRem -> Mod
 borderY p =
   cls1 $
     Class
@@ -114,7 +122,7 @@ borderY p =
       , ("border-style", "solid")
       ]
 
-borderX :: PxRem -> Mod Class
+borderX :: PxRem -> Mod
 borderX p =
   cls1 $
     Class
@@ -124,14 +132,14 @@ borderX p =
       , ("border-style", "solid")
       ]
 
-borderColor :: ToColor c => c -> Mod Class
+borderColor :: ToColor c => c -> Mod
 borderColor c =
   cls1 $
     Class
       (ClassName Nothing $ "brdc-" <> colorName c)
       [("border-color", Hex $ colorValue c)]
 
--- border :: PxRem -> Mod Class
+-- border :: PxRem -> Mod
 -- borderX p =
 --   cls1 $
 --     Class
@@ -140,14 +148,14 @@ borderColor c =
 --       , ("border-style", "solid")
 --       ]
 
-pointer :: Mod Class
+pointer :: Mod
 pointer = cls1 $ Class "pointer" [("cursor", "pointer")]
 
 hover :: Pseudo
 hover = Hover
 
 -- Add a pseudo-class like Hover to your style
-(|:) :: Pseudo -> Mod Class -> Mod Class
+(|:) :: Pseudo -> Mod -> Mod
 (|:) p f t =
   let t' = f t
    in case t'.classes of
