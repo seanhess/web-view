@@ -34,13 +34,16 @@ dependencies:
   - base >=4.16.4.0
   - containers
   - data-default
+  - bytestring
   - effectful
   - filepath
   - http-types
   - mtl
-  - scotty
   - string-interpolate
   - text
+  - wai >= 3.2
+  - warp
+  - string-conversions
 
 library:
   source-dirs: src

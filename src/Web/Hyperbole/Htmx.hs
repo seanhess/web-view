@@ -4,8 +4,8 @@ module Web.Hyperbole.Htmx where
 
 import Web.Htmx
 import Web.UI
-import Web.UI.Url
 
+-- import Web.UI.Url
 
 target :: Mod
 target = hxTarget This . hxSwap InnerHTML
@@ -29,7 +29,6 @@ hxPost = att "hx-post" . fromUrl
 
 hxPut :: Url -> Mod
 hxPut = att "hx-put" . fromUrl
-
 
 -- action :: PageAction action => action -> Mod Attribute
 -- action act = hxPost $ actionUrl act

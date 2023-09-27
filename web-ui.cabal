@@ -23,6 +23,7 @@ library
       Web.Htmx
       Web.Hyperbole
       Web.Hyperbole.Action
+      Web.Hyperbole.Effects
       Web.Hyperbole.Htmx
       Web.Hyperbole.Page
       Web.Hyperbole.Route
@@ -53,15 +54,18 @@ library
   ghc-options: -Wall -fdefer-typed-holes
   build-depends:
       base >=4.16.4.0
+    , bytestring
     , containers
     , data-default
     , effectful
     , filepath
     , http-types
     , mtl
-    , scotty
+    , string-conversions
     , string-interpolate
     , text
+    , wai >=3.2
+    , warp
   default-language: GHC2021
 
 executable example
@@ -91,15 +95,18 @@ executable example
   ghc-options: -Wall -fdefer-typed-holes
   build-depends:
       base >=4.16.4.0
+    , bytestring
     , containers
     , data-default
     , effectful
     , filepath
     , http-types
     , mtl
-    , scotty
+    , string-conversions
     , string-interpolate
     , text
+    , wai >=3.2
+    , warp
     , web-ui
   default-language: GHC2021
 
@@ -126,13 +133,16 @@ test-suite tests
   ghc-options: -Wall -fdefer-typed-holes
   build-depends:
       base >=4.16.4.0
+    , bytestring
     , containers
     , data-default
     , effectful
     , filepath
     , http-types
     , mtl
-    , scotty
+    , string-conversions
     , string-interpolate
     , text
+    , wai >=3.2
+    , warp
   default-language: GHC2021

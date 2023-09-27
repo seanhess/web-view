@@ -3,11 +3,13 @@
 
 module Web.UI.Render where
 
+import Data.ByteString.Lazy qualified as BL
 import Data.Map (Map)
 import Data.Map qualified as M
-import Data.Text (Text, pack)
 import Data.Text qualified as T
+import Data.Text.Lazy (Text)
 import Data.Text.Lazy qualified as L
+import Data.Text.Lazy.Encoding qualified as L
 import Web.UI.Element (insertContents, style)
 
 -- import Debug.Trace
@@ -25,7 +27,7 @@ htmlTag ind tag =
     -- single text node
     [Text t] ->
       -- SINGLE text node, just display it indented
-      [open <> htmlAtts (flatAttributes tag) <> ">" <> t <> close]
+      [open <> htmlAtts (flatAttributes tag) <> ">" <> L.fromStrict t <> close]
     _ ->
       mconcat
         [ [open <> htmlAtts (flatAttributes tag) <> ">"]
@@ -33,12 +35,12 @@ htmlTag ind tag =
         , [close]
         ]
  where
-  open = "<" <> tag.name
-  close = "</" <> tag.name <> ">"
+  open = "<" <> L.fromStrict tag.name
+  close = "</" <> L.fromStrict tag.name <> ">"
 
   htmlContent :: Content -> [Text]
   htmlContent (Node t) = htmlTag ind t
-  htmlContent (Text t) = [t]
+  htmlContent (Text t) = [L.fromStrict t]
 
   htmlChildren :: [Content] -> [Text]
   htmlChildren cts =
@@ -49,10 +51,10 @@ htmlTag ind tag =
   htmlAtts (FlatAttributes []) = ""
   htmlAtts (FlatAttributes as) =
     " "
-      <> T.intercalate " " (map htmlAtt $ M.toList as)
+      <> L.intercalate " " (map htmlAtt $ M.toList as)
    where
     htmlAtt (k, v) =
-      k <> "=" <> "'" <> v <> "'"
+      L.fromStrict $ k <> "=" <> "'" <> v <> "'"
 
 indentation :: Text
 indentation = "  "
@@ -66,45 +68,45 @@ indent t = indentation <> t
 noIndent :: Indent -> [Text] -> [Text]
 noIndent _ ts = ts
 
-renderText :: View () -> Text
-renderText u = T.intercalate "\n" content
+renderLazyText :: View () -> Text
+renderLazyText u = L.intercalate "\n" content
  where
   -- T.intercalate "\n" (content <> style css)
   content = map renderContent $ (.contents) $ runView $ do
     u
     insertContents $ (.contents) $ runView styles
+
+  css :: [T.Text]
   css = renderCSS $ (.classStyles) $ runView u
+
+  styles :: View ()
   styles = style (T.intercalate "\n" css)
 
-renderLazyText :: View () -> L.Text
-renderLazyText = L.fromStrict . renderText
+renderText :: View () -> T.Text
+renderText = L.toStrict . renderLazyText
+
+renderLazyByteString :: View () -> BL.ByteString
+renderLazyByteString = L.encodeUtf8 . renderLazyText
 
 renderContent :: Content -> Text
-renderContent (Node d) = T.unlines $ htmlTag indentAll d
-renderContent (Text t) = t
+renderContent (Node d) = L.unlines $ htmlTag indentAll d
+renderContent (Text t) = L.fromStrict t
 
-showView :: View () -> Text
-showView v = T.unlines $ mconcat $ map showContent $ (.contents) $ runView v
-
-showContent :: Content -> [Text]
-showContent (Node t) = htmlTag indentAll t
-showContent (Text t) = [t]
-
-renderCSS :: Map ClassName (Map Name StyleValue) -> [Text]
+renderCSS :: Map ClassName (Map Name StyleValue) -> [T.Text]
 renderCSS m = map renderClass $ toClasses m
  where
   toClasses = map toClass . M.toList
   toClass (n, p) = Class n p
 
-  renderClass :: Class -> Text
+  renderClass :: Class -> T.Text
   renderClass (Class n p) =
     "." <> classNameSelector n <> " " <> "{" <> T.intercalate "; " (map renderProp $ M.toList p) <> "}"
 
-  renderProp :: (Text, StyleValue) -> Text
+  renderProp :: (T.Text, StyleValue) -> T.Text
   renderProp (p, cv) = p <> ":" <> renderStyle cv
 
-renderStyle :: StyleValue -> Text
-renderStyle v = pack $ show v
+renderStyle :: StyleValue -> T.Text
+renderStyle v = T.pack $ show v
 
 flatAttributes :: Element -> FlatAttributes
 flatAttributes t =
@@ -114,9 +116,16 @@ flatAttributes t =
   addClass [] atts = atts
   addClass cx atts = M.insert "class" (classAttValue cx) atts
 
-  classAttValue :: [Class] -> Text
+  classAttValue :: [Class] -> T.Text
   classAttValue cx =
     T.intercalate " " $ map className cx
 
 -- | Attributes that include classes
 newtype FlatAttributes = FlatAttributes Attributes
+
+showView :: View () -> Text
+showView v = L.unlines $ mconcat $ map showContent $ (.contents) $ runView v
+
+showContent :: Content -> [Text]
+showContent (Node t) = htmlTag indentAll t
+showContent (Text t) = [L.fromStrict t]

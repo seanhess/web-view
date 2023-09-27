@@ -85,7 +85,7 @@ head = tag "head" id
 html :: View () -> View ()
 html = tag "html" id
 
-body :: View () -> View  ()
+body :: View () -> View ()
 body = tag "body" id
 
 row :: Mod -> View () -> View ()
@@ -152,8 +152,3 @@ data TableColumn dt = TableColumn Mod (View ()) (dt -> View ())
 
 link :: Url -> Mod -> View () -> View ()
 link u f = tag "a" (f . att "href" (fromUrl u))
-
-
-
-
-
