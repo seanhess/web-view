@@ -11,13 +11,13 @@ import Web.UI
 
 -- it just uses relative urls!
 data Routes
-  = Contact
+  = View
   | Edit
   | Save
   deriving (Show, Generic, Route)
 
 routes :: (Wai :> es, Users :> es) => Int -> Routes -> Eff es ()
-routes uid Contact = contact uid
+routes uid View = contact uid
 routes uid Edit = edit uid
 routes uid Save = saveContact uid
 
@@ -34,7 +34,10 @@ edit uid = do
   view $ editContact u
 
 saveContact :: (Wai :> es, Users :> es) => Int -> Eff es ()
-saveContact _uid = view $ el_ "save"
+saveContact uid = do
+  u <- userFormData uid
+  send $ SaveUser u
+  view $ viewContact u
 
 -- route :: UserStore -> ScottyM ()
 -- route us = do
@@ -58,14 +61,12 @@ saveContact _uid = view $ el_ "save"
 --     mu <- Users.load us uid
 --     maybe next pure mu
 
--- userFormData :: Wai :> es => Eff es User
--- userFormData = do
---   body <- send ReqBody
---   uid <- param "id"
---   firstName <- param "firstName"
---   lastName <- param "lastName"
---   email <- param "email"
---   pure $ User uid firstName lastName email True
+userFormData :: Wai :> es => Int -> Eff es User
+userFormData uid = do
+  firstName <- formParam "firstName"
+  lastName <- formParam "lastName"
+  email <- formParam "email"
+  pure $ User uid firstName lastName email True
 
 viewContact :: User -> View ()
 viewContact u = do
@@ -109,8 +110,8 @@ editContact u = do
       button id "Submit"
 
       -- no, we don't want it to re-render everything!
-      button (action Contact) "Cancel"
-      link (Url False $ routePaths Contact) id "Cancel"
+      button (action View) "Cancel"
+      link (Url False $ routePaths View) id "Cancel"
     space
 
 action :: Route a => a -> Mod

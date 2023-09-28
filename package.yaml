@@ -38,6 +38,7 @@ dependencies:
   - effectful
   - filepath
   - http-types
+  - http-api-data >= 0.6
   - mtl
   - string-interpolate
   - text

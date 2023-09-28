@@ -56,6 +56,7 @@ library
     , data-default
     , effectful
     , filepath
+    , http-api-data >=0.6
     , http-types
     , mtl
     , string-conversions
@@ -98,6 +99,7 @@ executable example
     , data-default
     , effectful
     , filepath
+    , http-api-data >=0.6
     , http-types
     , mtl
     , string-conversions
@@ -137,6 +139,7 @@ test-suite tests
     , data-default
     , effectful
     , filepath
+    , http-api-data >=0.6
     , http-types
     , mtl
     , string-conversions

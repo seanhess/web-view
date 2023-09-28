@@ -1,11 +1,15 @@
 {-# LANGUAGE FieldSelectors #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module Web.Hyperbole.Wai where
 
 import Control.Monad (when)
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as L
+import Data.String.Conversions (cs)
+import Data.String.Interpolate (i)
+import Data.Text (Text)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
@@ -14,8 +18,8 @@ import Network.HTTP.Types (Status, status200, status404)
 import Network.HTTP.Types.Header (HeaderName)
 import Network.Wai as Wai
 import Network.Wai.Parse as Wai
-
--- import Network.Wai.Parse
+import Web.FormUrlEncoded
+import Web.HttpApiData
 import Web.Hyperbole.Route
 import Web.UI
 import Web.UI.Render (renderLazyByteString)
@@ -40,32 +44,21 @@ data MimeType
   = Html
   | Text
 
--- TODO: support file uploads
--- formData :: Wai :> es => Eff es [Param]
--- formData = do
---   rb <- gets reqBody
---   Wai.parseRequestBodyEx opts backend req
---
--- notFound :: Wai :> es => Eff es ()
--- notFound = do
+formData :: (Wai :> es) => Eff es Form
+formData = do
+  bd <- send ReqBody
+  let ef = urlDecodeForm bd
+  either (send . ResError . ParseError) pure ef
 
--- runWaiResp
---   :: Eff (Wai : es) ()
---   -> Eff es Resp
--- runWaiResp = reinterpret (execState empty) $ \_ -> \case
---   AddHeader k v -> do
---     modify $ \r -> r{headers = (k, v) : r.headers}
---   SetResponseBody body -> do
---     modify $ \r -> r{body = body}
---  where
---   empty :: Resp
---   empty = Resp [] ""
+parseFormData :: (Wai :> es, FromForm a) => Eff es a
+parseFormData = do
+  f <- formData
+  either (send . ResError . ParseError) pure $ fromForm f
 
--- sendResponse :: Wai :> es => Resp -> Eff es ResponseReceived
--- sendResponse resp = send $ Respond resp
-
--- responseBody :: Wai :> es => ResponseBody -> Eff es ()
--- responseBody bs = send $ ResBody bs
+formParam :: (Wai :> es, FromHttpApiData a) => Text -> Eff es a
+formParam k = do
+  f <- formData
+  either (send . ResError . ParseError) pure $ parseUnique k f
 
 runWai
   :: IOE :> es
@@ -102,8 +95,20 @@ application actions request respond = do
         Left err -> respond $ responseError err
         Right resp -> do
           let headers = contentType resp.mimeType : resp.headers
-          liftIO $ respond $ responseLBS status200 headers resp.body
+              respBody = addDocument (requestMethod request) resp.body
+          liftIO $ respond $ responseLBS status200 headers respBody
  where
+  addDocument "GET" bd =
+    [i|<html>
+    <head>
+      <title>This is a title!</title>
+      <script src="https://unpkg.com/htmx.org@1.9.6" integrity="sha384-FhXw7b6AlE/jyjlZH5iHa/tTe9EpJ1Y55RjcgPbjeWMskSxZt1v9qkxLJWNJaGni" crossorigin="anonymous"></script>
+      <link rel="stylesheet" href="https://unpkg.com/modern-normalize@2.0.0/modern-normalize.css"/>
+    </head>
+    <body>#{bd}</body>
+  </html> |]
+  addDocument _ bd = bd
+
   contentType :: MimeType -> (HeaderName, ByteString)
   contentType Html = ("Content-Type", "text/html")
   contentType Text = ("Content-Type", "text/plain")
@@ -122,6 +127,7 @@ emptyResponse = Resp status404 [] Text "Not Found" ""
 
 data WaiError
   = NotFound
+  | ParseError Text
 
 notFound :: Wai :> es => Eff es a
 notFound = send $ ResError NotFound
