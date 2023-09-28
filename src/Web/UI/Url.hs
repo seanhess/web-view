@@ -1,21 +1,26 @@
 {-# LANGUAGE DefaultSignatures #-}
+
 module Web.UI.Url where
 
+import Data.String (IsString (..))
 import Data.Text (Text, pack)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as L
-import Data.String (IsString(..))
 
 type Segment = Text
-newtype Url = Url [Segment]
-  deriving newtype (Show)
+data Url = Url Bool [Segment]
+  deriving (Show)
 
 -- what if you want a relative url?
 instance IsString Url where
-  fromString s = Url [cleanSegment $ pack s]
+  fromString s = Url (isRoot s) [cleanSegment $ pack s]
+   where
+    isRoot ('/' : _) = True
+    isRoot _ = False
 
 fromUrl :: Url -> Text
-fromUrl (Url ss) = "/" <> T.intercalate "/" ss
+fromUrl (Url True ss) = "/" <> T.intercalate "/" ss
+fromUrl (Url False ss) = T.intercalate "/" ss
 
 class ToSegment a where
   segment :: a -> Segment
@@ -38,4 +43,4 @@ cleanSegment :: Segment -> Segment
 cleanSegment = T.dropWhileEnd (== '/') . T.dropWhile (== '/')
 
 (//) :: Url -> Segment -> Url
-(Url ss) // t = Url $ ss <> [cleanSegment t]
+(Url r ss) // t = Url r $ ss <> [cleanSegment t]

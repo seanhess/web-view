@@ -17,21 +17,28 @@ pathSegments path = T.splitOn "/" $ T.dropWhile (== '/') path
 class Route a where
   matchRoute :: [Text] -> Maybe a
   routePaths :: a -> [Text]
+  defRoute :: a
 
   default matchRoute :: (Generic a, GenRoute (Rep a)) => [Text] -> Maybe a
+  matchRoute [] = pure defRoute
   matchRoute paths = to <$> genRoute paths
 
   default routePaths :: (Generic a, GenRoute (Rep a)) => a -> [Text]
   routePaths p = genPaths $ from p
 
+  default defRoute :: (Generic a, GenRoute (Rep a)) => a
+  defRoute = to genFirst
+
 class GenRoute f where
   genRoute :: [Text] -> Maybe (f p)
   genPaths :: f p -> [Text]
+  genFirst :: f p
 
 -- datatype metadata
 instance (GenRoute f) => GenRoute (M1 D c f) where
   genRoute ps = M1 <$> genRoute ps
   genPaths (M1 x) = genPaths x
+  genFirst = M1 genFirst
 
 -- Constructor names / lines
 instance (Constructor c, GenRoute f) => GenRoute (M1 C c f) where
@@ -44,6 +51,8 @@ instance (Constructor c, GenRoute f) => GenRoute (M1 C c f) where
     M1 <$> genRoute ps
   genRoute [] = Nothing
 
+  genFirst = M1 genFirst
+
   genPaths (M1 x) =
     let name = conName (undefined :: M1 C c f x)
      in toLower (pack name) : genPaths x
@@ -53,22 +62,41 @@ instance GenRoute U1 where
   genRoute [] = pure U1
   genRoute _ = Nothing
   genPaths _ = []
+  genFirst = U1
 
 -- Selectors
 instance (GenRoute f) => GenRoute (M1 S c f) where
-  genRoute ps = do
+  genRoute ps =
     M1 <$> genRoute ps
+
+  genFirst = M1 genFirst
 
   genPaths (M1 x) = genPaths x
 
 -- Sum types
 instance (GenRoute a, GenRoute b) => GenRoute (a :+: b) where
   genRoute ps = L1 <$> genRoute ps <|> R1 <$> genRoute ps
+  genFirst = L1 genFirst
   genPaths (L1 a) = genPaths a
   genPaths (R1 a) = genPaths a
 
+-- Product types
+instance (GenRoute a, GenRoute b) => GenRoute (a :*: b) where
+  genRoute (p : ps) = do
+    ga <- genRoute [p]
+    gr <- genRoute ps
+    pure $ ga :*: gr
+  genRoute _ = Nothing
+
+  genFirst = genFirst :*: genFirst
+
+  genPaths (a :*: b) = genPaths a <> genPaths b
+
 instance Route sub => GenRoute (K1 R sub) where
   genRoute ts = K1 <$> matchRoute ts
+
+  genFirst = K1 defRoute
+
   genPaths (K1 sub) = routePaths sub
 
 genRouteRead :: Read x => [Text] -> Maybe (K1 R x a)
@@ -80,19 +108,23 @@ instance Route Text where
   matchRoute [t] = pure t
   matchRoute _ = Nothing
   routePaths t = [t]
+  defRoute = ""
 
 instance Route String where
   matchRoute [t] = pure (unpack t)
   matchRoute _ = Nothing
   routePaths t = [pack t]
+  defRoute = ""
 
 instance Route Integer where
   matchRoute = matchRouteRead
   routePaths = routePathsShow
+  defRoute = 0
 
 instance Route Int where
   matchRoute = matchRouteRead
   routePaths = routePathsShow
+  defRoute = 0
 
 matchRouteRead :: Read a => [Text] -> Maybe a
 matchRouteRead [t] = readMaybe (unpack t)

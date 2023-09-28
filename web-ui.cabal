@@ -22,12 +22,9 @@ library
   exposed-modules:
       Web.Htmx
       Web.Hyperbole
-      Web.Hyperbole.Action
-      Web.Hyperbole.Effects
       Web.Hyperbole.Htmx
-      Web.Hyperbole.Page
       Web.Hyperbole.Route
-      Web.Hyperbole.Scotty
+      Web.Hyperbole.Wai
       Web.UI
       Web.UI.Element
       Web.UI.Render

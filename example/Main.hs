@@ -11,16 +11,14 @@ import Data.Text.Lazy.Encoding qualified as L
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.State.Static.Local
+import Example.Contact qualified as Contact
 import Example.Effects.Users as Users
 import GHC.Generics (Generic)
 import Network.HTTP.Types (Method, QueryItem, methodPost, status200, status404)
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
 import Web.Hyperbole
-import Web.Hyperbole.Effects
-import Web.Hyperbole.Route
 import Web.UI
-import Web.UI.Render (renderLazyByteString)
 
 main :: IO ()
 main = do
@@ -31,9 +29,9 @@ main = do
 app :: UserStore -> Application
 app users = application (runUsersIO users . handle)
  where
-  handle :: (Wai :> es, Users :> es) => AppRoute -> Eff es ()
+  handle :: (Wai :> es, Users :> es) => Routes -> Eff es ()
   handle (Hello h) = hello h
-  handle Goodbye = view $ el_ "GOODBYE"
+  handle (Contact uid cr) = Contact.routes uid cr
   handle Echo = do
     req <- send ReqBody
     view $ col_ $ do
@@ -50,36 +48,18 @@ app users = application (runUsersIO users . handle)
           text " "
           text u.lastName
 
-  hello (Greet s) = view $ do el_ "GREET"; text s
-  hello (Poof s) = view $ do el_ "POOF"; text s
-
-application :: (Route route) => (route -> Eff [Wai, IOE] ()) -> Application
-application actions request respond = do
-  -- let (method, paths, query) = (requestMethod req, pathInfo req, queryString req)
-  case matchRoute (pathInfo request) of
-    Nothing -> respond $ responseLBS status404 [textPlain] "Not Found"
-    Just rt -> do
-      runEff . runWai request respond $ do
-        actions rt
-        send Respond
- where
-  textPlain = ("Content-Type", "text/plain")
-
-view :: Wai :> es => View () -> Eff es ()
-view vw = do
-  let bd = renderLazyByteString vw
-  send $ ResHeader "Content-Type" "text/html"
-  send $ ResBody bd
+  hello (Greet s) = view $ el_ "GREET" >> text s
+  hello (Poof s) = view $ el_ "POOF" >> text s
 
 -- send Respond
-data AppRoute
-  = Hello Hello
-  | Goodbye
+data Routes
+  = Users
+  | Contact Int Contact.Routes
+  | Hello Hello
   | Echo
-  | Users
-  deriving (Show, Eq, Generic, Route)
+  deriving (Show, Generic, Route)
 
 data Hello
   = Greet Text
   | Poof Text
-  deriving (Show, Eq, Generic, Route)
+  deriving (Show, Generic, Route)
