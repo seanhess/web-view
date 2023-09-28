@@ -1,7 +1,9 @@
+{-# LANGUAGE FieldSelectors #-}
 {-# LANGUAGE LambdaCase #-}
 
 module Web.Hyperbole.Wai where
 
+import Control.Monad (when)
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as L
 import Effectful
@@ -10,7 +12,10 @@ import Effectful.Error.Static
 import Effectful.State.Static.Local
 import Network.HTTP.Types (Status, status200, status404)
 import Network.HTTP.Types.Header (HeaderName)
-import Network.Wai
+import Network.Wai as Wai
+import Network.Wai.Parse as Wai
+
+-- import Network.Wai.Parse
 import Web.Hyperbole.Route
 import Web.UI
 import Web.UI.Render (renderLazyByteString)
@@ -28,12 +33,19 @@ data Resp = Resp
   , headers :: [(HeaderName, ByteString)]
   , mimeType :: MimeType
   , body :: L.ByteString
+  , reqBody :: L.ByteString
   }
 
 data MimeType
   = Html
   | Text
 
+-- TODO: support file uploads
+-- formData :: Wai :> es => Eff es [Param]
+-- formData = do
+--   rb <- gets reqBody
+--   Wai.parseRequestBodyEx opts backend req
+--
 -- notFound :: Wai :> es => Eff es ()
 -- notFound = do
 
@@ -60,14 +72,23 @@ runWai
   => Request
   -> Eff (Wai : es) a
   -> Eff es (Either WaiError Resp)
-runWai req = reinterpret (runErrorNoCallStack @WaiError . execState emptyResponse) $ \_ -> \case
-  ReqBody -> liftIO $ lazyRequestBody req
+runWai req = reinterpret (runErrorNoCallStack @WaiError . execState @Resp emptyResponse) $ \_ -> \case
+  ReqBody -> do
+    cacheReqBody
+    gets reqBody
   ResHeader k v ->
     modify $ \r -> r{headers = (k, v) : r.headers}
   ResBody mt bd ->
     modify $ \r -> r{body = bd, mimeType = mt, status = status200}
   ResError e -> do
     throwError e
+ where
+  cacheReqBody :: forall es. (IOE :> es, State Resp :> es) => Eff es ()
+  cacheReqBody = do
+    r <- get
+    when (L.null r.reqBody) $ do
+      rb <- liftIO $ Wai.consumeRequestBodyLazy req
+      put $ r{reqBody = rb}
 
 application :: (Route route) => (route -> Eff [Wai, IOE] ()) -> Application
 application actions request respond = do
@@ -97,7 +118,7 @@ view vw = do
   send $ ResBody Html bd
 
 emptyResponse :: Resp
-emptyResponse = Resp status404 [] Text "Not Found"
+emptyResponse = Resp status404 [] Text "Not Found" ""
 
 data WaiError
   = NotFound

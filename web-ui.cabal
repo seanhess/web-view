@@ -61,7 +61,8 @@ library
     , string-conversions
     , string-interpolate
     , text
-    , wai >=3.2
+    , wai >=3.0
+    , wai-extra >=3.0
     , warp
   default-language: GHC2021
 
@@ -102,7 +103,8 @@ executable example
     , string-conversions
     , string-interpolate
     , text
-    , wai >=3.2
+    , wai >=3.0
+    , wai-extra >=3.0
     , warp
     , web-ui
   default-language: GHC2021
@@ -140,6 +142,7 @@ test-suite tests
     , string-conversions
     , string-interpolate
     , text
-    , wai >=3.2
+    , wai >=3.0
+    , wai-extra >=3.0
     , warp
   default-language: GHC2021

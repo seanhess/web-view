@@ -1,33 +1,40 @@
 module Example.Contact where
 
-import Data.String.Conversions
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Example.Effects.Users
 import GHC.Generics (Generic)
 import Web.Hyperbole
 import Web.UI
-import Web.UI.Url
 
 -- TODO: right now we can't set routes! We are limited by where we currently are :(
 
 -- it just uses relative urls!
 data Routes
-  = Load
+  = Contact
   | Edit
   | Save
   deriving (Show, Generic, Route)
 
 routes :: (Wai :> es, Users :> es) => Int -> Routes -> Eff es ()
-routes uid Load = do
+routes uid Contact = contact uid
+routes uid Edit = edit uid
+routes uid Save = saveContact uid
+
+contact :: (Wai :> es, Users :> es) => Int -> Eff es ()
+contact uid = do
   mu <- send $ LoadUser uid
   u <- maybe notFound pure mu
   view $ viewContact u
-routes uid Edit = do
+
+edit :: (Wai :> es, Users :> es) => Int -> Eff es ()
+edit uid = do
   mu <- send $ LoadUser uid
   u <- maybe notFound pure mu
   view $ editContact u
-routes _uid Save = _
+
+saveContact :: (Wai :> es, Users :> es) => Int -> Eff es ()
+saveContact _uid = view $ el_ "save"
 
 -- route :: UserStore -> ScottyM ()
 -- route us = do
@@ -50,15 +57,16 @@ routes _uid Save = _
 --     uid <- param "id"
 --     mu <- Users.load us uid
 --     maybe next pure mu
---
---   userFormData :: ActionM User
---   userFormData = do
---     uid <- param "id"
---     firstName <- param "firstName"
---     lastName <- param "lastName"
---     email <- param "email"
---     pure $ User uid firstName lastName email True
---
+
+-- userFormData :: Wai :> es => Eff es User
+-- userFormData = do
+--   body <- send ReqBody
+--   uid <- param "id"
+--   firstName <- param "firstName"
+--   lastName <- param "lastName"
+--   email <- param "email"
+--   pure $ User uid firstName lastName email True
+
 viewContact :: User -> View ()
 viewContact u = do
   row (hxTarget This . hxSwap OuterHTML) $ do
@@ -101,8 +109,8 @@ editContact u = do
       button id "Submit"
 
       -- no, we don't want it to re-render everything!
-      button (action Load) "Cancel"
-      link (Url False $ routePaths Load) id "Cancel"
+      button (action Contact) "Cancel"
+      link (Url False $ routePaths Contact) id "Cancel"
     space
 
 action :: Route a => a -> Mod

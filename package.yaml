@@ -41,7 +41,8 @@ dependencies:
   - mtl
   - string-interpolate
   - text
-  - wai >= 3.2
+  - wai >= 3.0
+  - wai-extra >= 3.0
   - warp
   - string-conversions
 
