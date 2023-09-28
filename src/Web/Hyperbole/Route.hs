@@ -67,17 +67,36 @@ instance (GenRoute a, GenRoute b) => GenRoute (a :+: b) where
   genPaths (L1 a) = genPaths a
   genPaths (R1 a) = genPaths a
 
--- Route Param Types
-instance GenRoute (K1 R Integer) where
-  genRoute = genRouteRead
-  genPaths (K1 n) = [pack $ show n]
-
-instance GenRoute (K1 R Text) where
-  genRoute [t] = pure $ K1 t
-  genRoute _ = Nothing
-  genPaths (K1 t) = [t]
+instance Route sub => GenRoute (K1 R sub) where
+  genRoute ts = K1 <$> matchRoute ts
+  genPaths (K1 sub) = routePaths sub
 
 genRouteRead :: Read x => [Text] -> Maybe (K1 R x a)
 genRouteRead [t] = do
   K1 <$> readMaybe (unpack t)
 genRouteRead _ = Nothing
+
+instance Route Text where
+  matchRoute [t] = pure t
+  matchRoute _ = Nothing
+  routePaths t = [t]
+
+instance Route String where
+  matchRoute [t] = pure (unpack t)
+  matchRoute _ = Nothing
+  routePaths t = [pack t]
+
+instance Route Integer where
+  matchRoute = matchRouteRead
+  routePaths = routePathsShow
+
+instance Route Int where
+  matchRoute = matchRouteRead
+  routePaths = routePathsShow
+
+matchRouteRead :: Read a => [Text] -> Maybe a
+matchRouteRead [t] = readMaybe (unpack t)
+matchRouteRead _ = Nothing
+
+routePathsShow :: Show a => a -> [Text]
+routePathsShow a = [pack (show a)]
