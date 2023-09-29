@@ -11,7 +11,7 @@ import Data.Text.Lazy.Encoding qualified as L
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.State.Static.Local
-import Example.Contact qualified as Contact
+import Example.Contacts qualified as Contacts
 import Example.Effects.Users as Users
 import GHC.Generics (Generic)
 import Network.HTTP.Types (Method, QueryItem, methodPost, status200, status404)
@@ -29,37 +29,26 @@ main = do
 app :: UserStore -> Application
 app users = application (runUsersIO users . handle)
  where
-  handle :: (Wai :> es, Users :> es) => Routes -> Eff es ()
+  handle :: (Wai :> es, Users :> es) => Route -> Eff es ()
   handle (Hello h) = hello h
-  handle (Contact uid cr) = Contact.routes uid cr
   handle Echo = do
     req <- send ReqBody
-    view $ col_ $ do
-      el_ "ECHO:"
+    view $ col id $ do
+      el id "ECHO:"
       text $ cs req
-  handle Users = do
-    us <- send LoadUsers
-    -- liftIO $ print us
-    view $ do
-      flip mapM_ us $ \u -> do
-        row_ $ do
-          text "User: "
-          text u.firstName
-          text " "
-          text u.lastName
+  handle (Contacts rt) = Contacts.routes rt
 
   hello (Greet s) = view $ el_ "GREET" >> text s
   hello (Poof s) = view $ el_ "POOF" >> text s
 
 -- send Respond
-data Routes
-  = Users
-  | Contact Int Contact.Routes
+data Route
+  = Contacts Contacts.Route
   | Hello Hello
   | Echo
-  deriving (Show, Generic, Route)
+  deriving (Show, Generic, PageRoute)
 
 data Hello
   = Greet Text
   | Poof Text
-  deriving (Show, Generic, Route)
+  deriving (Show, Generic, PageRoute)

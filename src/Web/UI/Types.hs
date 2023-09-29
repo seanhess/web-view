@@ -104,3 +104,10 @@ runView (View st) = execState st (ViewState [] [])
 
 -- | A function that modifies an element. Allows for easy chaining and composition
 type Mod = Element -> Element
+
+mapRoot :: Mod -> View ()
+mapRoot f = do
+  modify $ \st -> st{contents = mapContents st.contents}
+ where
+  mapContents (Node root : cts) = Node (f root) : cts
+  mapContents cts = cts

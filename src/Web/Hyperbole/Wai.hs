@@ -7,19 +7,17 @@ module Web.Hyperbole.Wai where
 import Control.Monad (when)
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as L
-import Data.String.Conversions (cs)
 import Data.String.Interpolate (i)
 import Data.Text (Text)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.State.Static.Local
-import Network.HTTP.Types (Status, status200, status404)
+import Network.HTTP.Types (Status, status200, status400, status404, status500)
 import Network.HTTP.Types.Header (HeaderName)
 import Network.Wai as Wai
-import Network.Wai.Parse as Wai
 import Web.FormUrlEncoded
-import Web.HttpApiData
+import Web.HttpApiData (FromHttpApiData)
 import Web.Hyperbole.Route
 import Web.UI
 import Web.UI.Render (renderLazyByteString)
@@ -61,7 +59,7 @@ formParam k = do
   either (send . ResError . ParseError) pure $ parseUnique k f
 
 runWai
-  :: IOE :> es
+  :: (IOE :> es)
   => Request
   -> Eff (Wai : es) a
   -> Eff es (Either WaiError Resp)
@@ -83,14 +81,13 @@ runWai req = reinterpret (runErrorNoCallStack @WaiError . execState @Resp emptyR
       rb <- liftIO $ Wai.consumeRequestBodyLazy req
       put $ r{reqBody = rb}
 
-application :: (Route route) => (route -> Eff [Wai, IOE] ()) -> Application
+application :: (PageRoute route) => (route -> Eff [Wai, IOE] ()) -> Application
 application actions request respond = do
   -- let (method, paths, query) = (requestMethod req, pathInfo req, queryString req)
   case matchRoute (pathInfo request) of
     Nothing -> respond $ responseLBS status404 [contentType Text] "Not Found"
     Just rt -> do
-      res <- runEff . runWai request $ do
-        actions rt
+      res <- runEff . runWai request $ actions rt
       case res of
         Left err -> respond $ responseError err
         Right resp -> do
@@ -115,19 +112,21 @@ application actions request respond = do
 
   responseError NotFound =
     responseLBS status404 [contentType Text] "Not Found"
+  responseError (ParseError _) =
+    responseLBS status400 [contentType Text] "Bad Request"
 
-view :: Wai :> es => View () -> Eff es ()
+view :: (Wai :> es) => View () -> Eff es ()
 view vw = do
   let bd = renderLazyByteString vw
   send $ ResHeader "Content-Type" "text/html"
   send $ ResBody Html bd
 
 emptyResponse :: Resp
-emptyResponse = Resp status404 [] Text "Not Found" ""
+emptyResponse = Resp status500 [] Text "Response not set" ""
 
 data WaiError
   = NotFound
   | ParseError Text
 
-notFound :: Wai :> es => Eff es a
+notFound :: (Wai :> es) => Eff es a
 notFound = send $ ResError NotFound
