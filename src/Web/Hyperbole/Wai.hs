@@ -7,13 +7,14 @@ module Web.Hyperbole.Wai where
 import Control.Monad (when)
 import Data.ByteString (ByteString)
 import Data.ByteString.Lazy qualified as L
+import Data.String.Conversions (cs)
 import Data.String.Interpolate (i)
 import Data.Text (Text)
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Error.Static
 import Effectful.State.Static.Local
-import Network.HTTP.Types (Status, status200, status400, status404, status500)
+import Network.HTTP.Types (Status, status200, status301, status400, status404, status500)
 import Network.HTTP.Types.Header (HeaderName)
 import Network.Wai as Wai
 import Web.FormUrlEncoded
@@ -25,8 +26,9 @@ import Web.UI.Render (renderLazyByteString)
 data Wai :: Effect where
   ResHeader :: HeaderName -> ByteString -> Wai m ()
   ResBody :: MimeType -> L.ByteString -> Wai m ()
+  ResStatus :: Status -> Wai m ()
   ReqBody :: Wai m L.ByteString
-  ResError :: WaiError -> Wai m a
+  Interrupt :: Interrupt -> Wai m a
 
 type instance DispatchOf Wai = 'Dynamic
 
@@ -46,32 +48,34 @@ formData :: (Wai :> es) => Eff es Form
 formData = do
   bd <- send ReqBody
   let ef = urlDecodeForm bd
-  either (send . ResError . ParseError) pure ef
+  either (send . Interrupt . ParseError) pure ef
 
 parseFormData :: (Wai :> es, FromForm a) => Eff es a
 parseFormData = do
   f <- formData
-  either (send . ResError . ParseError) pure $ fromForm f
+  either (send . Interrupt . ParseError) pure $ fromForm f
 
 formParam :: (Wai :> es, FromHttpApiData a) => Text -> Eff es a
 formParam k = do
   f <- formData
-  either (send . ResError . ParseError) pure $ parseUnique k f
+  either (send . Interrupt . ParseError) pure $ parseUnique k f
 
 runWai
   :: (IOE :> es)
   => Request
   -> Eff (Wai : es) a
-  -> Eff es (Either WaiError Resp)
-runWai req = reinterpret (runErrorNoCallStack @WaiError . execState @Resp emptyResponse) $ \_ -> \case
+  -> Eff es (Either Interrupt Resp)
+runWai req = reinterpret (runErrorNoCallStack @Interrupt . execState @Resp emptyResponse) $ \_ -> \case
   ReqBody -> do
     cacheReqBody
     gets reqBody
   ResHeader k v ->
     modify $ \r -> r{headers = (k, v) : r.headers}
+  ResStatus s ->
+    modify $ \r -> r{status = s}
   ResBody mt bd ->
     modify $ \r -> r{body = bd, mimeType = mt, status = status200}
-  ResError e -> do
+  Interrupt e -> do
     throwError e
  where
   cacheReqBody :: forall es. (IOE :> es, State Resp :> es) => Eff es ()
@@ -89,7 +93,7 @@ application actions request respond = do
     Just rt -> do
       res <- runEff . runWai request $ actions rt
       case res of
-        Left err -> respond $ responseError err
+        Left err -> respond $ interrupt err
         Right resp -> do
           let headers = contentType resp.mimeType : resp.headers
               respBody = addDocument (requestMethod request) resp.body
@@ -113,10 +117,12 @@ application actions request respond = do
   contentType Html = ("Content-Type", "text/html")
   contentType Text = ("Content-Type", "text/plain")
 
-  responseError NotFound =
+  interrupt NotFound =
     responseLBS status404 [contentType Text] "Not Found"
-  responseError (ParseError _) =
+  interrupt (ParseError _) =
     responseLBS status400 [contentType Text] "Bad Request"
+  interrupt (Redirect u) =
+    responseLBS status301 [("Location", cs $ fromUrl u)] ""
 
 view :: (Wai :> es) => View () -> Eff es ()
 view vw = do
@@ -127,9 +133,14 @@ view vw = do
 emptyResponse :: Resp
 emptyResponse = Resp status500 [] Text "Response not set" ""
 
-data WaiError
+data Interrupt
   = NotFound
+  | Redirect Url
   | ParseError Text
 
 notFound :: (Wai :> es) => Eff es a
-notFound = send $ ResError NotFound
+notFound = send $ Interrupt NotFound
+
+redirect :: (Wai :> es) => Url -> Eff es ()
+redirect u = do
+  send $ Interrupt $ Redirect u
