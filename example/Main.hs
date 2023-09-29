@@ -27,28 +27,34 @@ main = do
   run 3000 $ app users
 
 app :: UserStore -> Application
-app users = application (runUsersIO users . handle)
+app users = application (runUsersIO users . route)
  where
-  handle :: (Wai :> es, Users :> es) => Route -> Eff es ()
-  handle (Hello h) = hello h
-  handle Echo = do
+  route :: (Wai :> es, Users :> es) => Route -> Eff es ()
+  route (Hello h) = hello h
+  route Echo = do
     req <- send ReqBody
     view $ col id $ do
       el id "ECHO:"
       text $ cs req
-  handle (Contacts rt) = Contacts.routes rt
+  route (Contacts rt) = Contacts.routes rt
+  route Main = view $ do
+    col (gap 10 . pad 10) $ do
+      el (bold . fontSize 32) "Examples"
+      link (routeUrl (Hello (Greet "World"))) id "Hello World"
+      link (routeUrl (Contacts Contacts.Root)) id "Contacts"
 
-  hello (Greet s) = view $ el_ "GREET" >> text s
-  hello (Poof s) = view $ el_ "POOF" >> text s
+  hello (Greet s) = view $ el (pad 10) "GREET" >> text s
+  hello (Poof s) = view $ el (pad 10) "POOF" >> text s
 
 -- send Respond
 data Route
-  = Contacts Contacts.Route
+  = Main
   | Hello Hello
+  | Contacts Contacts.Route
   | Echo
-  deriving (Show, Generic, PageRoute)
+  deriving (Show, Generic, Eq, PageRoute)
 
 data Hello
   = Greet Text
   | Poof Text
-  deriving (Show, Generic, PageRoute)
+  deriving (Show, Generic, Eq, PageRoute)

@@ -84,7 +84,7 @@ runWai req = reinterpret (runErrorNoCallStack @WaiError . execState @Resp emptyR
 application :: (PageRoute route) => (route -> Eff [Wai, IOE] ()) -> Application
 application actions request respond = do
   -- let (method, paths, query) = (requestMethod req, pathInfo req, queryString req)
-  case matchRoute (pathInfo request) of
+  case findRoute (pathInfo request) of
     Nothing -> respond $ responseLBS status404 [contentType Text] "Not Found"
     Just rt -> do
       res <- runEff . runWai request $ actions rt
@@ -95,6 +95,9 @@ application actions request respond = do
               respBody = addDocument (requestMethod request) resp.body
           liftIO $ respond $ responseLBS status200 headers respBody
  where
+  findRoute [] = Just defRoute
+  findRoute ps = matchRoute ps
+
   addDocument "GET" bd =
     [i|<html>
     <head>

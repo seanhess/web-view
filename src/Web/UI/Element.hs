@@ -134,13 +134,13 @@ table f dts wcs = do
   tag "table" (f . borderCollapse) $ do
     tag "thead" id $ do
       tag "tr" id $ do
-        forM_ cols $ \(TableColumn mtd h _) -> do
-          tag "th" mtd h
+        forM_ cols $ \tc -> do
+          tag "th" tc.headMod tc.headView
     tag "tbody" id $ do
       forM_ dts $ \dt -> do
         tag "tr" id $ do
-          forM_ cols $ \(TableColumn mtd _ view) -> do
-            tag "td" mtd $ view dt
+          forM_ cols $ \tc -> do
+            tag "td" tc.headMod $ tc.dataView dt
  where
   borderCollapse :: Mod
   borderCollapse = cls1 $ Class "brd-cl" [("border-collapse", "collapse")]
@@ -148,7 +148,11 @@ table f dts wcs = do
 tcol :: Mod -> View () -> (dt -> View ()) -> Writer [TableColumn dt] ()
 tcol f hd view = tell [TableColumn f hd view]
 
-data TableColumn dt = TableColumn Mod (View ()) (dt -> View ())
+data TableColumn dt = TableColumn
+  { headMod :: Mod
+  , headView :: View ()
+  , dataView :: dt -> View ()
+  }
 
 link :: Url -> Mod -> View () -> View ()
 link u f = tag "a" (f . att "href" (fromUrl u))

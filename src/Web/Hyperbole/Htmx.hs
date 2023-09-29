@@ -33,4 +33,5 @@ swapTarget :: HxSwap -> View () -> View ()
 swapTarget t = tag "div" (hxSwap t . hxTarget This)
 
 action :: (PageRoute a) => a -> Mod
-action a = hxPost (Url False $ routePaths a)
+action a = hxPost (routeUrl a)
+

@@ -13,7 +13,7 @@ data Route
   | View Int
   | Edit Int
   | Save Int
-  deriving (Show, Generic, PageRoute)
+  deriving (Show, Eq, Generic, PageRoute)
 
 routes :: (Wai :> es, Users :> es) => Route -> Eff es ()
 routes Root = do

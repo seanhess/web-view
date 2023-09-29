@@ -4,12 +4,13 @@ module Web.Hyperbole.Route where
 
 import Control.Applicative ((<|>))
 import Control.Monad (guard)
-import Data.Text as T (Text, dropWhile, intercalate, pack, splitOn, toLower, unpack)
+import Data.Text as T (Text, dropWhile, pack, splitOn, toLower, unpack)
 import GHC.Generics
 import Text.Read (readMaybe)
+import Web.UI.Url
 
-routeUrl :: (PageRoute a) => a -> Text
-routeUrl p = "/" <> intercalate "/" (routePaths p)
+routeUrl :: (PageRoute a) => a -> Url
+routeUrl a = Url False $ routePaths a
 
 pathSegments :: Text -> [Text]
 pathSegments path = T.splitOn "/" $ T.dropWhile (== '/') path
@@ -20,11 +21,14 @@ class PageRoute a where
   defRoute :: a
 
   default matchRoute :: (Generic a, GenPageRoute (Rep a)) => [Text] -> Maybe a
-  matchRoute [] = pure defRoute
+  -- this will match a trailing slash, but not if it is missing
+  matchRoute [""] = pure defRoute
   matchRoute paths = to <$> genRoute paths
 
-  default routePaths :: (Generic a, GenPageRoute (Rep a)) => a -> [Text]
-  routePaths p = genPaths $ from p
+  default routePaths :: (Generic a, Eq a, GenPageRoute (Rep a)) => a -> [Text]
+  routePaths p
+    | p == defRoute = [""]
+    | otherwise = genPaths $ from p
 
   default defRoute :: (Generic a, GenPageRoute (Rep a)) => a
   defRoute = to genFirst
