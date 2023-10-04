@@ -114,8 +114,8 @@ application actions request respond = do
   addDocument _ bd = bd
 
   contentType :: MimeType -> (HeaderName, ByteString)
-  contentType Html = ("Content-Type", "text/html")
-  contentType Text = ("Content-Type", "text/plain")
+  contentType Html = ("Content-Type", "text/html; charset=utf-8")
+  contentType Text = ("Content-Type", "text/plain; charset=utf-8")
 
   interrupt NotFound =
     responseLBS status404 [contentType Text] "Not Found"
