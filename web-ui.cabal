@@ -22,11 +22,13 @@ library
   exposed-modules:
       Web.Htmx
       Web.Hyperbole
+      Web.Hyperbole.Embed
       Web.Hyperbole.Htmx
       Web.Hyperbole.Route
       Web.Hyperbole.Wai
       Web.UI
       Web.UI.Element
+      Web.UI.Embed
       Web.UI.Render
       Web.UI.Style
       Web.UI.Types
@@ -55,6 +57,7 @@ library
     , containers
     , data-default
     , effectful
+    , file-embed
     , filepath
     , http-api-data >=0.6
     , http-types
@@ -97,6 +100,7 @@ executable example
     , containers
     , data-default
     , effectful
+    , file-embed
     , filepath
     , http-api-data >=0.6
     , http-types
@@ -136,6 +140,7 @@ test-suite tests
     , containers
     , data-default
     , effectful
+    , file-embed
     , filepath
     , http-api-data >=0.6
     , http-types
