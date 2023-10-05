@@ -50,6 +50,7 @@ instance Ord ClassName where
 
 data Pseudo
   = Hover
+  | Active
   deriving (Show, Eq)
 
 data StyleValue
@@ -72,6 +73,9 @@ instance Show StyleValue where
   show (RGB s) = "rgb(" <> s <> ")"
 
 newtype HexColor = HexColor Text
+
+instance IsString HexColor where
+  fromString = HexColor . T.dropWhile (== '#') . T.pack
 
 attribute :: Name -> AttValue -> Attribute
 attribute n v = (n, v)

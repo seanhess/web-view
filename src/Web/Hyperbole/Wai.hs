@@ -19,6 +19,7 @@ import Network.HTTP.Types.Header (HeaderName)
 import Network.Wai as Wai
 import Web.FormUrlEncoded
 import Web.HttpApiData (FromHttpApiData)
+import Web.Hyperbole.Embed (cssResetEmbed, htmxScriptEmbed)
 import Web.Hyperbole.Route
 import Web.UI
 import Web.UI.Render (renderLazyByteString)
@@ -106,8 +107,8 @@ application actions request respond = do
     [i|<html>
     <head>
       <title>This is a title!</title>
-      <script src="https://unpkg.com/htmx.org@1.9.6" integrity="sha384-FhXw7b6AlE/jyjlZH5iHa/tTe9EpJ1Y55RjcgPbjeWMskSxZt1v9qkxLJWNJaGni" crossorigin="anonymous"></script>
-      <link rel="stylesheet" href="https://unpkg.com/modern-normalize@2.0.0/modern-normalize.css"/>
+      <script type="text/javascript">#{htmxScriptEmbed}</script>
+      <style type type="text/css">#{cssResetEmbed}</style>
     </head>
     <body>#{bd}</body>
   </html> |]

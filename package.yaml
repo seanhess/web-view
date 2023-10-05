@@ -44,6 +44,7 @@ dependencies:
   - text
   - wai >= 3.0
   - warp
+  - file-embed
   - string-conversions
 
 library:

@@ -22,9 +22,9 @@ import Web.UI
 
 main :: IO ()
 main = do
-  putStrLn "Starting on :3000"
+  putStrLn "Starting Examples on :3001"
   users <- initUsers
-  run 3000 $ app users
+  run 3001 $ app users
 
 app :: UserStore -> Application
 app users = application (runUsersIO users . route)

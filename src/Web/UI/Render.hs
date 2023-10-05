@@ -44,8 +44,8 @@ htmlTag ind tag =
 
   htmlChildren :: [Content] -> [Text]
   htmlChildren cts =
-    mconcat $
-      fmap htmlContent cts
+    mconcat
+      $ fmap htmlContent cts
 
   htmlAtts :: FlatAttributes -> Text
   htmlAtts (FlatAttributes []) = ""
@@ -73,8 +73,8 @@ renderLazyText u = L.intercalate "\n" content
  where
   -- T.intercalate "\n" (content <> style css)
   content = map renderContent $ (.contents) $ runView $ do
-    u
     insertContents $ (.contents) $ runView styles
+    u
 
   css :: [T.Text]
   css = renderCSS $ (.classStyles) $ runView u
@@ -110,8 +110,8 @@ renderStyle v = T.pack $ show v
 
 flatAttributes :: Element -> FlatAttributes
 flatAttributes t =
-  FlatAttributes $
-    addClass (mconcat t.classes) t.attributes
+  FlatAttributes
+    $ addClass (mconcat t.classes) t.attributes
  where
   addClass [] atts = atts
   addClass cx atts = M.insert "class" (classAttValue cx) atts
