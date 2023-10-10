@@ -3,6 +3,7 @@ module Example.Contacts where
 import Control.Monad (forM_)
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Example.Colors
 import Example.Effects.Users
 import GHC.Generics (Generic)
 import Web.Hyperbole
@@ -33,7 +34,11 @@ routes (Save uid) = do
 loadUser :: (Wai :> es, Users :> es) => Int -> Eff es User
 loadUser uid = do
   mu <- send (LoadUser uid)
+  -- not found! Oh no!
   maybe notFound pure mu
+
+-- hxRequest :: Mod -> Mod
+-- hxRequest = prefix "hx-request"
 
 viewAll :: [User] -> View ()
 viewAll us = do
@@ -64,7 +69,7 @@ viewContact u = do
       label id "Email"
       text u.email
 
-    button (action $ Edit u.id) "Click to Edit"
+    button (action (Edit u.id) . bg Green . hover |: bg GreenLight) "Click to Edit"
 
 viewEdit :: User -> View ()
 viewEdit u = do

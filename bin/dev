@@ -14,6 +14,10 @@ for sig in INT QUIT HUP TERM; do
 done
 trap cleanup EXIT
 
+
+# client-side files
+npx webpack -w &
+
 # Recompile package.yaml on changes
 watchexec -e hs,yaml hpack &
 

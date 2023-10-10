@@ -1,10 +1,13 @@
 module Web.UI.Types where
 
 import Control.Monad.State.Strict (MonadState, State, execState, modify)
+import Data.Aeson
 import Data.Map (Map)
+import Data.Map.Strict qualified as M
 import Data.String (IsString (..))
 import Data.Text (Text, pack, unpack)
 import Data.Text qualified as T
+import GHC.Generics
 
 -- import Data.Text.Lazy qualified as L
 
@@ -19,18 +22,25 @@ data Class = Class
   , classProperties :: Map Name StyleValue
   }
 
+instance ToJSON Class where
+  toJSON c = toJSON c.className
+
 className :: Class -> Text
 className c = classNameText c.className
 
 classNameSelector :: ClassName -> Text
 classNameSelector (ClassName Nothing n) = n
-classNameSelector (ClassName p n) =
-  pseudoText p <> "\\:" <> n <> ":" <> pseudoText p
+classNameSelector (ClassName ps n) =
+  pseudoText ps <> "\\:" <> n <> ":" <> pseudoText ps
+
+-- prefixedName :: Maybe Text -> Text -> Text
+-- prefixedName Nothing t = t
+-- prefixedName (Just p) t = p <> "." <> t
 
 classNameText :: ClassName -> Text
 classNameText (ClassName Nothing n) = n
-classNameText (ClassName p n) =
-  pseudoText p <> ":" <> n
+classNameText (ClassName ps n) =
+  pseudoText ps <> ":" <> n
 
 pseudoText :: Maybe Pseudo -> Text
 pseudoText Nothing = ""
@@ -38,7 +48,8 @@ pseudoText (Just p) = T.toLower $ pack $ show p
 
 data ClassName = ClassName
   { pseudo :: Maybe Pseudo
-  , name :: Text
+  , -- , prefix :: Maybe Text
+    name :: Text
   }
   deriving (Eq)
 
@@ -47,6 +58,9 @@ instance IsString ClassName where
 
 instance Ord ClassName where
   compare a b = compare (classNameText a) (classNameText b)
+
+instance ToJSON ClassName where
+  toJSON a = String (classNameText a)
 
 data Pseudo
   = Hover
@@ -87,9 +101,22 @@ data Element = Element
   , children :: [Content]
   }
 
+-- optimized for size, [name, atts, [children]]
+instance ToJSON Element where
+  toJSON el =
+    Array
+      [ String el.name
+      , toJSON $ flatAttributes el
+      , toJSON el.children
+      ]
+
 data Content
   = Node Element
   | Text Text
+
+instance ToJSON Content where
+  toJSON (Node el) = toJSON el
+  toJSON (Text t) = String t
 
 -- | Views contain their contents, and a list of all styles mentioned during their rendering
 newtype View a = View (State ViewState a)
@@ -115,3 +142,27 @@ mapRoot f = do
  where
   mapContents (Node root : cts) = Node (f root) : cts
   mapContents cts = cts
+
+data TRBL a = TRBL
+  { top :: a
+  , right :: a
+  , bottom :: a
+  , left :: a
+  }
+
+-- | Attributes that include classes
+newtype FlatAttributes = FlatAttributes {attributes :: Attributes}
+  deriving (Generic)
+  deriving newtype (ToJSON)
+
+flatAttributes :: Element -> FlatAttributes
+flatAttributes t =
+  FlatAttributes
+    $ addClass (mconcat t.classes) t.attributes
+ where
+  addClass [] atts = atts
+  addClass cx atts = M.insert "class" (classAttValue cx) atts
+
+  classAttValue :: [Class] -> T.Text
+  classAttValue cx =
+    T.intercalate " " $ fmap className cx

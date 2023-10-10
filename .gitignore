@@ -1,3 +1,5 @@
 dist-newstyle
+node_modules
+dist
 .DS_Store
 tags

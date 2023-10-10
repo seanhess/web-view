@@ -3,7 +3,10 @@
 
 module Main where
 
+import Control.Monad (forever)
+import Data.ByteString.Lazy qualified as BL
 import Data.String.Conversions (cs)
+import Data.String.Interpolate (i)
 import Data.Text (Text)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as L
@@ -17,17 +20,23 @@ import GHC.Generics (Generic)
 import Network.HTTP.Types (Method, QueryItem, methodPost, status200, status404)
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
+import Network.Wai.Handler.WebSockets (websocketsOr)
+import Network.Wai.Middleware.Static (addBase, staticPolicy)
 import Web.Hyperbole
+import Web.Hyperbole.Application
 import Web.UI
+import Web.UI.Embed (cssResetEmbed)
 
 main :: IO ()
 main = do
   putStrLn "Starting Examples on :3001"
   users <- initUsers
-  run 3001 $ app users
+  run 3001
+    $ staticPolicy (addBase "dist")
+    $ app users
 
 app :: UserStore -> Application
-app users = application (runUsersIO users . route)
+app users = application document (runUsersIO users . route)
  where
   route :: (Wai :> es, Users :> es) => Route -> Eff es ()
   route (Hello h) = hello h
@@ -58,3 +67,14 @@ data Hello
   = Greet Text
   | Poof Text
   deriving (Show, Generic, Eq, PageRoute)
+
+document :: BL.ByteString -> BL.ByteString
+document cnt =
+  [i|<html>
+    <head>
+      <title>Hyperbole Examples</title>
+      <script type="text/javascript" src="/main.js"></script>
+      <style type type="text/css">#{cssResetEmbed}</style>
+    </head>
+    <body>#{cnt}</body>
+  </html>|]

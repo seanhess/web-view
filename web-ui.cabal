@@ -22,9 +22,11 @@ library
   exposed-modules:
       Web.Htmx
       Web.Hyperbole
+      Web.Hyperbole.Application
       Web.Hyperbole.Embed
       Web.Hyperbole.Htmx
       Web.Hyperbole.Route
+      Web.Hyperbole.Sockets
       Web.Hyperbole.Wai
       Web.UI
       Web.UI.Element
@@ -52,7 +54,8 @@ library
       NoFieldSelectors
   ghc-options: -Wall -fdefer-typed-holes
   build-depends:
-      base >=4.16.4.0
+      aeson
+    , base >=4.16.4.0
     , bytestring
     , containers
     , data-default
@@ -65,8 +68,11 @@ library
     , string-conversions
     , string-interpolate
     , text
+    , unordered-containers
     , wai >=3.0
+    , wai-websockets
     , warp
+    , websockets
   default-language: GHC2021
 
 executable example
@@ -95,7 +101,8 @@ executable example
       NoFieldSelectors
   ghc-options: -Wall -fdefer-typed-holes
   build-depends:
-      base >=4.16.4.0
+      aeson
+    , base >=4.16.4.0
     , bytestring
     , containers
     , data-default
@@ -108,9 +115,13 @@ executable example
     , string-conversions
     , string-interpolate
     , text
+    , unordered-containers
     , wai >=3.0
+    , wai-middleware-static
+    , wai-websockets
     , warp
     , web-ui
+    , websockets
   default-language: GHC2021
 
 test-suite tests
@@ -135,7 +146,8 @@ test-suite tests
       NoFieldSelectors
   ghc-options: -Wall -fdefer-typed-holes
   build-depends:
-      base >=4.16.4.0
+      aeson
+    , base >=4.16.4.0
     , bytestring
     , containers
     , data-default
@@ -148,6 +160,9 @@ test-suite tests
     , string-conversions
     , string-interpolate
     , text
+    , unordered-containers
     , wai >=3.0
+    , wai-websockets
     , warp
+    , websockets
   default-language: GHC2021

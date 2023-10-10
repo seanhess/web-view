@@ -29,9 +29,12 @@ hxPost = att "hx-post" . fromUrl
 hxPut :: Url -> Mod
 hxPut = att "hx-put" . fromUrl
 
+hxIndicator :: Selector -> Mod
+hxIndicator s = att "hx-indicator" (toAtt s)
+
 swapTarget :: HxSwap -> View () -> View ()
 swapTarget t = tag "div" (hxSwap t . hxTarget This)
 
 action :: (PageRoute a) => a -> Mod
-action a = hxPost (routeUrl a)
-
+-- action a = hxPost (routeUrl a)
+action a = att "data-action" (fromUrl $ routeUrl a)

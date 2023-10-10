@@ -17,6 +17,7 @@ module Web.UI
   , View
   , Content
   , Mod
+  , TRBL (..)
   , module Web.UI.Url
   ) where
 

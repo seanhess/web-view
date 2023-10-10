@@ -108,21 +108,6 @@ renderCSS m = map renderClass $ toClasses m
 renderStyle :: StyleValue -> T.Text
 renderStyle v = T.pack $ show v
 
-flatAttributes :: Element -> FlatAttributes
-flatAttributes t =
-  FlatAttributes
-    $ addClass (mconcat t.classes) t.attributes
- where
-  addClass [] atts = atts
-  addClass cx atts = M.insert "class" (classAttValue cx) atts
-
-  classAttValue :: [Class] -> T.Text
-  classAttValue cx =
-    T.intercalate " " $ map className cx
-
--- | Attributes that include classes
-newtype FlatAttributes = FlatAttributes Attributes
-
 showView :: View () -> Text
 showView v = L.unlines $ mconcat $ map showContent $ (.contents) $ runView v
 

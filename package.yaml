@@ -45,7 +45,11 @@ dependencies:
   - wai >= 3.0
   - warp
   - file-embed
+  - aeson
   - string-conversions
+  - wai-websockets
+  - unordered-containers
+  - websockets
 
 library:
   source-dirs: src
@@ -56,6 +60,7 @@ executables:
     source-dirs:         example
     dependencies:
     - web-ui
+    - wai-middleware-static
 
 tests:
   tests:

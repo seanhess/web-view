@@ -1,4 +1,5 @@
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Web.UI.Style where
 
@@ -9,9 +10,23 @@ import Web.UI.Types
 -- Px, converted to Rem
 type PxRem = Int
 
+class ToClassName a where
+  toClassName :: a -> Text
+
+instance ToClassName Int where
+  toClassName = T.pack . show
+
+instance ToClassName Text where
+  toClassName = id
+
+instance {-# OVERLAPS #-} (ToColor a) => ToClassName a where
+  toClassName = colorName
+
 -- | Hyphneate classnames
-(-.) :: (Show a) => Text -> a -> ClassName
-n -. a = ClassName Nothing $ n <> "-" <> pack (show a)
+(-.) :: (ToClassName a) => ClassName -> a -> ClassName
+(ClassName ps n) -. a = ClassName ps $ n <> "-" <> toClassName a
+
+infixl 6 -.
 
 -- | Add class attributes. If they already exist, will combine with spaces
 cls :: [Class] -> Mod
@@ -87,7 +102,7 @@ bg :: (ToColor c) => c -> Mod
 bg c =
   cls1
     $ Class
-      (ClassName Nothing $ "bg-" <> colorName c)
+      ("bg" -. colorName c)
       [ ("background-color", Hex $ colorValue c)
       ]
 
@@ -95,7 +110,7 @@ color :: (ToColor c) => c -> Mod
 color c =
   cls1
     $ Class
-      (ClassName Nothing $ "clr-" <> colorName c)
+      ("clr" -. colorName c)
       [("color", Hex $ colorValue c)]
 
 bold :: Mod
@@ -133,21 +148,33 @@ borderX p =
       , ("border-style", "solid")
       ]
 
+border' :: TRBL PxRem -> Mod
+border' s =
+  cls1
+    $ Class
+      ("brdtrbl" -. s.top -. s.right -. s.bottom -. s.left)
+      [ ("border-top", pxRem s.top)
+      , ("border-right", pxRem s.right)
+      , ("border-bottom", pxRem s.bottom)
+      , ("border-left", pxRem s.left)
+      , ("border-style", "solid")
+      ]
+
+borderR :: PxRem -> Mod
+borderR p =
+  cls1
+    $ Class
+      ("brdr" -. p)
+      [ ("border-right", pxRem p)
+      , ("border-style", "solid")
+      ]
+
 borderColor :: (ToColor c) => c -> Mod
 borderColor c =
   cls1
     $ Class
-      (ClassName Nothing $ "brdc-" <> colorName c)
+      ("brdc" -. colorName c)
       [("border-color", Hex $ colorValue c)]
-
--- border :: PxRem -> Mod
--- borderX p =
---   cls1 $
---     Class
---       ("brdx" -. p)
---       [ ("border", pxRem p)
---       , ("border-style", "solid")
---       ]
 
 pointer :: Mod
 pointer = cls1 $ Class "pointer" [("cursor", "pointer")]
@@ -160,17 +187,17 @@ active = Active
 
 -- Add a pseudo-class like Hover to your style
 (|:) :: Pseudo -> Mod -> Mod
-(|:) p f t =
+(|:) ps f t =
   let t' = f t
    in case t'.classes of
         [] -> t'
         (new : cx) ->
           -- this is a bit of a hack
           -- we know that the last class added is the one to be modified
-          t'{classes = map prefixClass new : cx}
+          t'{classes = map addPseudo new : cx}
  where
-  prefixClass (Class (ClassName _ n) v) =
-    Class (ClassName (Just p) n) v
+  addPseudo (Class (ClassName _ n) v) =
+    Class (ClassName (Just ps) n) v
 
 infixr 9 |:
 
@@ -191,3 +218,16 @@ class ToColor a where
 instance ToColor HexColor where
   colorValue c = c
   colorName (HexColor a) = T.dropWhile (== '#') a
+
+-- prefix :: Text -> Mod -> Mod
+-- prefix p f t =
+--   let t' = f t
+--    in case t'.classes of
+--         [] -> t'
+--         (new : cx) ->
+--           -- this is a bit of a hack
+--           -- we know that the last class added is the one to be modified
+--           t'{classes = map addPrefix new : cx}
+--  where
+--   addPrefix (Class (ClassName ps n) v) =
+--     Class (ClassName ps (Just p) n) v
