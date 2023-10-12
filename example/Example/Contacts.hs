@@ -1,6 +1,9 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 module Example.Contacts where
 
 import Control.Monad (forM_)
+import Data.Kind
 import Data.Text
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -25,7 +28,7 @@ page = livePage root actions
 
   actions (Contact uid) act = do
     u <- loadUser uid
-    runAction u act contact
+    runAction @Contact u act
 
 data Contact
   = View
@@ -37,30 +40,34 @@ class PageAction a where
   toAction :: String -> Maybe a
   fromAction :: a -> String
 
-data Component inp action es = Component
-  { id :: inp -> Url
-  , view :: inp -> View ()
-  , action :: inp -> action -> Eff es ()
-  }
+class Component act where
+  type Input act
+  type Effects act (es :: [Effect]) :: Constraint
+  compId :: Input act -> Url
+  compView :: Input act -> View ()
+  compAction :: (Effects act es) => Input act -> act -> Eff es ()
 
-viewComponent :: forall inp action es. Component inp action es -> inp -> View ()
-viewComponent comp inp = do
+viewComponent :: forall act. (Component act) => Input act -> View ()
+viewComponent inp = do
   el (hxSwap InnerHTML . hxTarget This)
-    $ comp.view inp
+    $ compView @act inp
 
-runAction :: inp -> act -> Component inp act es -> Eff es ()
-runAction inp act comp = comp.action inp act
+runAction :: forall act es. (Component act, Effects act es) => Input act -> act -> Eff es ()
+runAction inp act = compAction @act inp act
 
-contact :: (Wai :> es, Users :> es) => Component User Contact es
-contact = Component compId viewContact actions
- where
+instance Component Contact where
+  type Input Contact = User
+  type Effects Contact es = (Wai :> es, Users :> es)
+
   compId u = routeUrl $ Contact u.id
 
-  actions u View = do
+  compView = viewContact
+
+  compAction u View = do
     view $ viewContact u
-  actions u Edit = do
+  compAction u Edit = do
     view $ viewEdit u
-  actions u' Save = do
+  compAction u' Save = do
     u <- userFormData u'.id
     send $ SaveUser u
     view $ viewContact u
@@ -82,7 +89,7 @@ viewAll us = do
   row (pad 10 . gap 10) $ do
     forM_ us $ \u -> do
       el (border 1) $ do
-        viewComponent contact u
+        viewComponent @Contact u
 
 viewContact :: User -> View ()
 viewContact u = do
