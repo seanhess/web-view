@@ -25,7 +25,7 @@ page = livePage root actions
 
   actions (Contact uid) act = do
     u <- loadUser uid
-    contact u act
+    runAction u act contact
 
 data Contact
   = View
@@ -37,21 +37,33 @@ class PageAction a where
   toAction :: String -> Maybe a
   fromAction :: a -> String
 
--- data Component inp action es = Component
---   { view :: inp -> View ()
---   , action :: inp -> action -> Eff es ()
---   }
+data Component inp action es = Component
+  { id :: inp -> Url
+  , view :: inp -> View ()
+  , action :: inp -> action -> Eff es ()
+  }
 
-contact :: (Wai :> es, Users :> es) => User -> Contact -> Eff es ()
--- does contact ALSO have a way to display itself without any events?
-contact u View = do
-  view $ viewContact u
-contact u Edit = do
-  view $ viewEdit u
-contact u' Save = do
-  u <- userFormData u'.id
-  send $ SaveUser u
-  view $ viewContact u
+viewComponent :: forall inp action es. Component inp action es -> inp -> View ()
+viewComponent comp inp = do
+  el (hxSwap InnerHTML . hxTarget This)
+    $ comp.view inp
+
+runAction :: inp -> act -> Component inp act es -> Eff es ()
+runAction inp act comp = comp.action inp act
+
+contact :: (Wai :> es, Users :> es) => Component User Contact es
+contact = Component compId viewContact actions
+ where
+  compId u = routeUrl $ Contact u.id
+
+  actions u View = do
+    view $ viewContact u
+  actions u Edit = do
+    view $ viewEdit u
+  actions u' Save = do
+    u <- userFormData u'.id
+    send $ SaveUser u
+    view $ viewContact u
 
 livePage :: (PageAction act) => Eff es () -> (comp -> act -> Eff es ()) -> Maybe comp -> Eff es ()
 livePage = undefined
@@ -70,7 +82,7 @@ viewAll us = do
   row (pad 10 . gap 10) $ do
     forM_ us $ \u -> do
       el (border 1) $ do
-        component (Contact u.id) $ viewContact u
+        viewComponent contact u
 
 viewContact :: User -> View ()
 viewContact u = do
