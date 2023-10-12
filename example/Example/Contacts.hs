@@ -36,25 +36,6 @@ data Contact
   | Save
   deriving (Show, Read, Eq, Generic, PageAction, PageRoute)
 
-class PageAction a where
-  toAction :: String -> Maybe a
-  fromAction :: a -> String
-
-class Component act where
-  type Input act
-  type Effects act (es :: [Effect]) :: Constraint
-  compId :: Input act -> Url
-  compView :: Input act -> View ()
-  compAction :: (Effects act es) => Input act -> act -> Eff es ()
-
-viewComponent :: forall act. (Component act) => Input act -> View ()
-viewComponent inp = do
-  el (hxSwap InnerHTML . hxTarget This)
-    $ compView @act inp
-
-runAction :: forall act es. (Component act, Effects act es) => Input act -> act -> Eff es ()
-runAction inp act = compAction @act inp act
-
 instance Component Contact where
   type Input Contact = User
   type Effects Contact es = (Wai :> es, Users :> es)
@@ -90,6 +71,8 @@ viewAll us = do
     forM_ us $ \u -> do
       el (border 1) $ do
         viewComponent @Contact u
+
+newtype View' a = View' (forall es. (Wai :> es) => Eff es ())
 
 viewContact :: User -> View ()
 viewContact u = do
@@ -127,12 +110,28 @@ viewEdit u = do
 
     button (action View) "Cancel"
 
-component :: Target -> View () -> View ()
-component i = el (att "id" (fromUrl . routeUrl $ i) . hxTarget This . hxSwap InnerHTML)
-
 userFormData :: (Wai :> es) => Int -> Eff es User
 userFormData uid = do
   firstName <- formParam "firstName"
   lastName <- formParam "lastName"
   email <- formParam "email"
   pure $ User uid firstName lastName email True
+
+class PageAction a where
+  toAction :: String -> Maybe a
+  fromAction :: a -> String
+
+class Component act where
+  type Input act
+  type Effects act (es :: [Effect]) :: Constraint
+  compId :: Input act -> Url
+  compView :: Input act -> View ()
+  compAction :: (Effects act es) => Input act -> act -> Eff es ()
+
+viewComponent :: forall act. (Component act) => Input act -> View ()
+viewComponent inp = do
+  el (hxSwap InnerHTML . hxTarget This)
+    $ compView @act inp
+
+runAction :: forall act es. (Component act, Effects act es) => Input act -> act -> Eff es ()
+runAction inp act = compAction @act inp act
