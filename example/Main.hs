@@ -59,7 +59,7 @@ app users = application document (runUsersIO users . route)
 data Route
   = Main
   | Hello Hello
-  | Contacts Contacts.Route
+  | Contacts (Maybe Contacts.Route)
   | Echo
   deriving (Show, Generic, Eq, PageRoute)
 

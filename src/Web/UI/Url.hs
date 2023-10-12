@@ -7,8 +7,10 @@ import Data.Text (Text, pack)
 import Data.Text qualified as T
 import Data.Text.Lazy qualified as L
 
+type IsAbsolute = Bool
+
 type Segment = Text
-data Url = Url Bool [Segment]
+data Url = Url IsAbsolute [Segment]
   deriving (Show)
 
 -- what if you want a relative url?
@@ -24,7 +26,7 @@ fromUrl (Url False ss) = T.intercalate "/" ss
 
 class ToSegment a where
   segment :: a -> Segment
-  default segment :: Show a => a -> Segment
+  default segment :: (Show a) => a -> Segment
   segment = pack . show
 
 instance ToSegment Int
