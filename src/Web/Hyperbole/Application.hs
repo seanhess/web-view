@@ -27,11 +27,8 @@ talk = do
 
   -- HANDLE ACTION?
   -- SEND VIEW (possibly multiple times). Need to run action...
-  -- how does it know which page it references?
-  -- need to match again...
-  -- yeah we are running the same thing with different effects
 
-  sendCommand $ VDOM [Text $ "Updated: " <> msg]
+  sendCommand $ Render [Text $ "Updated: " <> msg]
 
 httpApplication :: (PageRoute route) => (L.ByteString -> L.ByteString) -> (route -> Eff [Wai, IOE] ()) -> Application
 httpApplication toDoc actions request respond = do

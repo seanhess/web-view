@@ -7,7 +7,6 @@ import Control.Monad (forever)
 import Data.Aeson (ToJSON)
 import Data.Aeson qualified as A
 import Data.ByteString.Lazy qualified as BL
-import Data.String.Conversions (cs)
 import Data.String.Interpolate (i)
 import Data.Text (Text)
 import Effectful
@@ -18,7 +17,7 @@ import Network.WebSockets qualified as WS
 import Web.UI
 
 data Command
-  = VDOM [Content]
+  = Render [Content]
   | Test Text
 
 data Socket :: Effect where
@@ -63,7 +62,7 @@ runSocket conn client = reinterpret (evalState client) $ \_ -> \case
     pure a
 
 sendCommand :: (Socket :> es) => Command -> Eff es ()
-sendCommand (VDOM cnt) = send $ SendMessage (formatMessage "VDOM" cnt)
+sendCommand (Render cnt) = send $ SendMessage (formatMessage "Render" cnt)
 sendCommand (Test cnt) = send $ SendMessage (formatMessage "Test" cnt)
 
 receiveData :: (Socket :> es, WebSocketsData a) => Eff es a
