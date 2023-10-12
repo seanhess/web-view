@@ -10,7 +10,9 @@ import Data.Text qualified as T
 import Data.Text.Lazy (Text)
 import Data.Text.Lazy qualified as L
 import Data.Text.Lazy.Encoding qualified as L
-import Web.UI.Element (insertContents, style)
+import Effectful
+import Effectful.State.Dynamic
+import Web.UI.Element (insertContents)
 
 -- import Debug.Trace
 import Web.UI.Types
@@ -68,25 +70,24 @@ indent t = indentation <> t
 noIndent :: Indent -> [Text] -> [Text]
 noIndent _ ts = ts
 
-renderLazyText :: View () -> Text
-renderLazyText u = L.intercalate "\n" content
+renderLazyText :: forall es. Eff (View : es) () -> Eff es Text
+renderLazyText view = L.intercalate "\n" <$> content
  where
-  -- T.intercalate "\n" (content <> style css)
-  content = map renderContent $ (.contents) $ runView $ do
-    insertContents $ (.contents) $ runView styles
-    u
+  content :: Eff es [Text]
+  content = do
+    st <- runView $ view >> addStyles
+    pure $ map renderContent st.contents
 
-  css :: [T.Text]
-  css = renderCSS $ (.classStyles) $ runView u
+  addStyles :: Eff (View : es) ()
+  addStyles = do
+    css <- renderCSS <$> gets @ViewState (.classStyles)
+    insertContents [Node $ Element "style" [] [("type", "text/css")] [Text $ T.intercalate "\n" css]]
 
-  styles :: View ()
-  styles = style (T.intercalate "\n" css)
+renderText :: Eff (View : es) () -> Eff es T.Text
+renderText = fmap L.toStrict <$> renderLazyText
 
-renderText :: View () -> T.Text
-renderText = L.toStrict . renderLazyText
-
-renderLazyByteString :: View () -> BL.ByteString
-renderLazyByteString = L.encodeUtf8 . renderLazyText
+renderLazyByteString :: Eff (View : es) () -> Eff es BL.ByteString
+renderLazyByteString = fmap L.encodeUtf8 <$> renderLazyText
 
 renderContent :: Content -> Text
 renderContent (Node d) = L.unlines $ htmlTag indentAll d
@@ -108,8 +109,10 @@ renderCSS m = map renderClass $ toClasses m
 renderStyle :: StyleValue -> T.Text
 renderStyle v = T.pack $ show v
 
-showView :: View () -> Text
-showView v = L.unlines $ mconcat $ map showContent $ (.contents) $ runView v
+showView :: Eff (View : es) () -> Eff es Text
+showView v = do
+  st <- runView v
+  pure $ L.unlines $ mconcat $ map showContent st.contents
 
 showContent :: Content -> [Text]
 showContent (Node t) = htmlTag indentAll t

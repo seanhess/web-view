@@ -65,7 +65,7 @@ loadUser uid = do
 -- hxRequest :: Mod -> Mod
 -- hxRequest = prefix "hx-request"
 
-viewAll :: [User] -> View ()
+viewAll :: (View :> es) => [User] -> Eff es ()
 viewAll us = do
   row (pad 10 . gap 10) $ do
     forM_ us $ \u -> do
@@ -74,24 +74,25 @@ viewAll us = do
 
 newtype View' a = View' (forall es. (Wai :> es) => Eff es ())
 
-viewContact :: User -> View ()
+-- add support for context?
+viewContact :: (View :> es) => User -> Eff es ()
 viewContact u = do
   col (pad 10 . gap 10) $ do
     el_ $ do
-      label id "First Name:"
+      label id (text "First Name:")
       text u.firstName
 
     el_ $ do
-      label id "Last Name:"
+      label id (text "Last Name:")
       text u.lastName
 
     el_ $ do
-      label id "Email"
+      label id (text "Email")
       text u.email
 
-    button (action Edit . bg Green . hover |: bg GreenLight) "Click to Edit"
+    button (action Edit . bg Green . hover |: bg GreenLight) (text "Click to Edit")
 
-viewEdit :: User -> View ()
+viewEdit :: (View :> es) => User -> Eff es ()
 viewEdit u = do
   form (action Save . pad 10 . gap 10) $ do
     label id $ do
@@ -106,9 +107,9 @@ viewEdit u = do
       text "Email"
       input (name "email" . value u.email)
 
-    button id "Submit"
+    button id (text "Submit")
 
-    button (action View) "Cancel"
+    button (action View) (text "Cancel")
 
 userFormData :: (Wai :> es) => Int -> Eff es User
 userFormData uid = do
@@ -125,10 +126,10 @@ class Component act where
   type Input act
   type Effects act (es :: [Effect]) :: Constraint
   compId :: Input act -> Url
-  compView :: Input act -> View ()
+  compView :: (View :> es) => Input act -> Eff es ()
   compAction :: (Effects act es) => Input act -> act -> Eff es ()
 
-viewComponent :: forall act. (Component act) => Input act -> View ()
+viewComponent :: forall act es. (Component act, View :> es) => Input act -> Eff es ()
 viewComponent inp = do
   el (hxSwap InnerHTML . hxTarget This)
     $ compView @act inp

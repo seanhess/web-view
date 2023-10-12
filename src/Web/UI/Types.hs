@@ -1,12 +1,13 @@
 module Web.UI.Types where
 
-import Control.Monad.State.Strict (MonadState, State, execState, modify)
 import Data.Aeson
 import Data.Map (Map)
 import Data.Map.Strict qualified as M
 import Data.String (IsString (..))
 import Data.Text (Text, pack, unpack)
 import Data.Text qualified as T
+import Effectful
+import Effectful.State.Dynamic
 import GHC.Generics
 
 -- import Data.Text.Lazy qualified as L
@@ -118,25 +119,27 @@ instance ToJSON Content where
   toJSON (Node el) = toJSON el
   toJSON (Text t) = String t
 
--- | Views contain their contents, and a list of all styles mentioned during their rendering
+{- | Views contain their contents, and a list of all styles mentioned during their rendering
 newtype View a = View (State ViewState a)
   deriving newtype (Functor, Applicative, Monad, MonadState ViewState)
+-}
+type View = State ViewState
 
 data ViewState = ViewState
   { contents :: [Content]
   , classStyles :: Map ClassName (Map Name StyleValue)
   }
 
-instance IsString (View ()) where
-  fromString s = modify $ \vs -> vs{contents = [Text (pack s)]}
+-- instance IsString (View ()) where
+--   fromString s = modify $ \vs -> vs{contents = [Text (pack s)]}
 
-runView :: View () -> ViewState
-runView (View st) = execState st (ViewState [] [])
+runView :: Eff (View : es) () -> Eff es ViewState
+runView = execStateLocal (ViewState [] [])
 
 -- | A function that modifies an element. Allows for easy chaining and composition
 type Mod = Element -> Element
 
-mapRoot :: Mod -> View ()
+mapRoot :: (View :> es) => Mod -> Eff es ()
 mapRoot f = do
   modify $ \st -> st{contents = mapContents st.contents}
  where

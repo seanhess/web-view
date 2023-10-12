@@ -1,23 +1,29 @@
 module Web.UI.Element where
 
-import Control.Monad.State.Strict (modify)
-import Control.Monad.Writer.Strict
 import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Text (Text)
+import Effectful
+import Effectful.State.Dynamic
 import Web.UI.Style
 import Web.UI.Types
-import Web.UI.Url
 
-tag :: Text -> Mod -> View () -> View ()
+-- import Web.UI.Url
+
+type Children es = Eff (View : es) ()
+
+-- we want to get the content
+-- but we aren't IN that monad. It's independent of us
+-- there must be a better way to do this.
+tag :: (View :> es) => Text -> Mod -> Children es -> Eff es ()
 tag nm f ct = do
-  let st = runView ct
+  st <- runView ct
   let elm = f $ Element nm [] [] st.contents
   addContent $ Node elm
   addClasses $ classList $ st.classStyles
   addClasses $ mconcat $ elm.classes
 
-addClasses :: [Class] -> View ()
+addClasses :: (View :> es) => [Class] -> Eff es ()
 addClasses clss = do
   modify $ \vs ->
     vs
@@ -27,7 +33,7 @@ addClasses clss = do
   addClsDef :: Class -> Map ClassName (Map Name StyleValue) -> Map ClassName (Map Name StyleValue)
   addClsDef c = M.insert c.className c.classProperties
 
-addContent :: Content -> View ()
+addContent :: (View :> es) => Content -> Eff es ()
 addContent ct = do
   modify $ \vs ->
     vs
@@ -35,7 +41,7 @@ addContent ct = do
       }
 
 -- Inserts into first child
-insertContents :: [Content] -> View ()
+insertContents :: (View :> es) => [Content] -> Eff es ()
 insertContents cs = do
   modify $ \vs -> vs{contents = insert vs.contents}
  where
@@ -51,14 +57,14 @@ att :: Name -> AttValue -> Mod
 att n v t = t{attributes = M.insert n v t.attributes}
 
 -- | A basic element
-el :: Mod -> View () -> View ()
+el :: (View :> es) => Mod -> Children es -> Eff es ()
 el = tag "div"
 
 -- | A basic element, with no modifiers
-el_ :: View () -> View ()
+el_ :: (View :> es) => Eff (View : es) () -> Eff es ()
 el_ = tag "div" id
 
-button :: Mod -> View () -> View ()
+button :: (View :> es) => Mod -> Children es -> Eff es ()
 button = tag "button"
 
 -- | Convert from text directly to view. You should not have to use this. Use `text` instead
@@ -67,49 +73,49 @@ data Head
 data Base
 data Doc
 
-text :: Text -> View ()
+text :: (View :> es) => Text -> Eff es ()
 text t = addContent $ Text t
 
-none :: View ()
+none :: Eff es ()
 none = pure ()
 
-meta :: Mod -> View ()
-meta f = tag "meta" f ("" :: View ())
+meta :: (View :> es) => Mod -> Eff es ()
+meta f = tag "meta" f none
 
-title :: Text -> View ()
+title :: (View :> es) => Text -> Eff es ()
 title = tag "title" id . text
 
-head :: View () -> View ()
+head :: (View :> es) => Children es -> Eff es ()
 head = tag "head" id
 
-html :: View () -> View ()
+html :: (View :> es) => Children es -> Eff es ()
 html = tag "html" id
 
-body :: View () -> View ()
+body :: (View :> es) => Children es -> Eff es ()
 body = tag "body" id
 
-row :: Mod -> View () -> View ()
+row :: (View :> es) => Mod -> Children es -> Eff es ()
 row f = el (flexRow . f)
 
-row_ :: View () -> View ()
+row_ :: (View :> es) => Children es -> Eff es ()
 row_ = row id
 
-col :: Mod -> View () -> View ()
+col :: (View :> es) => Mod -> Children es -> Eff es ()
 col f = el (flexCol . f)
 
-col_ :: View () -> View ()
+col_ :: (View :> es) => Children es -> Eff es ()
 col_ = col id
 
-space :: View ()
+space :: (View :> es) => Eff es ()
 space = el grow $ pure ()
 
-label :: Mod -> View () -> View ()
+label :: (View :> es) => Mod -> Children es -> Eff es ()
 label = tag "label"
 
-form :: Mod -> View () -> View ()
+form :: (View :> es) => Mod -> Children es -> Eff es ()
 form f = tag "form" (f . flexCol)
 
-input :: Mod -> View ()
+input :: (View :> es) => Mod -> Eff es ()
 input m = tag "input" (m . att "type" "text") none
 
 name :: Text -> Mod
@@ -118,49 +124,49 @@ name = att "name"
 value :: Text -> Mod
 value = att "value"
 
-script :: Text -> View ()
+script :: (View :> es) => Text -> Eff es ()
 -- script (Code code) = tag "script" (att "type" "text/javascript") $ fromText code
 script src = tag "script" (att "type" "text/javascript" . att "src" src) none
 
-style :: Text -> View ()
+style :: (View :> es) => Text -> Eff es ()
 style cnt = tag "style" (att "type" "text/css") (text $ "\n" <> cnt <> "\n")
 
-stylesheet :: Text -> View ()
+stylesheet :: (View :> es) => Text -> Eff es ()
 stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
 
-table :: Mod -> [dt] -> Writer [TableColumn dt] () -> View ()
-table f dts wcs = do
-  let cols = execWriter wcs
-  tag "table" (f . borderCollapse) $ do
-    tag "thead" id $ do
-      tag "tr" id $ do
-        forM_ cols $ \tc -> do
-          tc.headCell.fromCell
-    tag "tbody" id $ do
-      forM_ dts $ \dt -> do
-        tag "tr" id $ do
-          forM_ cols $ \tc -> do
-            (tc.dataCell dt).fromCell
- where
-  borderCollapse :: Mod
-  borderCollapse = cls1 $ Class "brd-cl" [("border-collapse", "collapse")]
-
-tcol :: Cell Head () -> (dt -> Cell Data ()) -> Writer [TableColumn dt] ()
-tcol hd view = tell [TableColumn hd view]
-
-data TableColumn dt = TableColumn
-  { headCell :: Cell Head ()
-  , dataCell :: dt -> Cell Data ()
-  }
-
-data Data
-newtype Cell t a = Cell {fromCell :: View a}
-
-th :: Mod -> View () -> Cell Head ()
-th f c = Cell $ tag "th" f c
-
-td :: Mod -> View () -> Cell Data ()
-td f c = Cell $ tag "td" f c
-
-link :: Url -> Mod -> View () -> View ()
-link u f = tag "a" (f . att "href" (fromUrl u))
+-- table :: Mod -> [dt] -> Writer [TableColumn dt] () -> Eff es ()
+-- table f dts wcs = do
+--   let cols = execWriter wcs
+--   tag "table" (f . borderCollapse) $ do
+--     tag "thead" id $ do
+--       tag "tr" id $ do
+--         forM_ cols $ \tc -> do
+--           tc.headCell.fromCell
+--     tag "tbody" id $ do
+--       forM_ dts $ \dt -> do
+--         tag "tr" id $ do
+--           forM_ cols $ \tc -> do
+--             (tc.dataCell dt).fromCell
+--  where
+--   borderCollapse :: Mod
+--   borderCollapse = cls1 $ Class "brd-cl" [("border-collapse", "collapse")]
+--
+-- tcol :: Cell Head () -> (dt -> Cell Data ()) -> Writer [TableColumn dt] ()
+-- tcol hd view = tell [TableColumn hd view]
+--
+-- data TableColumn dt = TableColumn
+--   { headCell :: Cell Head ()
+--   , dataCell :: dt -> Cell Data ()
+--   }
+--
+-- data Data
+-- newtype Cell t a = Cell {fromCell :: Eff es a}
+--
+-- th :: Mod -> Eff es () -> Cell Head ()
+-- th f c = Cell $ tag "th" f c
+--
+-- td :: Mod -> Eff es () -> Cell Data ()
+-- td f c = Cell $ tag "td" f c
+--
+-- link :: Url -> Mod -> Eff es () -> Eff es ()
+-- link u f = tag "a" (f . att "href" (fromUrl u))
