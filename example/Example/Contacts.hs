@@ -3,6 +3,7 @@
 module Example.Contacts where
 
 import Control.Monad (forM_)
+import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Reader.Static
@@ -18,26 +19,28 @@ data Action
   | Contacts Contacts
   deriving (Show, Eq, Generic, PageRoute)
 
-page :: forall es. (Page :> es, Users :> es) => Maybe Action -> Eff es ()
+page :: forall es. (Page :> es, Users :> es) => Eff es ()
 page = livePage root actions
  where
   root = do
+    traceM "ROOT"
     us <- usersAll
     respondView $ viewComponent Contacts viewAll us
 
   actions :: Action -> Eff es ()
   actions (Contact uid act) = do
+    traceM "CONTACT"
     u <- userFind uid
     runAction (Contact uid) contact u act
   actions (Contacts act) = do
+    traceM "CONTACTS"
     us <- usersAll
     runAction Contacts contacts us act
 
-livePage :: (Page :> es) => Eff es () -> (Action -> Eff es ()) -> Maybe Action -> Eff es ()
-livePage root _ Nothing = root
-livePage _ actions (Just act) = do
-  -- TODO: only accept POST
-  actions act
+livePage :: (Page :> es) => Eff es () -> (Action -> Eff es ()) -> Eff es ()
+livePage root actions = do
+  act <- send GetAction
+  maybe root actions act
 
 data Contacts
   = Reload

@@ -46,12 +46,12 @@ app users = application document (runUsersIO users . route)
     view $ col id $ do
       el id "ECHO:"
       text $ cs req
-  route (Contacts rt) = runPageWai $ Contacts.page rt
+  route Contacts = runPageWai Contacts.page
   route Main = view $ do
     col (gap 10 . pad 10) $ do
       el (bold . fontSize 32) "Examples"
       link (routeUrl (Hello (Greet "World"))) id "Hello World"
-      link (routeUrl (Contacts Nothing)) id "Contacts"
+      link (routeUrl Contacts) id "Contacts"
 
   hello (Greet s) = view $ el (pad 10) "GREET" >> text s
   hello (Poof s) = view $ el (pad 10) "POOF" >> text s
@@ -60,7 +60,7 @@ app users = application document (runUsersIO users . route)
 data Route
   = Main
   | Hello Hello
-  | Contacts (Maybe Contacts.Action)
+  | Contacts
   | Echo
   deriving (Show, Generic, Eq, PageRoute)
 

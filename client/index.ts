@@ -17,14 +17,24 @@ const address = `${protocol}//${window.location.host}`
 const socket = new WebSocket(address)
 
 
-function actionUrl(action:string) {
-  let base = window.location.href
-  return base + "/" + action
+function sendAction(action:string) {
+  const form = new URLSearchParams()
+  form.append("action", action)
+
+  fetch(window.location.href, {
+    method: "POST",
+    headers: { 'Accept': 'text/html', 'Content-Type': 'application/x-www-form-urlencoded'},
+    body: form
+  })
+    .then(res => res.text())
+    .then(html => console.log("RESPONSE", html))
 }
 
 listenClickAction(function(action:string) {
-  console.log("CLICK!", action, actionUrl(action))
+  console.log("CLICK!", action)
+  sendAction(action)
 })
+
 
 socket.addEventListener('open', (event) => {
   console.log("Opened")
