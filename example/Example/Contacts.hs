@@ -3,8 +3,6 @@
 module Example.Contacts where
 
 import Control.Monad (forM_)
-import Data.Kind
-import Data.Text
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.Reader.Static
@@ -20,13 +18,12 @@ data Action
   deriving (Show, Eq, Generic, PageRoute)
 
 page :: forall es. (Wai :> es, Users :> es) => Maybe Action -> Eff es ()
-page = livePage root actions
+page = maybe root actions
  where
   root = do
     us <- usersAll
     view $ viewComponent Contacts viewAll us
 
-  -- TODO! Unify the types!
   actions :: Action -> Eff es ()
   actions (Contact uid act) = do
     u <- userFind uid
@@ -37,10 +34,7 @@ page = livePage root actions
 
 data Contacts
   = Reload
-  deriving (Show, Eq, Read, Generic, PageAction, PageRoute)
-
-instance LiveView Contacts Action where
-  type Input Contacts = [User]
+  deriving (Show, Eq, Read, Generic, PageRoute)
 
 contacts :: (Reader (Contacts -> Action) :> es, Wai :> es) => [User] -> Contacts -> Eff es ()
 contacts us Reload =
@@ -59,10 +53,7 @@ data Contact
   = View
   | Edit
   | Save
-  deriving (Show, Read, Eq, Generic, PageAction, PageRoute)
-
-instance LiveView Contact Action where
-  type Input Contact = User
+  deriving (Show, Read, Eq, Generic, PageRoute)
 
 -- compId = Contact
 
@@ -88,10 +79,6 @@ usersAll = send LoadUsers
 userSave :: (Users :> es) => User -> Eff es ()
 userSave = send . SaveUser
 
--- hxRequest :: Mod -> Mod
--- hxRequest = prefix "hx-request"
-
--- add support for context?
 viewContact :: User -> View' (Contact -> Action) ()
 viewContact u = do
   col (pad 10 . gap 10) $ do
@@ -107,9 +94,6 @@ viewContact u = do
       label id (text "Email")
       text u.email
 
-    -- oh, boo, the attribute mods can't be execute in the monad :(
-    -- at least not right now :)
-    -- form elements should accept them directly
     liveButton Edit (bg Green . hover |: bg GreenLight) (text "Click to Edit")
 
 liveButton :: (PageRoute pageAction) => action -> Mod -> View' (action -> pageAction) () -> View' (action -> pageAction) ()
@@ -134,7 +118,7 @@ viewEdit u = do
 
     button id (text "Submit")
 
-    button (action View) (text "Cancel")
+    liveButton View id (text "Cancel")
 
 userFormData :: (Wai :> es) => Int -> Eff es User
 userFormData uid = do
@@ -143,20 +127,13 @@ userFormData uid = do
   email <- formParam "email"
   pure $ User uid firstName lastName email True
 
-class PageAction a where
-  toAction :: Text -> Maybe a
-  fromAction :: a -> Text
-
-class LiveView act pageAction where
-  type Input act
-
-viewComponent :: forall act pageAction ctx. (LiveView act pageAction, PageRoute pageAction) => (act -> pageAction) -> (Input act -> View' (act -> pageAction) ()) -> Input act -> View' ctx ()
+viewComponent :: (PageRoute pageAction) => (act -> pageAction) -> (inp -> View' (act -> pageAction) ()) -> inp -> View' ctx ()
 viewComponent toPageAction fvw inp = do
   el (hxSwap InnerHTML . hxTarget This)
     $ addContext toPageAction
     $ fvw inp
 
-runAction :: forall act es pageAction. (LiveView act pageAction, PageRoute pageAction) => (act -> pageAction) -> (Input act -> act -> Eff (Reader (act -> pageAction) : es) ()) -> Input act -> act -> Eff es ()
+runAction :: (PageRoute pageAction) => (act -> pageAction) -> (inp -> act -> Eff (Reader (act -> pageAction) : es) ()) -> inp -> act -> Eff es ()
 runAction toPageAction r inp act =
   runReader toPageAction $ r inp act
 
@@ -164,6 +141,3 @@ liveView :: (Reader (act -> pageAction) :> es, Wai :> es) => View' (act -> pageA
 liveView vw = do
   u <- ask
   view $ addContext u vw
-
-livePage :: Eff es () -> (action -> Eff es ()) -> Maybe action -> Eff es ()
-livePage = undefined
