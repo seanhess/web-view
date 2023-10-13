@@ -7,6 +7,7 @@ import Data.Kind
 import Data.Text
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Reader.Static
 import Example.Colors
 import Example.Effects.Users
 import GHC.Generics (Generic)
@@ -45,7 +46,8 @@ instance Component Contact where
   compView = viewContact
 
   compAction u View = do
-    view $ viewContact u
+    let tg = compId @Contact u
+    view $ runReader tg $ viewContact u
   compAction u Edit = do
     view $ viewEdit u
   compAction u' Save = do
@@ -65,6 +67,10 @@ loadUser uid = do
 -- hxRequest :: Mod -> Mod
 -- hxRequest = prefix "hx-request"
 
+-- I can allow arbitrary effects...
+-- for myself
+-- just not for everyone :)
+
 viewAll :: (View :> es) => [User] -> Eff es ()
 viewAll us = do
   row (pad 10 . gap 10) $ do
@@ -72,10 +78,8 @@ viewAll us = do
       el (border 1) $ do
         viewComponent @Contact u
 
-newtype View' a = View' (forall es. (Wai :> es) => Eff es ())
-
 -- add support for context?
-viewContact :: (View :> es) => User -> Eff es ()
+viewContact :: (View :> es, Reader Url :> es) => User -> Eff es ()
 viewContact u = do
   col (pad 10 . gap 10) $ do
     el_ $ do
@@ -90,7 +94,15 @@ viewContact u = do
       label id (text "Email")
       text u.email
 
-    button (action Edit . bg Green . hover |: bg GreenLight) (text "Click to Edit")
+    -- oh, boo, the attribute mods can't be execute in the monad :(
+    -- at least not right now :)
+    -- form elements should accept them directly
+    liveButton Edit (bg Green . hover |: bg GreenLight) (text "Click to Edit")
+
+liveButton :: (View :> es, Reader Url :> es, PageAction action) => action -> Mod -> Children es -> Eff es ()
+liveButton a f cd = do
+  t <- ask
+  tag "button" (att "data-action" (fromAction a) . att "data-target" (fromUrl t) . f) cd
 
 viewEdit :: (View :> es) => User -> Eff es ()
 viewEdit u = do
@@ -119,20 +131,23 @@ userFormData uid = do
   pure $ User uid firstName lastName email True
 
 class PageAction a where
-  toAction :: String -> Maybe a
-  fromAction :: a -> String
+  toAction :: Text -> Maybe a
+  fromAction :: a -> Text
 
 class Component act where
   type Input act
   type Effects act (es :: [Effect]) :: Constraint
   compId :: Input act -> Url
-  compView :: (View :> es) => Input act -> Eff es ()
+  compView :: (View :> es, Reader Url :> es) => Input act -> Eff es ()
   compAction :: (Effects act es) => Input act -> act -> Eff es ()
 
 viewComponent :: forall act es. (Component act, View :> es) => Input act -> Eff es ()
 viewComponent inp = do
+  let tg = compId @act inp
   el (hxSwap InnerHTML . hxTarget This)
-    $ compView @act inp
+    $ runReader tg (compView @act inp)
 
-runAction :: forall act es. (Component act, Effects act es) => Input act -> act -> Eff es ()
-runAction inp act = compAction @act inp act
+runAction :: forall act es. (Component act, Effects act (Reader Url : es)) => Input act -> act -> Eff es ()
+runAction inp act =
+  let tg = compId @act inp
+   in runReader tg $ compAction @act inp act

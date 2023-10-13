@@ -125,6 +125,10 @@ newtype View a = View (State ViewState a)
 -}
 type View = State ViewState
 
+-- should I build component support into views?
+-- yeah.... that makes sense!
+-- so, I'll have a context that changes: set an id, etc
+
 data ViewState = ViewState
   { contents :: [Content]
   , classStyles :: Map ClassName (Map Name StyleValue)
