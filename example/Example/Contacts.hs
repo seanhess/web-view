@@ -14,54 +14,59 @@ import GHC.Generics (Generic)
 import Web.Hyperbole
 import Web.UI
 
-data Target
-  = Contact Int
-  | Contacts
+data Action
+  = Contact Int Contact
+  | Contacts Contacts
   deriving (Show, Eq, Generic, PageRoute)
 
-page :: forall es. (Wai :> es, Users :> es) => Maybe Target -> Eff es ()
+page :: forall es. (Wai :> es, Users :> es) => Maybe Action -> Eff es ()
 page = livePage root actions
  where
   root = do
     us <- usersAll
-    view $ viewComponent @Contacts viewAll us
+    view $ viewComponent Contacts viewAll us
 
   -- TODO! Unify the types!
-  actions :: Target -> Contact -> Eff es ()
-  actions (Contact uid) act = do
+  actions :: Action -> Eff es ()
+  actions (Contact uid act) = do
     u <- userFind uid
-    runAction contact u act
-  actions Contacts act = do
+    runAction (Contact uid) contact u act
+  actions (Contacts act) = do
     us <- usersAll
-    runAction contacts us act
-
-contacts :: [User] -> Contacts -> Eff es ()
-contacts us Reload =
-  liveView $ viewAll us
+    runAction Contacts contacts us act
 
 data Contacts
   = Reload
-  deriving (Show, Eq, Read, Generic, PageAction)
+  deriving (Show, Eq, Read, Generic, PageAction, PageRoute)
 
-instance LiveView Contacts where
+instance LiveView Contacts Action where
   type Input Contacts = [User]
-  compId _ = "contacts"
 
+contacts :: (Reader (Contacts -> Action) :> es, Wai :> es) => [User] -> Contacts -> Eff es ()
+contacts us Reload =
+  liveView $ viewAll us
+
+viewAll :: [User] -> View' (Contacts -> Action) ()
+viewAll us = do
+  row (pad 10 . gap 10) $ do
+    forM_ us $ \u -> do
+      el (border 1) $ do
+        viewComponent (Contact u.id) viewContact u
+        liveButton Reload id "Reload"
+
+-- fn :: (a -> Action)
 data Contact
   = View
   | Edit
   | Save
-  deriving (Show, Read, Eq, Generic, PageAction)
+  deriving (Show, Read, Eq, Generic, PageAction, PageRoute)
 
-instance LiveView Contact where
+instance LiveView Contact Action where
   type Input Contact = User
-  compId u = routeUrl $ Contact u.id
 
--- -- carry the type info here!
--- contactView :: LiveView User Contact
--- contactView = viewContact
+-- compId = Contact
 
-contact :: (Reader Url :> es, Wai :> es, Users :> es) => User -> Contact -> Eff es ()
+contact :: (Reader (Contact -> Action) :> es, Wai :> es, Users :> es) => User -> Contact -> Eff es ()
 contact u View = do
   liveView $ viewContact u
 contact u Edit = do
@@ -70,14 +75,6 @@ contact u' Save = do
   u <- userFormData u'.id
   send $ SaveUser u
   liveView $ viewContact u
-
-liveView :: (Reader Url :> es, Wai :> es) => View' Url () -> Eff es ()
-liveView vw = do
-  u <- ask
-  view $ addContext u vw
-
-livePage :: (PageAction act) => Eff es () -> (comp -> act -> Eff es ()) -> Maybe comp -> Eff es ()
-livePage = undefined
 
 userFind :: (Wai :> es, Users :> es) => Int -> Eff es User
 userFind uid = do
@@ -94,16 +91,8 @@ userSave = send . SaveUser
 -- hxRequest :: Mod -> Mod
 -- hxRequest = prefix "hx-request"
 
-viewAll :: [User] -> View' Url ()
-viewAll us = do
-  row (pad 10 . gap 10) $ do
-    forM_ us $ \u -> do
-      el (border 1) $ do
-        viewComponent @Contact viewContact u
-        liveButton Reload id "Reload"
-
 -- add support for context?
-viewContact :: User -> View' Url ()
+viewContact :: User -> View' (Contact -> Action) ()
 viewContact u = do
   col (pad 10 . gap 10) $ do
     el_ $ do
@@ -123,12 +112,12 @@ viewContact u = do
     -- form elements should accept them directly
     liveButton Edit (bg Green . hover |: bg GreenLight) (text "Click to Edit")
 
-liveButton :: (PageAction action) => action -> Mod -> View' Url () -> View' Url ()
+liveButton :: (PageRoute pageAction) => action -> Mod -> View' (action -> pageAction) () -> View' (action -> pageAction) ()
 liveButton a f cd = do
-  u <- context
-  tag "button" (att "data-action" (fromAction a) . att "data-target" (fromUrl u) . f) cd
+  pact <- context
+  tag "button" (att "data-action" (fromUrl . routeUrl . pact $ a) . f) cd
 
-viewEdit :: User -> View' Url ()
+viewEdit :: User -> View' (Contact -> Action) ()
 viewEdit u = do
   form (action Save . pad 10 . gap 10) $ do
     label id $ do
@@ -158,18 +147,23 @@ class PageAction a where
   toAction :: Text -> Maybe a
   fromAction :: a -> Text
 
-class LiveView act where
+class LiveView act pageAction where
   type Input act
-  compId :: Input act -> Url
 
-viewComponent :: forall act. (LiveView act) => (Input act -> View' Url ()) -> Input act -> View ()
-viewComponent fvw inp = do
-  let tg = compId @act inp
+viewComponent :: forall act pageAction ctx. (LiveView act pageAction, PageRoute pageAction) => (act -> pageAction) -> (Input act -> View' (act -> pageAction) ()) -> Input act -> View' ctx ()
+viewComponent toPageAction fvw inp = do
   el (hxSwap InnerHTML . hxTarget This)
-    $ addContext tg
+    $ addContext toPageAction
     $ fvw inp
 
-runAction :: forall act es. (LiveView act) => (Input act -> act -> Eff (Reader Url : es) ()) -> Input act -> act -> Eff es ()
-runAction r inp act =
-  let u = compId @act inp
-   in runReader u $ r inp act
+runAction :: forall act es pageAction. (LiveView act pageAction, PageRoute pageAction) => (act -> pageAction) -> (Input act -> act -> Eff (Reader (act -> pageAction) : es) ()) -> Input act -> act -> Eff es ()
+runAction toPageAction r inp act =
+  runReader toPageAction $ r inp act
+
+liveView :: (Reader (act -> pageAction) :> es, Wai :> es) => View' (act -> pageAction) () -> Eff es ()
+liveView vw = do
+  u <- ask
+  view $ addContext u vw
+
+livePage :: Eff es () -> (action -> Eff es ()) -> Maybe action -> Eff es ()
+livePage = undefined
