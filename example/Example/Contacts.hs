@@ -16,67 +16,91 @@ import Web.UI
 
 data Target
   = Contact Int
+  | Contacts
   deriving (Show, Eq, Generic, PageRoute)
 
-page :: (Wai :> es, Users :> es) => Maybe Target -> Eff es ()
+page :: forall es. (Wai :> es, Users :> es) => Maybe Target -> Eff es ()
 page = livePage root actions
  where
   root = do
-    us <- send LoadUsers
-    view $ viewAll us
+    us <- usersAll
+    view $ viewComponent @Contacts viewAll us
 
+  -- TODO! Unify the types!
+  actions :: Target -> Contact -> Eff es ()
   actions (Contact uid) act = do
-    u <- loadUser uid
-    runAction @Contact u act
+    u <- userFind uid
+    runAction contact u act
+  actions Contacts act = do
+    us <- usersAll
+    runAction contacts us act
+
+contacts :: [User] -> Contacts -> Eff es ()
+contacts us Reload =
+  liveView $ viewAll us
+
+data Contacts
+  = Reload
+  deriving (Show, Eq, Read, Generic, PageAction)
+
+instance LiveView Contacts where
+  type Input Contacts = [User]
+  compId _ = "contacts"
 
 data Contact
   = View
   | Edit
   | Save
-  deriving (Show, Read, Eq, Generic, PageAction, PageRoute)
+  deriving (Show, Read, Eq, Generic, PageAction)
 
-instance Component Contact where
+instance LiveView Contact where
   type Input Contact = User
-  type Effects Contact es = (Wai :> es, Users :> es)
-
   compId u = routeUrl $ Contact u.id
 
-  compView = viewContact
+-- -- carry the type info here!
+-- contactView :: LiveView User Contact
+-- contactView = viewContact
 
-  compAction u View = do
-    let tg = compId @Contact u
-    view $ addContext tg $ viewContact u
-  compAction u Edit = do
-    let tg = compId @Contact u
-    view $ addContext tg $ viewEdit u
-  compAction u' Save = do
-    let tg = compId @Contact u'
-    u <- userFormData u'.id
-    send $ SaveUser u
-    view $ addContext tg $ viewContact u
+contact :: (Reader Url :> es, Wai :> es, Users :> es) => User -> Contact -> Eff es ()
+contact u View = do
+  liveView $ viewContact u
+contact u Edit = do
+  liveView $ viewEdit u
+contact u' Save = do
+  u <- userFormData u'.id
+  send $ SaveUser u
+  liveView $ viewContact u
+
+liveView :: (Reader Url :> es, Wai :> es) => View' Url () -> Eff es ()
+liveView vw = do
+  u <- ask
+  view $ addContext u vw
 
 livePage :: (PageAction act) => Eff es () -> (comp -> act -> Eff es ()) -> Maybe comp -> Eff es ()
 livePage = undefined
 
-loadUser :: (Wai :> es, Users :> es) => Int -> Eff es User
-loadUser uid = do
+userFind :: (Wai :> es, Users :> es) => Int -> Eff es User
+userFind uid = do
   mu <- send (LoadUser uid)
   -- not found! Oh no!
   maybe notFound pure mu
 
+usersAll :: (Users :> es) => Eff es [User]
+usersAll = send LoadUsers
+
+userSave :: (Users :> es) => User -> Eff es ()
+userSave = send . SaveUser
+
 -- hxRequest :: Mod -> Mod
 -- hxRequest = prefix "hx-request"
 
--- I can allow arbitrary effects...
--- for myself
--- just not for everyone :)
-
-viewAll :: [User] -> View ()
+viewAll :: [User] -> View' Url ()
 viewAll us = do
   row (pad 10 . gap 10) $ do
     forM_ us $ \u -> do
       el (border 1) $ do
-        viewComponent @Contact u
+        viewComponent @Contact viewContact u
+        liveButton Reload id "Reload"
 
 -- add support for context?
 viewContact :: User -> View' Url ()
@@ -134,21 +158,18 @@ class PageAction a where
   toAction :: Text -> Maybe a
   fromAction :: a -> Text
 
-class Component act where
+class LiveView act where
   type Input act
-  type Effects act (es :: [Effect]) :: Constraint
   compId :: Input act -> Url
-  compView :: Input act -> View' Url ()
-  compAction :: (Effects act es) => Input act -> act -> Eff es ()
 
-viewComponent :: forall act. (Component act) => Input act -> View ()
-viewComponent inp = do
+viewComponent :: forall act. (LiveView act) => (Input act -> View' Url ()) -> Input act -> View ()
+viewComponent fvw inp = do
   let tg = compId @act inp
   el (hxSwap InnerHTML . hxTarget This)
     $ addContext tg
-    $ compView @act inp
+    $ fvw inp
 
-runAction :: forall act es. (Component act, Effects act es) => Input act -> act -> Eff es ()
-runAction inp act =
-  -- let tg = compId @act inp
-  compAction @act inp act
+runAction :: forall act es. (LiveView act) => (Input act -> act -> Eff (Reader Url : es) ()) -> Input act -> act -> Eff es ()
+runAction r inp act =
+  let u = compId @act inp
+   in runReader u $ r inp act
