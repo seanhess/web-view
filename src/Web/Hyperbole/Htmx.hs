@@ -4,6 +4,7 @@ import Effectful
 import Web.Htmx
 import Web.Hyperbole.Route
 import Web.UI
+import Web.UI.Types
 
 -- import Web.UI.Url
 
@@ -33,7 +34,7 @@ hxPut = att "hx-put" . fromUrl
 hxIndicator :: Selector -> Mod
 hxIndicator s = att "hx-indicator" (toAtt s)
 
-swapTarget :: (View :> es) => HxSwap -> Children es -> Eff es ()
+swapTarget :: HxSwap -> View' c () -> View' c ()
 swapTarget t = tag "div" (hxSwap t . hxTarget This)
 
 action :: (PageRoute a) => a -> Mod

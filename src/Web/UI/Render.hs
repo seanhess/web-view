@@ -70,24 +70,30 @@ indent t = indentation <> t
 noIndent :: Indent -> [Text] -> [Text]
 noIndent _ ts = ts
 
-renderLazyText :: View' c () -> Text
-renderLazyText view = L.intercalate "\n" content
+renderLazyText :: forall c. c -> View' c () -> Text
+renderLazyText c u = L.intercalate "\n" content
  where
+  -- T.intercalate "\n" (content <> style css)
   content :: [Text]
-  content = do
-    st <- runView $ view >> addStyles
-    pure $ map renderContent st.contents
+  content = map renderContent $ (.contents) $ runView c addCss
 
-  addStyles :: View' c ()
-  addStyles = do
-    css <- renderCSS <$> gets @ViewState (.classStyles)
-    insertContents [Node $ Element "style" [] [("type", "text/css")] [Text $ T.intercalate "\n" css]]
+  addCss :: View' c ()
+  addCss = do
+    insertContents [styleElement]
+    u
 
-renderText :: View' c () -> T.Text
-renderText = L.toStrict . renderLazyText
+  css :: [T.Text]
+  css = renderCSS $ (.classStyles) $ runView c u
 
-renderLazyByteString :: View' c () -> BL.ByteString
-renderLazyByteString = L.encodeUtf8 . renderLazyText
+  styleElement :: Content
+  styleElement =
+    Node $ Element "style" [] [("type", "text/css")] [Text $ T.intercalate "\n" css]
+
+renderText :: c -> View' c () -> T.Text
+renderText c = L.toStrict . renderLazyText c
+
+renderLazyByteString :: c -> View' c () -> BL.ByteString
+renderLazyByteString c = L.encodeUtf8 . renderLazyText c
 
 renderContent :: Content -> Text
 renderContent (Node d) = L.unlines $ htmlTag indentAll d

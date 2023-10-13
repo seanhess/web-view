@@ -15,6 +15,9 @@ module Web.UI
 
     -- * Types
   , View
+  , View'
+  , context
+  , addContext
   , Content
   , Mod
   , TRBL (..)

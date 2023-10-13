@@ -81,9 +81,9 @@ runWai req = reinterpret (runErrorNoCallStack @Interrupt . execState @Resp empty
       rb <- liftIO $ Wai.consumeRequestBodyLazy req
       put $ r{reqBody = rb}
 
-view :: (Wai :> es) => Eff '[View] () -> Eff es ()
+view :: (Wai :> es) => View () -> Eff es ()
 view vw = do
-  let bd = runPureEff $ renderLazyByteString vw
+  let bd = renderLazyByteString () vw
   send $ ResHeader "Content-Type" "text/html"
   send $ ResBody ContentHtml bd
 

@@ -14,8 +14,6 @@ import GHC.Generics (Generic)
 import Web.Hyperbole
 import Web.UI
 
--- but there's no action associated with it. Maybe a generic "Load"?
--- there's also no hierarchy
 data Target
   = Contact Int
   deriving (Show, Eq, Generic, PageRoute)
@@ -47,13 +45,15 @@ instance Component Contact where
 
   compAction u View = do
     let tg = compId @Contact u
-    view $ runReader tg $ viewContact u
+    view $ addContext tg $ viewContact u
   compAction u Edit = do
-    view $ viewEdit u
+    let tg = compId @Contact u
+    view $ addContext tg $ viewEdit u
   compAction u' Save = do
+    let tg = compId @Contact u'
     u <- userFormData u'.id
     send $ SaveUser u
-    view $ viewContact u
+    view $ addContext tg $ viewContact u
 
 livePage :: (PageAction act) => Eff es () -> (comp -> act -> Eff es ()) -> Maybe comp -> Eff es ()
 livePage = undefined
@@ -71,7 +71,7 @@ loadUser uid = do
 -- for myself
 -- just not for everyone :)
 
-viewAll :: (View :> es) => [User] -> Eff es ()
+viewAll :: [User] -> View ()
 viewAll us = do
   row (pad 10 . gap 10) $ do
     forM_ us $ \u -> do
@@ -79,7 +79,7 @@ viewAll us = do
         viewComponent @Contact u
 
 -- add support for context?
-viewContact :: (View :> es, Reader Url :> es) => User -> Eff es ()
+viewContact :: User -> View' Url ()
 viewContact u = do
   col (pad 10 . gap 10) $ do
     el_ $ do
@@ -99,12 +99,12 @@ viewContact u = do
     -- form elements should accept them directly
     liveButton Edit (bg Green . hover |: bg GreenLight) (text "Click to Edit")
 
-liveButton :: (View :> es, Reader Url :> es, PageAction action) => action -> Mod -> Children es -> Eff es ()
+liveButton :: (PageAction action) => action -> Mod -> View' Url () -> View' Url ()
 liveButton a f cd = do
-  t <- ask
-  tag "button" (att "data-action" (fromAction a) . att "data-target" (fromUrl t) . f) cd
+  u <- context
+  tag "button" (att "data-action" (fromAction a) . att "data-target" (fromUrl u) . f) cd
 
-viewEdit :: (View :> es) => User -> Eff es ()
+viewEdit :: User -> View' Url ()
 viewEdit u = do
   form (action Save . pad 10 . gap 10) $ do
     label id $ do
@@ -138,16 +138,17 @@ class Component act where
   type Input act
   type Effects act (es :: [Effect]) :: Constraint
   compId :: Input act -> Url
-  compView :: (View :> es, Reader Url :> es) => Input act -> Eff es ()
+  compView :: Input act -> View' Url ()
   compAction :: (Effects act es) => Input act -> act -> Eff es ()
 
-viewComponent :: forall act es. (Component act, View :> es) => Input act -> Eff es ()
+viewComponent :: forall act. (Component act) => Input act -> View ()
 viewComponent inp = do
   let tg = compId @act inp
   el (hxSwap InnerHTML . hxTarget This)
-    $ runReader tg (compView @act inp)
+    $ addContext tg
+    $ compView @act inp
 
-runAction :: forall act es. (Component act, Effects act (Reader Url : es)) => Input act -> act -> Eff es ()
+runAction :: forall act es. (Component act, Effects act es) => Input act -> act -> Eff es ()
 runAction inp act =
-  let tg = compId @act inp
-   in runReader tg $ compAction @act inp act
+  -- let tg = compId @act inp
+  compAction @act inp act

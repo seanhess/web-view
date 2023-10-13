@@ -131,17 +131,8 @@ data ViewState = ViewState
 
 type ClassStyles = Map ClassName (Map Name StyleValue)
 
-newtype View' ctx a = View' {viewState :: forall es. (State ViewState :> es, Reader ctx :> es) => Eff es a}
-
-instance Functor (View' ctx) where
-  fmap f (View' ef) = View' $ fmap f ef
-
-instance Applicative (View' ctx) where
-  pure a = View' $ pure a
-  View' fab <*> View' a = View' $ fab <*> a
-
-instance Monad (View' ctx) where
-  (View' m) >>= f = View' $ m >>= \a -> let (View' m') = f a in m'
+newtype View' ctx a = View' {viewState :: Eff [Reader ctx, State ViewState] a}
+  deriving newtype (Functor, Applicative, Monad)
 
 type View = View' ()
 
@@ -150,7 +141,7 @@ instance IsString (View' ctx ()) where
 
 runView :: ctx -> View' ctx () -> ViewState
 runView ctx (View' ef) =
-  runPureEff . runReader ctx . execState (ViewState [] []) $ ef
+  runPureEff . execState (ViewState [] []) . runReader ctx $ ef
 
 -- | A function that modifies an element. Allows for easy chaining and composition
 type Mod = Element -> Element
@@ -165,6 +156,13 @@ modStyles f = View' $ do
 
 context :: View' c c
 context = View' ask
+
+-- we want to convert an existing view to a new context, discarding the old one
+addContext :: cx -> View' cx () -> View' c ()
+addContext ctx vw = do
+  -- runs the sub-view in a different context, saving its state
+  let st = runView ctx vw
+  View' $ put st
 
 mapRoot :: Mod -> View' c ()
 mapRoot f = modContents mapContents
