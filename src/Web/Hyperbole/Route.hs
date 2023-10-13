@@ -130,6 +130,13 @@ instance PageRoute Int where
   routePaths = routePathsShow
   defRoute = 0
 
+instance (PageRoute a) => PageRoute (Maybe a) where
+  matchRoute [] = pure Nothing
+  matchRoute ps = Just <$> matchRoute ps
+
+  routePaths _ = []
+  defRoute = Nothing
+
 matchRouteRead :: (Read a) => [Text] -> Maybe a
 matchRouteRead [t] = readMaybe (unpack t)
 matchRouteRead _ = Nothing

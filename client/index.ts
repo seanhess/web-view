@@ -16,8 +16,14 @@ const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const address = `${protocol}//${window.location.host}`
 const socket = new WebSocket(address)
 
+
+function actionUrl(action:string) {
+  let base = window.location.href
+  return base + "/" + action
+}
+
 listenClickAction(function(action:string) {
-  socket.send("CLICK: " + action)
+  console.log("CLICK!", action, actionUrl(action))
 })
 
 socket.addEventListener('open', (event) => {

@@ -24,6 +24,7 @@ import Network.Wai.Handler.WebSockets (websocketsOr)
 import Network.Wai.Middleware.Static (addBase, staticPolicy)
 import Web.Hyperbole
 import Web.Hyperbole.Application
+import Web.Hyperbole.Page
 import Web.UI
 import Web.UI.Embed (cssResetEmbed)
 
@@ -45,12 +46,12 @@ app users = application document (runUsersIO users . route)
     view $ col id $ do
       el id "ECHO:"
       text $ cs req
-  route (Contacts rt) = Contacts.routes rt
+  route (Contacts rt) = runPageWai $ Contacts.page rt
   route Main = view $ do
     col (gap 10 . pad 10) $ do
       el (bold . fontSize 32) "Examples"
       link (routeUrl (Hello (Greet "World"))) id "Hello World"
-      link (routeUrl (Contacts Contacts.Root)) id "Contacts"
+      link (routeUrl (Contacts Nothing)) id "Contacts"
 
   hello (Greet s) = view $ el (pad 10) "GREET" >> text s
   hello (Poof s) = view $ el (pad 10) "POOF" >> text s
@@ -59,7 +60,7 @@ app users = application document (runUsersIO users . route)
 data Route
   = Main
   | Hello Hello
-  | Contacts (Maybe Contacts.Route)
+  | Contacts (Maybe Contacts.Action)
   | Echo
   deriving (Show, Generic, Eq, PageRoute)
 

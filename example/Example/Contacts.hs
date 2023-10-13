@@ -10,6 +10,7 @@ import Example.Colors
 import Example.Effects.Users
 import GHC.Generics (Generic)
 import Web.Hyperbole
+import Web.Hyperbole.Page
 import Web.UI
 
 data Action
@@ -17,12 +18,12 @@ data Action
   | Contacts Contacts
   deriving (Show, Eq, Generic, PageRoute)
 
-page :: forall es. (Wai :> es, Users :> es) => Maybe Action -> Eff es ()
-page = maybe root actions
+page :: forall es. (Page :> es, Users :> es) => Maybe Action -> Eff es ()
+page = livePage root actions
  where
   root = do
     us <- usersAll
-    view $ viewComponent Contacts viewAll us
+    respondView $ viewComponent Contacts viewAll us
 
   actions :: Action -> Eff es ()
   actions (Contact uid act) = do
@@ -32,21 +33,27 @@ page = maybe root actions
     us <- usersAll
     runAction Contacts contacts us act
 
+livePage :: (Page :> es) => Eff es () -> (Action -> Eff es ()) -> Maybe Action -> Eff es ()
+livePage root _ Nothing = root
+livePage _ actions (Just act) = do
+  -- TODO: only accept POST
+  actions act
+
 data Contacts
   = Reload
   deriving (Show, Eq, Read, Generic, PageRoute)
 
-contacts :: (Reader (Contacts -> Action) :> es, Wai :> es) => [User] -> Contacts -> Eff es ()
+contacts :: (Reader (Contacts -> Action) :> es, Page :> es) => [User] -> Contacts -> Eff es ()
 contacts us Reload =
   liveView $ viewAll us
 
 viewAll :: [User] -> View' (Contacts -> Action) ()
 viewAll us = do
   row (pad 10 . gap 10) $ do
+    liveButton Reload (bg GrayLight) "Reload"
     forM_ us $ \u -> do
       el (border 1) $ do
         viewComponent (Contact u.id) viewContact u
-        liveButton Reload id "Reload"
 
 -- fn :: (a -> Action)
 data Contact
@@ -57,7 +64,7 @@ data Contact
 
 -- compId = Contact
 
-contact :: (Reader (Contact -> Action) :> es, Wai :> es, Users :> es) => User -> Contact -> Eff es ()
+contact :: (Reader (Contact -> Action) :> es, Page :> es, Users :> es) => User -> Contact -> Eff es ()
 contact u View = do
   liveView $ viewContact u
 contact u Edit = do
@@ -67,11 +74,10 @@ contact u' Save = do
   send $ SaveUser u
   liveView $ viewContact u
 
-userFind :: (Wai :> es, Users :> es) => Int -> Eff es User
+userFind :: (Page :> es, Users :> es) => Int -> Eff es User
 userFind uid = do
   mu <- send (LoadUser uid)
-  -- not found! Oh no!
-  maybe notFound pure mu
+  maybe missingInfo pure mu
 
 usersAll :: (Users :> es) => Eff es [User]
 usersAll = send LoadUsers
@@ -120,11 +126,11 @@ viewEdit u = do
 
     liveButton View id (text "Cancel")
 
-userFormData :: (Wai :> es) => Int -> Eff es User
+userFormData :: (Page :> es) => Int -> Eff es User
 userFormData uid = do
-  firstName <- formParam "firstName"
-  lastName <- formParam "lastName"
-  email <- formParam "email"
+  firstName <- param "firstName"
+  lastName <- param "lastName"
+  email <- param "email"
   pure $ User uid firstName lastName email True
 
 viewComponent :: (PageRoute pageAction) => (act -> pageAction) -> (inp -> View' (act -> pageAction) ()) -> inp -> View' ctx ()
@@ -137,7 +143,7 @@ runAction :: (PageRoute pageAction) => (act -> pageAction) -> (inp -> act -> Eff
 runAction toPageAction r inp act =
   runReader toPageAction $ r inp act
 
-liveView :: (Reader (act -> pageAction) :> es, Wai :> es) => View' (act -> pageAction) () -> Eff es ()
+liveView :: (Reader (act -> pageAction) :> es, Page :> es) => View' (act -> pageAction) () -> Eff es ()
 liveView vw = do
   u <- ask
-  view $ addContext u vw
+  respondView $ addContext u vw

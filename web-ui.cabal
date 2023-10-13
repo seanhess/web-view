@@ -25,6 +25,7 @@ library
       Web.Hyperbole.Application
       Web.Hyperbole.Embed
       Web.Hyperbole.Htmx
+      Web.Hyperbole.Page
       Web.Hyperbole.Route
       Web.Hyperbole.Sockets
       Web.Hyperbole.Wai

@@ -4,8 +4,7 @@ import Data.Map qualified as M
 import Data.Text (Text)
 import Web.UI.Style
 import Web.UI.Types
-
--- import Web.UI.Url
+import Web.UI.Url
 
 tag :: Text -> Mod -> View' c () -> View' c ()
 tag nm f ct = do
@@ -153,6 +152,6 @@ stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
 --
 -- td :: Mod -> Eff es () -> Cell Data ()
 -- td f c = Cell $ tag "td" f c
---
--- link :: Url -> Mod -> Eff es () -> Eff es ()
--- link u f = tag "a" (f . att "href" (fromUrl u))
+
+link :: Url -> Mod -> View' c () -> View' c ()
+link u f = tag "a" (f . att "href" (fromUrl u))
