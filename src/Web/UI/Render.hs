@@ -70,30 +70,30 @@ indent t = indentation <> t
 noIndent :: Indent -> [Text] -> [Text]
 noIndent _ ts = ts
 
-renderLazyText :: forall es. Eff (View : es) () -> Eff es Text
-renderLazyText view = L.intercalate "\n" <$> content
+renderLazyText :: View' c () -> Text
+renderLazyText view = L.intercalate "\n" content
  where
-  content :: Eff es [Text]
+  content :: [Text]
   content = do
     st <- runView $ view >> addStyles
     pure $ map renderContent st.contents
 
-  addStyles :: Eff (View : es) ()
+  addStyles :: View' c ()
   addStyles = do
     css <- renderCSS <$> gets @ViewState (.classStyles)
     insertContents [Node $ Element "style" [] [("type", "text/css")] [Text $ T.intercalate "\n" css]]
 
-renderText :: Eff (View : es) () -> Eff es T.Text
-renderText = fmap L.toStrict <$> renderLazyText
+renderText :: View' c () -> T.Text
+renderText = L.toStrict . renderLazyText
 
-renderLazyByteString :: Eff (View : es) () -> Eff es BL.ByteString
-renderLazyByteString = fmap L.encodeUtf8 <$> renderLazyText
+renderLazyByteString :: View' c () -> BL.ByteString
+renderLazyByteString = L.encodeUtf8 . renderLazyText
 
 renderContent :: Content -> Text
 renderContent (Node d) = L.unlines $ htmlTag indentAll d
 renderContent (Text t) = L.fromStrict t
 
-renderCSS :: Map ClassName (Map Name StyleValue) -> [T.Text]
+renderCSS :: ClassStyles -> [T.Text]
 renderCSS m = map renderClass $ toClasses m
  where
   toClasses = map toClass . M.toList
@@ -109,10 +109,10 @@ renderCSS m = map renderClass $ toClasses m
 renderStyle :: StyleValue -> T.Text
 renderStyle v = T.pack $ show v
 
-showView :: Eff (View : es) () -> Eff es Text
-showView v = do
-  st <- runView v
-  pure $ L.unlines $ mconcat $ map showContent st.contents
+showView :: c -> View' c () -> Text
+showView c v =
+  let st = runView c v
+   in L.unlines $ mconcat $ map showContent st.contents
 
 showContent :: Content -> [Text]
 showContent (Node t) = htmlTag indentAll t

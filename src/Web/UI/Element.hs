@@ -1,70 +1,56 @@
 module Web.UI.Element where
 
-import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Text (Text)
-import Effectful
-import Effectful.State.Dynamic
 import Web.UI.Style
 import Web.UI.Types
 
 -- import Web.UI.Url
 
-type Children es = Eff (View : es) ()
-
--- we want to get the content
--- but we aren't IN that monad. It's independent of us
--- there must be a better way to do this.
-tag :: (View :> es) => Text -> Mod -> Children es -> Eff es ()
+tag :: Text -> Mod -> View' c () -> View' c ()
 tag nm f ct = do
-  st <- runView ct
+  ctx <- context
+  let st = runView ctx ct
   let elm = f $ Element nm [] [] st.contents
   addContent $ Node elm
-  addClasses $ classList $ st.classStyles
-  addClasses $ mconcat $ elm.classes
+  addClasses $ classList st.classStyles
+  addClasses $ mconcat elm.classes
 
-addClasses :: (View :> es) => [Class] -> Eff es ()
+addClasses :: [Class] -> View' c ()
 addClasses clss = do
-  modify $ \vs ->
-    vs
-      { classStyles = foldr addClsDef vs.classStyles clss
-      }
+  modStyles $ \cm -> foldr addClsDef cm clss
  where
-  addClsDef :: Class -> Map ClassName (Map Name StyleValue) -> Map ClassName (Map Name StyleValue)
+  addClsDef :: Class -> ClassStyles -> ClassStyles
   addClsDef c = M.insert c.className c.classProperties
 
-addContent :: (View :> es) => Content -> Eff es ()
-addContent ct = do
-  modify $ \vs ->
-    vs
-      { contents = vs.contents <> [ct]
-      }
+addContent :: Content -> View' c ()
+addContent ct =
+  modContents (<> [ct])
 
 -- Inserts into first child
-insertContents :: (View :> es) => [Content] -> Eff es ()
-insertContents cs = do
-  modify $ \vs -> vs{contents = insert vs.contents}
+insertContents :: [Content] -> View' c ()
+insertContents cs = modContents insert
  where
   insert [Node e] = [Node $ insertEl e]
   insert cnt = cnt <> cs
   insertEl e = e{children = e.children <> cs}
 
-classList :: Map ClassName (Map Name StyleValue) -> [Class]
+classList :: ClassStyles -> [Class]
 classList m = map (uncurry Class) $ M.toList m
 
 -- | Set an attribute, replacing existing value
 att :: Name -> AttValue -> Mod
-att n v t = t{attributes = M.insert n v t.attributes}
+att n v (Element en ec ea ecs) = Element en ec (M.insert n v ea) ecs
 
 -- | A basic element
-el :: (View :> es) => Mod -> Children es -> Eff es ()
+el :: Mod -> View' c () -> View' c ()
 el = tag "div"
 
 -- | A basic element, with no modifiers
-el_ :: (View :> es) => Eff (View : es) () -> Eff es ()
+el_ :: View' c () -> View' c ()
 el_ = tag "div" id
 
-button :: (View :> es) => Mod -> Children es -> Eff es ()
+button :: Mod -> View' c () -> View' c ()
 button = tag "button"
 
 -- | Convert from text directly to view. You should not have to use this. Use `text` instead
@@ -73,49 +59,49 @@ data Head
 data Base
 data Doc
 
-text :: (View :> es) => Text -> Eff es ()
+text :: Text -> View' c ()
 text t = addContent $ Text t
 
-none :: Eff es ()
+none :: View' c ()
 none = pure ()
 
-meta :: (View :> es) => Mod -> Eff es ()
+meta :: Mod -> View' c ()
 meta f = tag "meta" f none
 
-title :: (View :> es) => Text -> Eff es ()
+title :: Text -> View' c ()
 title = tag "title" id . text
 
-head :: (View :> es) => Children es -> Eff es ()
+head :: View' c () -> View' c ()
 head = tag "head" id
 
-html :: (View :> es) => Children es -> Eff es ()
+html :: View' c () -> View' c ()
 html = tag "html" id
 
-body :: (View :> es) => Children es -> Eff es ()
+body :: View' c () -> View' c ()
 body = tag "body" id
 
-row :: (View :> es) => Mod -> Children es -> Eff es ()
+row :: Mod -> View' c () -> View' c ()
 row f = el (flexRow . f)
 
-row_ :: (View :> es) => Children es -> Eff es ()
+row_ :: View' c () -> View' c ()
 row_ = row id
 
-col :: (View :> es) => Mod -> Children es -> Eff es ()
+col :: Mod -> View' c () -> View' c ()
 col f = el (flexCol . f)
 
-col_ :: (View :> es) => Children es -> Eff es ()
+col_ :: View' c () -> View' c ()
 col_ = col id
 
-space :: (View :> es) => Eff es ()
+space :: View' c ()
 space = el grow $ pure ()
 
-label :: (View :> es) => Mod -> Children es -> Eff es ()
+label :: Mod -> View' c () -> View' c ()
 label = tag "label"
 
-form :: (View :> es) => Mod -> Children es -> Eff es ()
+form :: Mod -> View' c () -> View' c ()
 form f = tag "form" (f . flexCol)
 
-input :: (View :> es) => Mod -> Eff es ()
+input :: Mod -> View' c ()
 input m = tag "input" (m . att "type" "text") none
 
 name :: Text -> Mod
@@ -124,17 +110,17 @@ name = att "name"
 value :: Text -> Mod
 value = att "value"
 
-script :: (View :> es) => Text -> Eff es ()
+script :: Text -> View' c ()
 -- script (Code code) = tag "script" (att "type" "text/javascript") $ fromText code
 script src = tag "script" (att "type" "text/javascript" . att "src" src) none
 
-style :: (View :> es) => Text -> Eff es ()
+style :: Text -> View' c ()
 style cnt = tag "style" (att "type" "text/css") (text $ "\n" <> cnt <> "\n")
 
-stylesheet :: (View :> es) => Text -> Eff es ()
+stylesheet :: Text -> View' c ()
 stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
 
--- table :: Mod -> [dt] -> Writer [TableColumn dt] () -> Eff es ()
+-- table :: Mod -> [dt] -> Writer [TableColumn dt] () -> View' c ()
 -- table f dts wcs = do
 --   let cols = execWriter wcs
 --   tag "table" (f . borderCollapse) $ do

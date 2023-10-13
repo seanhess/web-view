@@ -7,7 +7,8 @@ import Data.String (IsString (..))
 import Data.Text (Text, pack, unpack)
 import Data.Text qualified as T
 import Effectful
-import Effectful.State.Dynamic
+import Effectful.Reader.Static
+import Effectful.State.Static.Local as ES
 import GHC.Generics
 
 -- import Data.Text.Lazy qualified as L
@@ -123,29 +124,50 @@ instance ToJSON Content where
 newtype View a = View (State ViewState a)
   deriving newtype (Functor, Applicative, Monad, MonadState ViewState)
 -}
-type View = State ViewState
-
--- should I build component support into views?
--- yeah.... that makes sense!
--- so, I'll have a context that changes: set an id, etc
-
 data ViewState = ViewState
   { contents :: [Content]
-  , classStyles :: Map ClassName (Map Name StyleValue)
+  , classStyles :: ClassStyles
   }
 
--- instance IsString (View ()) where
---   fromString s = modify $ \vs -> vs{contents = [Text (pack s)]}
+type ClassStyles = Map ClassName (Map Name StyleValue)
 
-runView :: Eff (View : es) () -> Eff es ViewState
-runView = execStateLocal (ViewState [] [])
+newtype View' ctx a = View' {viewState :: forall es. (State ViewState :> es, Reader ctx :> es) => Eff es a}
+
+instance Functor (View' ctx) where
+  fmap f (View' ef) = View' $ fmap f ef
+
+instance Applicative (View' ctx) where
+  pure a = View' $ pure a
+  View' fab <*> View' a = View' $ fab <*> a
+
+instance Monad (View' ctx) where
+  (View' m) >>= f = View' $ m >>= \a -> let (View' m') = f a in m'
+
+type View = View' ()
+
+instance IsString (View' ctx ()) where
+  fromString s = modContents (const [Text (pack s)])
+
+runView :: ctx -> View' ctx () -> ViewState
+runView ctx (View' ef) =
+  runPureEff . runReader ctx . execState (ViewState [] []) $ ef
 
 -- | A function that modifies an element. Allows for easy chaining and composition
 type Mod = Element -> Element
 
-mapRoot :: (View :> es) => Mod -> Eff es ()
-mapRoot f = do
-  modify $ \st -> st{contents = mapContents st.contents}
+modContents :: ([Content] -> [Content]) -> View' c ()
+modContents f = View' $ do
+  ES.modify $ \s -> s{contents = f s.contents}
+
+modStyles :: (ClassStyles -> ClassStyles) -> View' c ()
+modStyles f = View' $ do
+  ES.modify $ \s -> s{classStyles = f s.classStyles}
+
+context :: View' c c
+context = View' ask
+
+mapRoot :: Mod -> View' c ()
+mapRoot f = modContents mapContents
  where
   mapContents (Node root : cts) = Node (f root) : cts
   mapContents cts = cts
