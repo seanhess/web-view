@@ -11,29 +11,21 @@ import Effectful.Reader.Static
 import Example.Colors
 import Example.Effects.Users
 import GHC.Generics (Generic)
-import Web.HttpApiData (FromHttpApiData)
 import Web.Hyperbole
 import Web.Hyperbole.Page
 import Web.UI
 
 
--- data ViewId
---   = Contact Int
---   | Contacts
---   deriving (Show, Eq, Generic, PageRoute)
-
-data ViewId a where
-  Contact :: Int -> ViewId Contact
-  Contacts :: ViewId Contacts
+data ViewId
+  = Contact Int
+  | Contacts
+  deriving (Show, Eq, Generic, PageRoute)
 
 
-instance PageRoute (ViewId a) where
-  matchRoute = undefined
-  routePaths = undefined
-  defRoute = undefined
+newtype Component viewId event = Component viewId
 
 
-page :: forall es a. (Page :> es, Users :> es) => Maybe (ViewId a) -> Eff es ()
+page :: forall es. (Page :> es, Users :> es) => Maybe ViewId -> Eff es ()
 page = livePage root actions
  where
   root = do
@@ -41,7 +33,7 @@ page = livePage root actions
     us <- usersAll
     respondView $ viewComponent Contacts viewAll us
 
-  actions :: ViewId a -> Eff es ()
+  actions :: ViewId -> Eff es ()
   actions (Contact uid) = do
     traceM "CONTACT"
     u <- userFind uid
@@ -57,12 +49,12 @@ data Contacts
   deriving (Show, Eq, Read)
 
 
-contacts :: (Reader (ViewId Contacts) :> es, Page :> es) => [User] -> Contacts -> Eff es ()
+contacts :: (Reader (Component ViewId Contact) :> es, Page :> es) => [User] -> Contacts -> Eff es ()
 contacts us Reload =
   liveView $ viewAll us
 
 
-viewAll :: [User] -> View' (ViewId Contacts) ()
+viewAll :: [User] -> View' (Component ViewId Contacts) ()
 viewAll us = do
   col (pad 10 . gap 10) $ do
     liveButton Reload (bg GrayLight) "Reload"
@@ -81,7 +73,7 @@ data Contact
   deriving (Show, Read, Eq)
 
 
-contact :: (Reader (ViewId Contact) :> es, Page :> es, Users :> es) => User -> Contact -> Eff es ()
+contact :: (Reader (Component ViewId Contact) :> es, Page :> es, Users :> es) => User -> Contact -> Eff es ()
 contact u View = do
   liveView $ viewContact u
 contact u Edit = do
@@ -92,7 +84,7 @@ contact u' Save = do
   liveView $ viewContact u
 
 
-viewContact :: User -> View' (ViewId Contact) ()
+viewContact :: User -> View' (Component ViewId Contact) ()
 viewContact u = do
   col (pad 10 . gap 10) $ do
     el_ $ do
@@ -110,7 +102,7 @@ viewContact u = do
     liveButton Edit (bg Green . hover |: bg GreenLight) (text "Click to Edit")
 
 
-viewEdit :: User -> View' (ViewId Contact) ()
+viewEdit :: User -> View' (Component ViewId Contact) ()
 viewEdit u = do
   form (action Save . pad 10 . gap 10) $ do
     label id $ do
@@ -152,7 +144,7 @@ userSave :: (Users :> es) => User -> Eff es ()
 userSave = send . SaveUser
 
 
-liveButton :: (Show action) => action -> Mod -> View' (f action) () -> View' (f action) ()
+liveButton :: (Show action) => action -> Mod -> View' (Component viewId action) () -> View' (Component viewId action) ()
 liveButton a f cd = do
   -- you don't need to put the context in here. We can look it up from the above!
   -- pact <- context
@@ -164,11 +156,11 @@ actionTarget viewId = do
   att "data-target" (fromUrl $ routeUrl viewId)
 
 
-viewComponent :: (PageRoute viewId) => viewId -> (inp -> View' viewId ()) -> inp -> View' ctx ()
+viewComponent :: (PageRoute viewId) => viewId -> (inp -> View' (Component viewId action) ()) -> inp -> View' ctx ()
 viewComponent viewId fvw inp = do
   let tgt = fromUrl $ routeUrl viewId
   el (actionTarget tgt . att "id" tgt)
-    $ addContext viewId
+    $ addContext (Component viewId)
     $ fvw inp
 
 
@@ -179,7 +171,7 @@ runAction viewId r inp = do
   runReader viewId $ r inp act
 
 
-liveView :: (Reader viewId :> es, Page :> es) => View' viewId () -> Eff es ()
+liveView :: (Reader (Component viewId action) :> es, Page :> es) => View' (Component viewId action) () -> Eff es ()
 liveView vw = do
   u <- ask
   respondView $ addContext u vw
