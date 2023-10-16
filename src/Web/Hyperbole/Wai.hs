@@ -19,6 +19,7 @@ import Web.HttpApiData (FromHttpApiData)
 import Web.UI
 import Web.UI.Render (renderLazyByteString)
 
+
 data Wai :: Effect where
   ResHeader :: HeaderName -> ByteString -> Wai m ()
   ResBody :: ContentType -> L.ByteString -> Wai m ()
@@ -26,7 +27,9 @@ data Wai :: Effect where
   ReqBody :: Wai m L.ByteString
   Interrupt :: Interrupt -> Wai m a
 
+
 type instance DispatchOf Wai = 'Dynamic
+
 
 data Resp = Resp
   { status :: Status
@@ -36,9 +39,11 @@ data Resp = Resp
   , reqBody :: L.ByteString
   }
 
+
 data ContentType
   = ContentHtml
   | ContentText
+
 
 formData :: (Wai :> es) => Eff es Form
 formData = do
@@ -46,15 +51,18 @@ formData = do
   let ef = urlDecodeForm bd
   either (send . Interrupt . ParseError) pure ef
 
+
 parseFormData :: (Wai :> es, FromForm a) => Eff es a
 parseFormData = do
   f <- formData
   either (send . Interrupt . ParseError) pure $ fromForm f
 
+
 formParam :: (Wai :> es, FromHttpApiData a) => Text -> Eff es a
 formParam k = do
   f <- formData
   either (send . Interrupt . ParseError) pure $ parseUnique k f
+
 
 runWai
   :: (IOE :> es)
@@ -81,22 +89,27 @@ runWai req = reinterpret (runErrorNoCallStack @Interrupt . execState @Resp empty
       rb <- liftIO $ Wai.consumeRequestBodyLazy req
       put $ r{reqBody = rb}
 
+
 view :: (Wai :> es) => View () -> Eff es ()
 view vw = do
   let bd = renderLazyByteString () vw
   send $ ResHeader "Content-Type" "text/html"
   send $ ResBody ContentHtml bd
 
+
 emptyResponse :: Resp
 emptyResponse = Resp status500 [] ContentText "Response not set" ""
+
 
 data Interrupt
   = NotFound
   | Redirect Url
   | ParseError Text
 
+
 notFound :: (Wai :> es) => Eff es a
 notFound = send $ Interrupt NotFound
+
 
 redirect :: (Wai :> es) => Url -> Eff es ()
 redirect u = do
