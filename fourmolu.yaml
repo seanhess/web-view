@@ -20,7 +20,7 @@ import-export-style: leading
 # record-brace-space: false
 
 # # Number of spaces between top-level declarations
-# newlines-between-decls: 1
+newlines-between-decls: 2
 #
 # # How to print Haddock comments (choices: single-line, multi-line, or multi-line-compact)
 # haddock-style: multi-line

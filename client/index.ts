@@ -17,7 +17,7 @@ const address = `${protocol}//${window.location.host}`
 const socket = new WebSocket(address)
 
 
-function sendAction(action:string) {
+function sendAction(id:string, action:string) {
   const form = new URLSearchParams()
   form.append("action", action)
 
@@ -30,9 +30,9 @@ function sendAction(action:string) {
     .then(html => console.log("RESPONSE", html))
 }
 
-listenClickAction(function(action:string) {
-  console.log("CLICK!", action)
-  sendAction(action)
+listenClickAction(function(target:string, action:string) {
+  console.log("CLICK!", target, action)
+  // sendAction
 })
 
 

@@ -28,6 +28,7 @@ import Web.Hyperbole.Page
 import Web.UI
 import Web.UI.Embed (cssResetEmbed)
 
+
 main :: IO ()
 main = do
   putStrLn "Starting Examples on :3001"
@@ -35,6 +36,7 @@ main = do
   run 3001
     $ staticPolicy (addBase "dist")
     $ app users
+
 
 app :: UserStore -> Application
 app users = application document (runUsersIO users . route)
@@ -46,28 +48,31 @@ app users = application document (runUsersIO users . route)
     view $ col id $ do
       el id "ECHO:"
       text $ cs req
-  route Contacts = runPageWai Contacts.page
+  route (Contacts mv) = runPageWai $ Contacts.page mv
   route Main = view $ do
     col (gap 10 . pad 10) $ do
       el (bold . fontSize 32) "Examples"
       link (routeUrl (Hello (Greet "World"))) id "Hello World"
-      link (routeUrl Contacts) id "Contacts"
+      link (routeUrl (Contacts Nothing)) id "Contacts"
 
   hello (Greet s) = view $ el (pad 10) "GREET" >> text s
   hello (Poof s) = view $ el (pad 10) "POOF" >> text s
+
 
 -- send Respond
 data Route
   = Main
   | Hello Hello
-  | Contacts
+  | Contacts (Maybe Contacts.ViewId)
   | Echo
   deriving (Show, Generic, Eq, PageRoute)
+
 
 data Hello
   = Greet Text
   | Poof Text
   deriving (Show, Generic, Eq, PageRoute)
+
 
 document :: BL.ByteString -> BL.ByteString
 document cnt =

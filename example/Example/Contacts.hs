@@ -3,6 +3,7 @@
 module Example.Contacts where
 
 import Control.Monad (forM_)
+import Data.String.Conversions (cs)
 import Debug.Trace
 import Effectful
 import Effectful.Dispatch.Dynamic
@@ -10,16 +11,29 @@ import Effectful.Reader.Static
 import Example.Colors
 import Example.Effects.Users
 import GHC.Generics (Generic)
+import Web.HttpApiData (FromHttpApiData)
 import Web.Hyperbole
 import Web.Hyperbole.Page
 import Web.UI
 
-data Action
-  = Contact Int Contact
-  | Contacts Contacts
-  deriving (Show, Eq, Generic, PageRoute)
 
-page :: forall es. (Page :> es, Users :> es) => Eff es ()
+-- data ViewId
+--   = Contact Int
+--   | Contacts
+--   deriving (Show, Eq, Generic, PageRoute)
+
+data ViewId a where
+  Contact :: Int -> ViewId Contact
+  Contacts :: ViewId Contacts
+
+
+instance PageRoute (ViewId a) where
+  matchRoute = undefined
+  routePaths = undefined
+  defRoute = undefined
+
+
+page :: forall es a. (Page :> es, Users :> es) => Maybe (ViewId a) -> Eff es ()
 page = livePage root actions
  where
   root = do
@@ -27,47 +41,47 @@ page = livePage root actions
     us <- usersAll
     respondView $ viewComponent Contacts viewAll us
 
-  actions :: Action -> Eff es ()
-  actions (Contact uid act) = do
+  actions :: ViewId a -> Eff es ()
+  actions (Contact uid) = do
     traceM "CONTACT"
     u <- userFind uid
-    runAction (Contact uid) contact u act
-  actions (Contacts act) = do
+    runAction (Contact uid) contact u
+  actions Contacts = do
     traceM "CONTACTS"
     us <- usersAll
-    runAction Contacts contacts us act
+    runAction Contacts contacts us
 
-livePage :: (Page :> es) => Eff es () -> (Action -> Eff es ()) -> Eff es ()
-livePage root actions = do
-  act <- send GetAction
-  maybe root actions act
 
 data Contacts
   = Reload
-  deriving (Show, Eq, Read, Generic, PageRoute)
+  deriving (Show, Eq, Read)
 
-contacts :: (Reader (Contacts -> Action) :> es, Page :> es) => [User] -> Contacts -> Eff es ()
+
+contacts :: (Reader (ViewId Contacts) :> es, Page :> es) => [User] -> Contacts -> Eff es ()
 contacts us Reload =
   liveView $ viewAll us
 
-viewAll :: [User] -> View' (Contacts -> Action) ()
+
+viewAll :: [User] -> View' (ViewId Contacts) ()
 viewAll us = do
-  row (pad 10 . gap 10) $ do
+  col (pad 10 . gap 10) $ do
     liveButton Reload (bg GrayLight) "Reload"
-    forM_ us $ \u -> do
-      el (border 1) $ do
-        viewComponent (Contact u.id) viewContact u
+    liveButton Edit (bg GrayLight) "Edit #2"
+    row (pad 10 . gap 10) $ do
+      forM_ us $ \u -> do
+        el (border 1) $ do
+          viewComponent (Contact u.id) viewContact u
+
 
 -- fn :: (a -> Action)
 data Contact
   = View
   | Edit
   | Save
-  deriving (Show, Read, Eq, Generic, PageRoute)
+  deriving (Show, Read, Eq)
 
--- compId = Contact
 
-contact :: (Reader (Contact -> Action) :> es, Page :> es, Users :> es) => User -> Contact -> Eff es ()
+contact :: (Reader (ViewId Contact) :> es, Page :> es, Users :> es) => User -> Contact -> Eff es ()
 contact u View = do
   liveView $ viewContact u
 contact u Edit = do
@@ -77,18 +91,8 @@ contact u' Save = do
   send $ SaveUser u
   liveView $ viewContact u
 
-userFind :: (Page :> es, Users :> es) => Int -> Eff es User
-userFind uid = do
-  mu <- send (LoadUser uid)
-  maybe missingInfo pure mu
 
-usersAll :: (Users :> es) => Eff es [User]
-usersAll = send LoadUsers
-
-userSave :: (Users :> es) => User -> Eff es ()
-userSave = send . SaveUser
-
-viewContact :: User -> View' (Contact -> Action) ()
+viewContact :: User -> View' (ViewId Contact) ()
 viewContact u = do
   col (pad 10 . gap 10) $ do
     el_ $ do
@@ -105,12 +109,8 @@ viewContact u = do
 
     liveButton Edit (bg Green . hover |: bg GreenLight) (text "Click to Edit")
 
-liveButton :: (PageRoute pageAction) => action -> Mod -> View' (action -> pageAction) () -> View' (action -> pageAction) ()
-liveButton a f cd = do
-  pact <- context
-  tag "button" (att "data-action" (fromUrl . routeUrl . pact $ a) . f) cd
 
-viewEdit :: User -> View' (Contact -> Action) ()
+viewEdit :: User -> View' (ViewId Contact) ()
 viewEdit u = do
   form (action Save . pad 10 . gap 10) $ do
     label id $ do
@@ -129,6 +129,7 @@ viewEdit u = do
 
     liveButton View id (text "Cancel")
 
+
 userFormData :: (Page :> es) => Int -> Eff es User
 userFormData uid = do
   firstName <- param "firstName"
@@ -136,17 +137,54 @@ userFormData uid = do
   email <- param "email"
   pure $ User uid firstName lastName email True
 
-viewComponent :: (PageRoute pageAction) => (act -> pageAction) -> (inp -> View' (act -> pageAction) ()) -> inp -> View' ctx ()
-viewComponent toPageAction fvw inp = do
-  el (hxSwap InnerHTML . hxTarget This)
-    $ addContext toPageAction
+
+userFind :: (Page :> es, Users :> es) => Int -> Eff es User
+userFind uid = do
+  mu <- send (LoadUser uid)
+  maybe missingInfo pure mu
+
+
+usersAll :: (Users :> es) => Eff es [User]
+usersAll = send LoadUsers
+
+
+userSave :: (Users :> es) => User -> Eff es ()
+userSave = send . SaveUser
+
+
+liveButton :: (Show action) => action -> Mod -> View' (f action) () -> View' (f action) ()
+liveButton a f cd = do
+  -- you don't need to put the context in here. We can look it up from the above!
+  -- pact <- context
+  tag "button" (att "data-action" (cs . show $ a) . f) cd
+
+
+actionTarget :: (PageRoute viewId) => viewId -> Mod
+actionTarget viewId = do
+  att "data-target" (fromUrl $ routeUrl viewId)
+
+
+viewComponent :: (PageRoute viewId) => viewId -> (inp -> View' viewId ()) -> inp -> View' ctx ()
+viewComponent viewId fvw inp = do
+  let tgt = fromUrl $ routeUrl viewId
+  el (actionTarget tgt . att "id" tgt)
+    $ addContext viewId
     $ fvw inp
 
-runAction :: (PageRoute pageAction) => (act -> pageAction) -> (inp -> act -> Eff (Reader (act -> pageAction) : es) ()) -> inp -> act -> Eff es ()
-runAction toPageAction r inp act =
-  runReader toPageAction $ r inp act
 
-liveView :: (Reader (act -> pageAction) :> es, Page :> es) => View' (act -> pageAction) () -> Eff es ()
+runAction :: (PageRoute viewId, Read act, Page :> es) => viewId -> (inp -> act -> Eff (Reader viewId : es) ()) -> inp -> Eff es ()
+runAction viewId r inp = do
+  -- TODO: fix Just here
+  act <- send GetAction
+  runReader viewId $ r inp act
+
+
+liveView :: (Reader viewId :> es, Page :> es) => View' viewId () -> Eff es ()
 liveView vw = do
   u <- ask
   respondView $ addContext u vw
+
+
+livePage :: (Page :> es) => Eff es () -> (viewId -> Eff es ()) -> Maybe viewId -> Eff es ()
+livePage root _ Nothing = root
+livePage _ actions (Just vid) = actions vid
