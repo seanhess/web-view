@@ -47,17 +47,38 @@ data ContactsAction
   deriving (Show, Read, Eq)
 
 
-class Component id action where
-  parseEvent :: Text -> Text -> Maybe (Event id action)
-  default parseEvent :: (Read id, Read action) => Text -> Text -> Maybe (Event id action)
-  parseEvent ti ta = do
-    i <- readMaybe (cs ti)
-    a <- readMaybe (cs ta)
-    pure $ Event i a
+class Component id where
+  type Action id
 
 
-instance Component Contact ContactAction
-instance Component Contacts ContactsAction
+  -- TODO: switch these to be Page effects?
+  parseId :: Text -> Maybe id
+  default parseId :: (Read id) => Text -> Maybe id
+  parseId = readMaybe . cs
+
+
+  idAtt :: id -> Text
+  default idAtt :: (Show id) => id -> Text
+  idAtt = cs . show
+
+
+  -- TODO: should this be some generic serializable instead?
+  parseAction :: Text -> Maybe (Action id)
+  default parseAction :: (Read (Action id)) => Text -> Maybe (Action id)
+  parseAction = readMaybe . cs
+
+
+  actionAtt :: Action id -> Text
+  default actionAtt :: (Show (Action id)) => Action id -> Text
+  actionAtt = cs . show
+
+
+instance Component Contact where
+  type Action Contact = ContactAction
+
+
+instance Component Contacts where
+  type Action Contacts = ContactsAction
 
 
 -- TODO: put input into Component again?
@@ -68,16 +89,22 @@ root pg = do
   respondView vw
 
 
-handleAction :: forall viewId action es. (Page :> es, Component viewId action, PageRoute viewId) => (viewId -> action -> Eff es (View' viewId ())) -> Eff es ()
+handleAction :: forall viewId es. (Page :> es, Component viewId, PageRoute viewId) => (viewId -> Action viewId -> Eff es (View' viewId ())) -> Eff es ()
 handleAction handle = do
-  -- TODO: these shouldn't be required. Just pass if they aren't found
-  ti <- param "id"
-  ta <- param "action"
-  case parseEvent ti ta of
-    Nothing -> pure ()
-    Just (Event vid act) -> do
-      vw <- handle vid act
-      respondView $ liveView vid vw
+  -- this continues if it doesn't match!
+  mi <- getId
+  ma <- getAction
+  case (mi, ma) of
+    (Just i, Just a) -> do
+      vw <- handle i a
+      respondView $ liveView i vw
+    _ -> pure ()
+ where
+  getId :: Eff es (Maybe viewId)
+  getId = undefined
+
+  getAction :: Eff es (Maybe (Action viewId))
+  getAction = undefined
 
 
 -- newtype Component viewId event = Component viewId
@@ -193,11 +220,9 @@ userSave :: (Users :> es) => User -> Eff es ()
 userSave = send . SaveUser
 
 
-liveButton :: (Show action, Component id action) => action -> Mod -> View' id () -> View' id ()
+liveButton :: forall id. (Component id) => Action id -> Mod -> View' id () -> View' id ()
 liveButton a f cd = do
-  -- you don't need to put the context in here. We can look it up from the above!
-  -- pact <- context
-  tag "button" (att "data-action" (cs . show $ a) . f) cd
+  tag "button" (att "data-action" (actionAtt @id a) . f) cd
 
 
 -- liveButton' :: (Show action) => viewId -> action2 -> Mod -> View' (Component viewId action2) () -> View' (Component viewId action) ()
@@ -215,20 +240,19 @@ liveButton a f cd = do
 --   -- arg...
 --   cd
 
-actionTarget :: (PageRoute viewId) => viewId -> Mod
+actionTarget :: (Component viewId) => viewId -> Mod
 actionTarget viewId = do
-  att "data-target" (fromUrl $ routeUrl viewId)
+  att "data-target" (idAtt viewId)
 
 
-liveView :: (PageRoute viewId) => viewId -> View' viewId () -> View' ctx ()
+liveView :: (Component viewId) => viewId -> View' viewId () -> View' ctx ()
 liveView viewId vw = do
-  let tgt = fromUrl $ routeUrl viewId
-  el (actionTarget tgt . att "id" tgt)
-    $ addContext viewId
-    $ vw
+  let tgt = idAtt viewId
+  el (actionTarget viewId . att "id" tgt)
+    $ addContext viewId vw
 
 
-runAction :: (PageRoute viewId, Read act, Page :> es) => viewId -> (inp -> act -> Eff (Reader viewId : es) ()) -> inp -> Eff es ()
+runAction :: (Component viewId, Read act, Page :> es) => viewId -> (inp -> act -> Eff (Reader viewId : es) ()) -> inp -> Eff es ()
 runAction viewId r inp = do
   -- TODO: fix Just here
   act <- send GetAction
