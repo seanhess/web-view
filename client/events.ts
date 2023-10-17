@@ -10,7 +10,7 @@ export function listenClick(cb:(target:HTMLElement, action:string) => void): voi
       let target = document.getElementById(source.dataset.target)
 
       if (!target) {
-        console.error("Could not find target: ", source.dataset.target)
+        console.error("Missing target: ", source.dataset.target)
         return
       }
 
@@ -29,7 +29,7 @@ export function listenFormSubmit(cb:(target:HTMLElement, action:string, form:For
       let target = document.getElementById(form.dataset.target)
 
       if (!target) {
-        console.error("Could not find target: ", form.dataset.target)
+        console.error("Missing target: ", form.dataset.target)
         return
       }
 

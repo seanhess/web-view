@@ -1,7 +1,7 @@
 {-# LANGUAGE FieldSelectors #-}
 {-# LANGUAGE LambdaCase #-}
 
-module Web.Hyperbole.Wai where
+module Effectful.Wai where
 
 import Control.Monad (when)
 import Data.ByteString (ByteString)
@@ -17,10 +17,7 @@ import Network.Wai as Wai
 import Web.FormUrlEncoded
 import Web.HttpApiData (FromHttpApiData)
 import Web.UI
-import Web.UI.Render (renderLazyByteString)
 
-
--- import Network.HTTP.Types.URI
 
 data Wai :: Effect where
   ResHeader :: HeaderName -> ByteString -> Wai m ()
@@ -69,6 +66,10 @@ formParam k = do
   either (send . Interrupt . ParseError) pure $ parseUnique k f
 
 
+requestBody :: (Wai :> es) => Eff es L.ByteString
+requestBody = send ReqBody
+
+
 runWai
   :: (IOE :> es)
   => Request
@@ -102,13 +103,6 @@ runWai req = reinterpret runLocal $ \_ -> \case
     when (L.null r.cachedRequestBody) $ do
       rb <- liftIO $ Wai.consumeRequestBodyLazy req
       put $ r{cachedRequestBody = rb}
-
-
-view :: (Wai :> es) => View () -> Eff es ()
-view vw = do
-  let bd = renderLazyByteString () vw
-  send $ ResHeader "Content-Type" "text/html"
-  send $ ResBody ContentHtml bd
 
 
 -- Ends computation with whatever has already been set on the response

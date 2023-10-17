@@ -161,19 +161,16 @@ instance Semigroup ViewState where
 type ClassStyles = Map ClassName (Map Name StyleValue)
 
 
-newtype View' ctx a = View' {viewState :: Eff [Reader ctx, State ViewState] a}
+newtype View ctx a = View {viewState :: Eff [Reader ctx, State ViewState] a}
   deriving newtype (Functor, Applicative, Monad)
 
 
-type View = View' ()
-
-
-instance IsString (View' ctx ()) where
+instance IsString (View ctx ()) where
   fromString s = modContents (const [Text (pack s)])
 
 
-runView :: ctx -> View' ctx () -> ViewState
-runView ctx (View' ef) =
+runView :: ctx -> View ctx () -> ViewState
+runView ctx (View ef) =
   runPureEff . execState (ViewState [] []) . runReader ctx $ ef
 
 
@@ -181,30 +178,30 @@ runView ctx (View' ef) =
 type Mod = Element -> Element
 
 
-modContents :: ([Content] -> [Content]) -> View' c ()
-modContents f = View' $ do
+modContents :: ([Content] -> [Content]) -> View c ()
+modContents f = View $ do
   ES.modify $ \s -> s{contents = f s.contents}
 
 
-modStyles :: (ClassStyles -> ClassStyles) -> View' c ()
-modStyles f = View' $ do
+modStyles :: (ClassStyles -> ClassStyles) -> View c ()
+modStyles f = View $ do
   ES.modify $ \s -> s{classStyles = f s.classStyles}
 
 
-context :: View' c c
-context = View' ask
+context :: View c c
+context = View ask
 
 
 -- we want to convert an existing view to a new context, discarding the old one
-addContext :: cx -> View' cx () -> View' c ()
+addContext :: cx -> View cx () -> View c ()
 addContext ctx vw = do
   -- runs the sub-view in a different context, saving its state
   -- we need to MERGE it
   let st = runView ctx vw
-  View' $ ES.modify $ \s -> s <> st
+  View $ ES.modify $ \s -> s <> st
 
 
-mapRoot :: Mod -> View' c ()
+mapRoot :: Mod -> View c ()
 mapRoot f = modContents mapContents
  where
   mapContents (Node root : cts) = Node (f root) : cts

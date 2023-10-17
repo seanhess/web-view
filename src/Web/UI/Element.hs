@@ -6,7 +6,8 @@ import Web.UI.Style
 import Web.UI.Types
 import Web.UI.Url
 
-tag :: Text -> Mod -> View' c () -> View' c ()
+
+tag :: Text -> Mod -> View c () -> View c ()
 tag nm f ct = do
   ctx <- context
   let st = runView ctx ct
@@ -15,111 +16,142 @@ tag nm f ct = do
   addClasses $ classList st.classStyles
   addClasses $ mconcat elm.classes
 
-addClasses :: [Class] -> View' c ()
+
+addClasses :: [Class] -> View c ()
 addClasses clss = do
   modStyles $ \cm -> foldr addClsDef cm clss
  where
   addClsDef :: Class -> ClassStyles -> ClassStyles
   addClsDef c = M.insert c.className c.classProperties
 
-addContent :: Content -> View' c ()
+
+addContent :: Content -> View c ()
 addContent ct =
   modContents (<> [ct])
 
+
 -- Inserts into first child
-insertContents :: [Content] -> View' c ()
+insertContents :: [Content] -> View c ()
 insertContents cs = modContents insert
  where
   insert [Node e] = [Node $ insertEl e]
   insert cnt = cnt <> cs
   insertEl e = e{children = e.children <> cs}
 
+
 classList :: ClassStyles -> [Class]
 classList m = map (uncurry Class) $ M.toList m
+
 
 -- | Set an attribute, replacing existing value
 att :: Name -> AttValue -> Mod
 att n v (Element en ec ea ecs) = Element en ec (M.insert n v ea) ecs
 
+
 -- | A basic element
-el :: Mod -> View' c () -> View' c ()
+el :: Mod -> View c () -> View c ()
 el = tag "div"
 
+
 -- | A basic element, with no modifiers
-el_ :: View' c () -> View' c ()
+el_ :: View c () -> View c ()
 el_ = tag "div" id
 
-button :: Mod -> View' c () -> View' c ()
+
+button :: Mod -> View c () -> View c ()
 button = tag "button"
+
 
 -- | Convert from text directly to view. You should not have to use this. Use `text` instead
 data Head
 
+
 data Base
 data Doc
 
-text :: Text -> View' c ()
+
+text :: Text -> View c ()
 text t = addContent $ Text t
 
-none :: View' c ()
+
+none :: View c ()
 none = pure ()
 
-meta :: Mod -> View' c ()
+
+meta :: Mod -> View c ()
 meta f = tag "meta" f none
 
-title :: Text -> View' c ()
+
+title :: Text -> View c ()
 title = tag "title" id . text
 
-head :: View' c () -> View' c ()
+
+head :: View c () -> View c ()
 head = tag "head" id
 
-html :: View' c () -> View' c ()
+
+html :: View c () -> View c ()
 html = tag "html" id
 
-body :: View' c () -> View' c ()
+
+body :: View c () -> View c ()
 body = tag "body" id
 
-row :: Mod -> View' c () -> View' c ()
+
+row :: Mod -> View c () -> View c ()
 row f = el (flexRow . f)
 
-row_ :: View' c () -> View' c ()
+
+row_ :: View c () -> View c ()
 row_ = row id
 
-col :: Mod -> View' c () -> View' c ()
+
+col :: Mod -> View c () -> View c ()
 col f = el (flexCol . f)
 
-col_ :: View' c () -> View' c ()
+
+col_ :: View c () -> View c ()
 col_ = col id
 
-space :: View' c ()
+
+space :: View c ()
 space = el grow $ pure ()
 
-label :: Mod -> View' c () -> View' c ()
+
+label :: Mod -> View c () -> View c ()
 label = tag "label"
 
-form :: Mod -> View' c () -> View' c ()
+
+form :: Mod -> View c () -> View c ()
 form f = tag "form" (f . flexCol)
 
-input :: Mod -> View' c ()
+
+input :: Mod -> View c ()
 input m = tag "input" (m . att "type" "text") none
+
 
 name :: Text -> Mod
 name = att "name"
 
+
 value :: Text -> Mod
 value = att "value"
 
-script :: Text -> View' c ()
+
+script :: Text -> View c ()
 -- script (Code code) = tag "script" (att "type" "text/javascript") $ fromText code
 script src = tag "script" (att "type" "text/javascript" . att "src" src) none
 
-style :: Text -> View' c ()
+
+style :: Text -> View c ()
 style cnt = tag "style" (att "type" "text/css") (text $ "\n" <> cnt <> "\n")
 
-stylesheet :: Text -> View' c ()
+
+stylesheet :: Text -> View c ()
 stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
 
--- table :: Mod -> [dt] -> Writer [TableColumn dt] () -> View' c ()
+
+-- table :: Mod -> [dt] -> Writer [TableColumn dt] () -> View c ()
 -- table f dts wcs = do
 --   let cols = execWriter wcs
 --   tag "table" (f . borderCollapse) $ do
@@ -153,5 +185,5 @@ stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
 -- td :: Mod -> Eff es () -> Cell Data ()
 -- td f c = Cell $ tag "td" f c
 
-link :: Url -> Mod -> View' c () -> View' c ()
+link :: Url -> Mod -> View c () -> View c ()
 link u f = tag "a" (f . att "href" (fromUrl u))

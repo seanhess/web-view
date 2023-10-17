@@ -18,16 +18,12 @@ import Example.Contacts qualified as Contacts
 import Example.Effects.Users as Users
 import GHC.Generics (Generic)
 import Network.HTTP.Types (Method, QueryItem, methodPost, status200, status404)
-import Network.Wai
+import Network.Wai ()
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Handler.WebSockets (websocketsOr)
 import Network.Wai.Middleware.Static (addBase, staticPolicy)
 import Web.Hyperbole
-import Web.Hyperbole.Application
-import Web.Hyperbole.Page
-import Web.Hyperbole.Wai
 import Web.UI
-import Web.UI.Embed (cssResetEmbed)
 
 
 main :: IO ()
@@ -40,47 +36,56 @@ main = do
 
 
 app :: UserStore -> Application
-app users = application document (runUsersIO users . route)
+app users = waiApplication document (runUsersIO users . runPageWai . router)
  where
-  route :: (Wai :> es, Users :> es) => Route -> Eff es ()
-  route (Hello h) = hello h
-  route Echo = do
-    req <- send ReqBody
+  router :: (Page :> es, Users :> es) => AppRoute -> Eff es ()
+  router (Hello h) = hello h
+  router Echo = do
+    f <- formData
     view $ col id $ do
       el id "ECHO:"
-      text $ cs req
-  route Contacts = runPageWai Contacts.page
-  route Main = view $ do
+      text $ cs $ show f
+  router Contacts = Contacts.page
+  router Main = view $ do
     col (gap 10 . pad 10) $ do
       el (bold . fontSize 32) "Examples"
       link (routeUrl (Hello (Greet "World"))) id "Hello World"
       link (routeUrl Contacts) id "Contacts"
 
   hello (Greet s) = view $ el (pad 10) "GREET" >> text s
-  hello (Poof s) = view $ el (pad 10) "POOF" >> text s
 
 
 -- send Respond
-data Route
+data AppRoute
   = Main
   | Hello Hello
   | Contacts
   | Echo
-  deriving (Show, Generic, Eq, PageRoute)
+  deriving (Show, Generic, Eq, Route)
 
 
 data Hello
   = Greet Text
-  | Poof Text
-  deriving (Show, Generic, Eq, PageRoute)
+  deriving (Show, Generic, Eq, Route)
 
+
+-- document :: BL.ByteString -> BL.ByteString
+-- document cnt =
+--   [i|<html>
+--     <head>
+--       <title>Hyperbole Examples</title>
+--       <script type="text/javascript" src="/main.js"></script>
+--       <style type type="text/css">#{cssResetEmbed}</style>
+--     </head>
+--     <body>#{cnt}</body>
+--   </html>|]
 
 document :: BL.ByteString -> BL.ByteString
 document cnt =
   [i|<html>
     <head>
       <title>Hyperbole Examples</title>
-      <script type="text/javascript" src="/main.js"></script>
+      <script type="text/javascript">#{scriptEmbed}</script>
       <style type type="text/css">#{cssResetEmbed}</style>
     </head>
     <body>#{cnt}</body>

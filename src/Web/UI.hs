@@ -2,6 +2,7 @@ module Web.UI
   ( -- * Render
     renderText
   , renderLazyText
+  , renderLazyByteString
 
     -- * Element
   , module Web.UI.Element
@@ -15,7 +16,6 @@ module Web.UI
 
     -- * Types
   , View
-  , View'
   , context
   , addContext
   , Content
@@ -30,3 +30,4 @@ import Web.UI.Style
 import Web.UI.Types
 import Web.UI.Url
 import Prelude hiding (head)
+

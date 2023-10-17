@@ -37,14 +37,14 @@ listenClick(async function(target:HTMLElement, action:string) {
   // console.log("CLICK!", target.id, action)
 
   let ret = await sendAction(target.id, action)
-  target.outerHTML = ret
+  target.innerHTML = ret
 })
 
 listenFormSubmit(async function(target:HTMLElement, action:string, form:FormData) {
   console.log("FORM", target.id, action,form)
 
   let ret = await sendAction(target.id, action, form)
-  target.outerHTML = ret
+  target.innerHTML = ret
 })
 
 function toSearch(form?:FormData):URLSearchParams | undefined {

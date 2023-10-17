@@ -5,28 +5,26 @@
 module Web.Hyperbole.Page where
 
 import Control.Monad (join)
-import Data.Bifunctor (first)
 import Data.ByteString
 import Data.String.Conversions
 import Data.String.Interpolate (i)
 import Data.Text
 import Effectful
 import Effectful.Dispatch.Dynamic
+import Effectful.Wai (ContentType (..), Wai (..))
+import Effectful.Wai qualified as Wai
 import Network.HTTP.Types (Query)
 import Network.Wai
-import Text.Read (readMaybe)
 import Web.FormUrlEncoded (Form)
 import Web.FormUrlEncoded qualified as Form
 import Web.Hyperbole.LiveView
-import Web.Hyperbole.Wai (Wai (..))
-import Web.Hyperbole.Wai qualified as Wai
 import Web.UI
 
 
 -- you can't automatically derive FromHttpApiData. I don't like it!
 
 data Page :: Effect where
-  RespondView :: View () -> Page m ()
+  RespondView :: View () () -> Page m ()
   GetEvent :: (Param act, Param id, LiveView id) => Page m (Maybe (Event id act))
   GetForm :: Page m Form
   PageError :: PageError -> Page m a
@@ -44,7 +42,9 @@ runPageWai
   -> Eff es a
 runPageWai = interpret $ \_ -> \case
   RespondView vw -> do
-    Wai.view vw
+    let bd = renderLazyByteString () vw
+    send $ ResHeader "Content-Type" "text/html"
+    send $ ResBody ContentHtml bd
     Wai.continue
   GetEvent -> do
     q <- fmap queryString <$> send $ Wai.Request
@@ -80,8 +80,8 @@ param p f = do
     maybe (Left [i|could not parseParam: '#{t}'|]) pure $ parseParam t
 
 
-respondView :: (Page :> es) => View () -> Eff es ()
-respondView = send . RespondView
+view :: (Page :> es) => View () () -> Eff es ()
+view = send . RespondView
 
 
 notFound :: (Page :> es) => Eff es a
@@ -93,17 +93,18 @@ data PageError
   | ParseError Text
 
 
-class Param a where
-  -- not as flexible as FromHttpApiData, but derivable
-  parseParam :: Text -> Maybe a
-  default parseParam :: (Read a) => Text -> Maybe a
-  parseParam = readMaybe . cs
+pageLoad :: (Page :> es) => Eff es (View () ()) -> Eff es ()
+pageLoad pg = do
+  vw <- pg
+  view vw
 
 
-  toParam :: a -> Text
-  default toParam :: (Show a) => a -> Text
-  toParam = cs . show
-
-
-instance Param Text where
-  parseParam = pure
+pageAction :: forall id es. (Page :> es, LiveView id, Param id, Param (Action id), Show id) => (id -> Action id -> Eff es (View id ())) -> Eff es ()
+pageAction handle = do
+  -- this continues if it doesn't match!
+  mev <- send GetEvent
+  case mev of
+    Just (Event vid act) -> do
+      vw <- handle vid act
+      view $ addContext vid vw
+    _ -> pure ()

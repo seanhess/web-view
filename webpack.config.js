@@ -15,6 +15,10 @@ module.exports = {
   resolve: {
     modules: ["node_modules",path.resolve(__dirname, "client")],
     extensions: ['.tsx', '.ts', '.js'],
+  },
+
+  output: {
+    filename: "hyperbole.js"
   }
 }
 
