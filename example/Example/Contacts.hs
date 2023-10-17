@@ -3,11 +3,12 @@
 module Example.Contacts where
 
 import Control.Monad (forM_)
+import Data.String.Conversions
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Example.Colors
 import Example.Effects.Users
-import Web.Hyperbole
+import Web.Hyperbole hiding (target)
 import Web.UI
 
 
@@ -93,7 +94,12 @@ contacts _ Reload = do
 
 viewAll :: [User] -> View' Contacts ()
 viewAll us = do
-  liveButton Reload (bg GrayLight) "Reload"
+  row (gap 10) $ do
+    liveButton Reload (bg GrayLight) "Reload"
+    -- TODO: we need to actually target the target.... hmm....
+    target (Contact 2) $ do
+      c <- context
+      liveButton Edit (bg GrayLight) $ text $ "Edit 2: " <> cs (show c)
   row (pad 10 . gap 10) $ do
     forM_ us $ \u -> do
       el (border 1) $ do
@@ -137,7 +143,7 @@ viewContact u = do
 
 viewEdit :: User -> View' Contact ()
 viewEdit u = do
-  form (dataAction Save . pad 10 . gap 10) $ do
+  liveForm Save (pad 10 . gap 10) $ do
     label id $ do
       text "First Name"
       input (name "firstName" . value u.firstName)
@@ -150,7 +156,7 @@ viewEdit u = do
       text "Email"
       input (name "email" . value u.email)
 
-    button id (text "Submit")
+    submitButton id "Submit"
 
     liveButton View id (text "Cancel")
 
@@ -178,13 +184,35 @@ userSave :: (Users :> es) => User -> Eff es ()
 userSave = send . SaveUser
 
 
-liveButton :: forall id. (LiveView id, Param (Action id)) => Action id -> Mod -> View' id () -> View' id ()
-liveButton a f cd = do
-  tag "button" (dataAction a . f) cd
+liveForm :: (LiveView id, Param (Action id), Param id) => Action id -> Mod -> View' id () -> View' id ()
+liveForm a f cd = do
+  c <- context
+  tag "form" (dataAction a . dataTarget c . f . flexCol) cd
 
+
+submitButton :: Mod -> View' c () -> View' c ()
+submitButton f = tag "button" (att "type" "submit" . f)
+
+
+liveButton :: (LiveView id, Param (Action id), Param id) => Action id -> Mod -> View' id () -> View' id ()
+liveButton a f cd = do
+  c <- context
+  tag "button" (dataAction a . dataTarget c . f) cd
+
+
+-- I'd rather not make ANOTHER copy of liveButton
 
 dataAction :: (Param a) => a -> Mod
 dataAction = att "data-action" . toParam
+
+
+dataTarget :: (Param a) => a -> Mod
+dataTarget = att "data-target" . toParam
+
+
+target :: (LiveView id) => id -> View' id () -> View' a ()
+target vid vw =
+  addContext vid vw
 
 
 -- actionTarget :: (LiveView id) => id -> Mod
@@ -193,5 +221,5 @@ dataAction = att "data-action" . toParam
 
 liveView :: (LiveView id, Param id) => id -> View' id () -> View' ctx ()
 liveView vid vw = do
-  el (att "data-target" (toParam vid) . att "id" (toParam vid))
+  el (att "id" (toParam vid))
     $ addContext vid vw
