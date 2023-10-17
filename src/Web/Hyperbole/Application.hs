@@ -15,11 +15,13 @@ import Web.Hyperbole.Wai
 import Web.UI
 import Web.UI.Types (Content (Text))
 
+
 -- | Run both the http and ws application
 application :: (PageRoute route) => (L.ByteString -> L.ByteString) -> (route -> Eff [Wai, IOE] ()) -> Application
 application toDoc actions =
   websocketsOr connectionOptions (socketApplication talk)
     $ httpApplication toDoc actions
+
 
 talk :: (Socket :> es) => Eff es ()
 talk = do
@@ -30,6 +32,7 @@ talk = do
 
   sendCommand $ Render [Text $ "Updated: " <> msg]
 
+
 httpApplication :: (PageRoute route) => (L.ByteString -> L.ByteString) -> (route -> Eff [Wai, IOE] ()) -> Application
 httpApplication toDoc actions request respond = do
   -- let (method, paths, query) = (requestMethod req, pathInfo req, queryString req)
@@ -38,11 +41,8 @@ httpApplication toDoc actions request respond = do
     Just rt -> do
       res <- runEff . runWai request $ actions rt
       case res of
-        Left err -> respond $ interrupt err
-        Right resp -> do
-          let headers = contentType resp.contentType : resp.headers
-              respBody = addDocument (requestMethod request) resp.body
-          liftIO $ respond $ responseLBS status200 headers respBody
+        Left err -> interrupt err
+        Right resp -> sendResponse resp
  where
   findRoute [] = Just defRoute
   findRoute ps = matchRoute ps
@@ -55,9 +55,19 @@ httpApplication toDoc actions request respond = do
   contentType ContentHtml = ("Content-Type", "text/html; charset=utf-8")
   contentType ContentText = ("Content-Type", "text/plain; charset=utf-8")
 
+  sendResponse :: Handler -> IO ResponseReceived
+  sendResponse resp = do
+    let headers = contentType resp.contentType : resp.headers
+        respBody = addDocument (requestMethod request) resp.body
+    respond $ responseLBS status200 headers respBody
+
   interrupt NotFound =
-    responseLBS status404 [contentType ContentText] "Not Found"
-  interrupt (ParseError _) =
-    responseLBS status400 [contentType ContentText] "Bad Request"
+    respond $ responseLBS status404 [contentType ContentText] "Not Found"
+  interrupt (ParseError e) = do
+    -- TODO: logging!
+    putStrLn $ "Parse Error: " <> show e
+    respond $ responseLBS status400 [contentType ContentText] "Bad Request"
   interrupt (Redirect u) =
-    responseLBS status301 [("Location", cs $ fromUrl u)] ""
+    respond $ responseLBS status301 [("Location", cs $ fromUrl u)] ""
+  interrupt (RespondNow resp) = do
+    sendResponse resp

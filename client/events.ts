@@ -1,7 +1,7 @@
 
 export type UrlFragment = string
 
-export function listenClickAction(cb:(id:string, action:UrlFragment) => void): void {
+export function listenClickAction(cb:(target:HTMLElement, action:UrlFragment) => void): void {
   document.addEventListener("click", function(e) {
     let el = e.target as HTMLInputElement
 
@@ -10,8 +10,11 @@ export function listenClickAction(cb:(id:string, action:UrlFragment) => void): v
     let target:HTMLElement = el.closest("[data-target]");
 
     if (source?.dataset.action && target?.dataset.target) {
-      cb(target.dataset.target, source.dataset.action)
+      cb(target, source.dataset.action)
     }
   })
 }
 
+export function targetId(el:HTMLElement): string {
+  return el.dataset.target
+}

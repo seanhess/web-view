@@ -4,7 +4,7 @@
 // import { WEBSOCKET_ADDRESS, Messages } from './Messages'
 // import { INIT_PAGE, INIT_STATE, State, Class } from './types';
 // import { fromVDOM, VDOM } from './vdom'
-import  { listenClickAction } from './events'
+import  { listenClickAction, targetId } from './events'
 
 
 // const CONTENT_ID = "yeti-root-content"
@@ -17,22 +17,28 @@ const address = `${protocol}//${window.location.host}`
 const socket = new WebSocket(address)
 
 
-function sendAction(id:string, action:string) {
-  const form = new URLSearchParams()
-  form.append("action", action)
+async function sendAction(id:string, action:string) {
+  let url = new URL(window.location.href)
+  url.searchParams.append("id", id)
+  url.searchParams.append("action", action)
 
-  fetch(window.location.href, {
+  console.log("URL", url.toString())
+
+  let res = await fetch(url, {
     method: "POST",
     headers: { 'Accept': 'text/html', 'Content-Type': 'application/x-www-form-urlencoded'},
-    body: form
+    // body: form
   })
-    .then(res => res.text())
-    .then(html => console.log("RESPONSE", html))
+
+  return res.text()
 }
 
-listenClickAction(function(target:string, action:string) {
-  console.log("CLICK!", target, action)
-  // sendAction
+listenClickAction(async function(target:HTMLElement, action:string) {
+  console.log("CLICK!", targetId(target), action)
+  let ret = await sendAction(targetId(target), action)
+  console.log("RET", ret)
+
+  target.outerHTML = ret
 })
 
 

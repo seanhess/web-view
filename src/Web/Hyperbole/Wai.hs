@@ -20,23 +20,28 @@ import Web.UI
 import Web.UI.Render (renderLazyByteString)
 
 
+-- import Network.HTTP.Types.URI
+
 data Wai :: Effect where
   ResHeader :: HeaderName -> ByteString -> Wai m ()
   ResBody :: ContentType -> L.ByteString -> Wai m ()
   ResStatus :: Status -> Wai m ()
   ReqBody :: Wai m L.ByteString
+  Request :: Wai m Request
+  Continue :: Wai m ()
   Interrupt :: Interrupt -> Wai m a
 
 
 type instance DispatchOf Wai = 'Dynamic
 
 
-data Resp = Resp
-  { status :: Status
+data Handler = Handler
+  { request :: Request
+  , cachedRequestBody :: L.ByteString
+  , status :: Status
   , headers :: [(HeaderName, ByteString)]
   , contentType :: ContentType
   , body :: L.ByteString
-  , reqBody :: L.ByteString
   }
 
 
@@ -68,26 +73,35 @@ runWai
   :: (IOE :> es)
   => Request
   -> Eff (Wai : es) a
-  -> Eff es (Either Interrupt Resp)
-runWai req = reinterpret (runErrorNoCallStack @Interrupt . execState @Resp emptyResponse) $ \_ -> \case
+  -> Eff es (Either Interrupt Handler)
+runWai req = reinterpret runLocal $ \_ -> \case
+  Request -> do
+    gets request
   ReqBody -> do
     cacheReqBody
-    gets reqBody
+    gets cachedRequestBody
   ResHeader k v -> modify
     $ \r -> r{headers = (k, v) : r.headers}
   ResStatus s -> modify
     $ \r -> r{status = s}
   ResBody ct bd -> modify
     $ \r -> r{body = bd, contentType = ct, status = status200}
+  Continue -> do
+    h <- get
+    throwError $ RespondNow h
   Interrupt e -> do
     throwError e
  where
-  cacheReqBody :: forall es. (IOE :> es, State Resp :> es) => Eff es ()
+  runLocal =
+    runErrorNoCallStack @Interrupt
+      . execState @Handler (emptyResponse req)
+
+  cacheReqBody :: forall es. (IOE :> es, State Handler :> es) => Eff es ()
   cacheReqBody = do
     r <- get
-    when (L.null r.reqBody) $ do
+    when (L.null r.cachedRequestBody) $ do
       rb <- liftIO $ Wai.consumeRequestBodyLazy req
-      put $ r{reqBody = rb}
+      put $ r{cachedRequestBody = rb}
 
 
 view :: (Wai :> es) => View () -> Eff es ()
@@ -97,14 +111,20 @@ view vw = do
   send $ ResBody ContentHtml bd
 
 
-emptyResponse :: Resp
-emptyResponse = Resp status500 [] ContentText "Response not set" ""
+-- Ends computation with whatever has already been set on the response
+continue :: (Wai :> es) => Eff es ()
+continue = send Continue
+
+
+emptyResponse :: Request -> Handler
+emptyResponse r = Handler r "" status500 [] ContentText "Response not set"
 
 
 data Interrupt
   = NotFound
   | Redirect Url
   | ParseError Text
+  | RespondNow Handler
 
 
 notFound :: (Wai :> es) => Eff es a
