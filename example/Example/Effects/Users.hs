@@ -9,6 +9,7 @@ import Data.Text (Text)
 import Effectful
 import Effectful.Dispatch.Dynamic
 
+
 data User = User
   { id :: Int
   , firstName :: Text
@@ -18,16 +19,21 @@ data User = User
   }
   deriving (Show)
 
+
 -- Load a user AND do next if missing?
 data Users :: Effect where
   LoadUser :: Int -> Users m (Maybe User)
   LoadUsers :: Users m [User]
   SaveUser :: User -> Users m ()
   ModifyUser :: Int -> (User -> User) -> Users m ()
+  DeleteUser :: Int -> Users m ()
+
 
 type instance DispatchOf Users = 'Dynamic
 
+
 type UserStore = MVar (Map Int User)
+
 
 runUsersIO
   :: (IOE :> es)
@@ -39,27 +45,38 @@ runUsersIO var = interpret $ \_ -> \case
   LoadUsers -> Example.Effects.Users.all var
   SaveUser u -> Example.Effects.Users.save var u
   ModifyUser uid f -> Example.Effects.Users.modify var uid f
+  DeleteUser uid -> Example.Effects.Users.delete var uid
 
-load :: MonadIO m => UserStore -> Int -> m (Maybe User)
+
+load :: (MonadIO m) => UserStore -> Int -> m (Maybe User)
 load var uid = do
   us <- liftIO $ readMVar var
   pure $ M.lookup uid us
 
-save :: MonadIO m => UserStore -> User -> m ()
+
+save :: (MonadIO m) => UserStore -> User -> m ()
 save var u = do
   liftIO $ modifyMVar_ var $ \us -> pure $ M.insert u.id u us
 
-all :: MonadIO m => UserStore -> m [User]
+
+all :: (MonadIO m) => UserStore -> m [User]
 all var = do
   us <- liftIO $ readMVar var
   pure $ M.elems us
 
-modify :: MonadIO m => UserStore -> Int -> (User -> User) -> m ()
+
+modify :: (MonadIO m) => UserStore -> Int -> (User -> User) -> m ()
 modify var uid f = liftIO $ do
   modifyMVar_ var $ \us -> do
     pure $ M.adjust f uid us
 
-initUsers :: MonadIO m => m UserStore
+
+delete :: (MonadIO m) => UserStore -> Int -> m ()
+delete var uid = do
+  liftIO $ modifyMVar_ var $ \us -> pure $ M.delete uid us
+
+
+initUsers :: (MonadIO m) => m UserStore
 initUsers =
   liftIO $ newMVar $ M.fromList $ map (\u -> (u.id, u)) users
  where

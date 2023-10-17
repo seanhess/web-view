@@ -8,10 +8,14 @@ export function listenClick(cb:(target:HTMLElement, action:string) => void): voi
     // they should all have an action and target
     if (source?.dataset.action && source?.dataset.target) {
       let target = document.getElementById(source.dataset.target)
-      if (target) {
-        e.preventDefault()
-        cb(target, source.dataset.action)
+
+      if (!target) {
+        console.error("Could not find target: ", source.dataset.target)
+        return
       }
+
+      e.preventDefault()
+      cb(target, source.dataset.action)
     }
   })
 }
@@ -23,11 +27,15 @@ export function listenFormSubmit(cb:(target:HTMLElement, action:string, form:For
     // they should all have an action and target
     if (form?.dataset.action && form?.dataset.target) {
       let target = document.getElementById(form.dataset.target)
-      if (target) {
-        e.preventDefault()
-        const formData = new FormData(form)
-        cb(target, form.dataset.action, formData)
+
+      if (!target) {
+        console.error("Could not find target: ", form.dataset.target)
+        return
       }
+
+      e.preventDefault()
+      const formData = new FormData(form)
+      cb(target, form.dataset.action, formData)
     }
   })
 }

@@ -34,6 +34,7 @@ data Contacts = Contacts
 
 data ContactsAction
   = Reload
+  | Delete Int
   deriving (Show, Read, Eq, Param)
 
 
@@ -85,6 +86,10 @@ contacts :: (Page :> es, Users :> es) => Contacts -> ContactsAction -> Eff es (V
 contacts _ Reload = do
   us <- usersAll
   pure $ viewAll us
+contacts _ (Delete uid) = do
+  userDelete uid
+  us <- usersAll
+  pure $ viewAll us
 
 
 -- contacts :: (Reader (LiveView ViewId Contact) :> es, Page :> es) => [User] -> Contacts -> Eff es ()
@@ -97,9 +102,7 @@ viewAll us = do
   row (gap 10) $ do
     liveButton Reload (bg GrayLight) "Reload"
     -- TODO: we need to actually target the target.... hmm....
-    target (Contact 2) $ do
-      c <- context
-      liveButton Edit (bg GrayLight) $ text $ "Edit 2: " <> cs (show c)
+    target (Contact 2) $ liveButton Edit (bg GrayLight) "Edit 2"
   row (pad 10 . gap 10) $ do
     forM_ us $ \u -> do
       el (border 1) $ do
@@ -160,6 +163,8 @@ viewEdit u = do
 
     liveButton View id (text "Cancel")
 
+    target Contacts $ liveButton (Delete u.id) (bg Red) (text "Delete")
+
 
 userFormData :: (Page :> es) => Int -> Eff es User
 userFormData uid = do
@@ -182,6 +187,10 @@ usersAll = send LoadUsers
 
 userSave :: (Users :> es) => User -> Eff es ()
 userSave = send . SaveUser
+
+
+userDelete :: (Users :> es) => Int -> Eff es ()
+userDelete = send . DeleteUser
 
 
 liveForm :: (LiveView id, Param (Action id), Param id) => Action id -> Mod -> View' id () -> View' id ()
@@ -214,10 +223,6 @@ target :: (LiveView id) => id -> View' id () -> View' a ()
 target vid vw =
   addContext vid vw
 
-
--- actionTarget :: (LiveView id) => id -> Mod
--- actionTarget viewId = do
---   att "data-target" (toParam viewId)
 
 liveView :: (LiveView id, Param id) => id -> View' id () -> View' ctx ()
 liveView vid vw = do
