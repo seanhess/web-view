@@ -44,7 +44,7 @@ modClasses cx t =
 
 -- | Add a single class attribute.
 cls1 :: ClassName -> Styles -> Mod
-cls1 cn ss = modClasses [Class cn (defaultSelector cn) ss]
+cls1 cn ss = modClasses [Class (selector cn) ss]
 
 
 width :: PxRem -> Mod
@@ -183,8 +183,7 @@ active = Active
 (|:) :: Pseudo -> Mod -> Mod
 (|:) ps = modLastClasses $ \c ->
   c
-    { name = classNameAddPseudo ps c.name
-    , selector = selectorAddPseudo ps c.selector
+    { selector = selectorAddPseudo ps c.selector
     }
 
 
@@ -195,7 +194,6 @@ parent :: Text -> Mod -> Mod
 parent p = modLastClasses $ \c ->
   c
     { selector = selectorAddParent p c.selector
-    , name = classNameAddParent p c.name
     }
 
 

@@ -70,7 +70,7 @@ viewAll us = onRequest loading $ do
     -- I want to change something, then run ANOTHER event on load
     liveButton Reload (bg GrayLight) "Reload"
     target (Contact 2) $ liveButton Edit (bg GrayLight) "Edit 2"
-  row (pad 10 . gap 10 . parent "live-view" (bg Green)) $ do
+  row (pad 10 . gap 10) $ do
     forM_ us $ \u -> do
       el (border 1) $ do
         liveView (Contact u.id) $ viewContact u

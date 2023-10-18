@@ -26,60 +26,60 @@ type Styles = Map Name StyleValue
 
 
 data Class = Class
-  { name :: ClassName
-  , selector :: Selector
+  { selector :: Selector
   , properties :: Styles
   }
 
 
 instance ToJSON Class where
-  toJSON c = toJSON c.name
+  toJSON c = toJSON c.selector
 
-
--- what uniquely identifies this? The selector
 
 data Selector = Selector
   { parent :: Maybe Text
-  , className :: Text
+  , pseudo :: Maybe Pseudo
+  , className :: ClassName
   }
   deriving (Eq, Ord, Generic, ToJSON)
 
 
 instance IsString Selector where
-  fromString s = Selector Nothing (pack s)
+  fromString s = Selector Nothing Nothing (fromString s)
 
 
 selectorAddPseudo :: Pseudo -> Selector -> Selector
-selectorAddPseudo p s =
-  s{className = pseudoText p <> "\\:" <> s.className <> ":" <> pseudoText p}
+selectorAddPseudo ps (Selector pr _ cn) = Selector pr (Just ps) cn
 
 
 selectorAddParent :: Text -> Selector -> Selector
-selectorAddParent p (Selector _ c) = Selector (Just p) c
+selectorAddParent p (Selector _ ps c) = Selector (Just p) ps c
+
+
+selector :: ClassName -> Selector
+selector = Selector Nothing Nothing
 
 
 selectorText :: Selector -> T.Text
 selectorText s =
-  parent s.parent <> "." <> classNameElementText (ClassName s.parent s.className)
+  parent s.parent <> "." <> addPseudo s.pseudo (classNameElementText Nothing s.className)
  where
   parent Nothing = ""
   parent (Just p) = "." <> p <> " "
+
+  addPseudo Nothing c = c
+  addPseudo (Just p) c =
+    pseudoText p <> "\\:" <> c <> ":" <> pseudoText p
 
 
 data ClassName = ClassName
   { parent :: Maybe Text
   , text :: Text
   }
-  deriving (Eq, Generic, ToJSON)
+  deriving (Eq, Ord, Generic, ToJSON)
 
 
 instance IsString ClassName where
   fromString s = ClassName Nothing (pack s)
-
-
-classNameAddPseudo :: Pseudo -> ClassName -> ClassName
-classNameAddPseudo p c =
-  c{text = pseudoText p <> ":" <> c.text}
 
 
 classNameAddParent :: Text -> ClassName -> ClassName
@@ -87,16 +87,17 @@ classNameAddParent p (ClassName _ c) = ClassName (Just p) c
 
 
 -- | The class name as it appears in the element
-classNameElementText :: ClassName -> Text
-classNameElementText c =
-  parent c.parent <> c.text
+classNameElementText :: Maybe Pseudo -> ClassName -> Text
+classNameElementText mp c =
+  parent c.parent <> addPseudo mp c.text
  where
   parent Nothing = ""
   parent (Just p) = p <> "-"
 
-
-defaultSelector :: ClassName -> Selector
-defaultSelector (ClassName mp t) = Selector mp t
+  addPseudo :: Maybe Pseudo -> Text -> Text
+  addPseudo Nothing cn = cn
+  addPseudo (Just p) cn =
+    pseudoText p <> ":" <> cn
 
 
 pseudoText :: Pseudo -> Text
@@ -106,7 +107,7 @@ pseudoText p = T.toLower $ pack $ show p
 data Pseudo
   = Hover
   | Active
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord, Generic, ToJSON)
 
 
 data StyleValue
@@ -255,4 +256,4 @@ flatAttributes t =
 
   classAttValue :: [Class] -> T.Text
   classAttValue cx =
-    T.intercalate " " $ fmap (\c -> classNameElementText c.name) cx
+    T.intercalate " " $ fmap (\c -> classNameElementText c.selector.pseudo c.selector.className) cx
