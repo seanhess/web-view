@@ -14,10 +14,11 @@ type PxRem = Int
 
 class ToClassName a where
   toClassName :: a -> Text
+  default toClassName :: (Show a) => a -> Text
+  toClassName = T.toLower . T.pack . show
 
 
-instance ToClassName Int where
-  toClassName = T.pack . show
+instance ToClassName Int
 
 
 instance ToClassName Text where
@@ -117,6 +118,20 @@ rounded n = cls1 ("rnd" -. n) [("border-radius", pxRem n)]
 
 border :: PxRem -> Mod
 border p = cls1 ("brd" -. p) [("border", pxRem p), ("border-style", "solid")]
+
+
+data Display
+  = None
+  | Block
+  deriving (Show, Eq, ToClassName)
+
+
+-- should probably do something higher level than this
+display :: Display -> Mod
+display d = cls1 ("dsp" -. d) [("display", val d)]
+ where
+  val None = "none"
+  val Block = "block"
 
 
 borderY :: PxRem -> Mod

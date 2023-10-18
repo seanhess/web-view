@@ -66,7 +66,7 @@ contacts _ (Delete uid) = do
 
 viewAll :: [User] -> View Contacts ()
 viewAll us = onRequest loading $ do
-  row (gap 10) $ do
+  row (gap 10 . parent "request" (bg Red)) $ do
     -- I want to change something, then run ANOTHER event on load
     liveButton Reload (bg GrayLight) "Reload"
     target (Contact 2) $ liveButton Edit (bg GrayLight) "Edit 2"

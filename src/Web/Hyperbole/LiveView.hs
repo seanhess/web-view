@@ -35,8 +35,8 @@ liveButton a f cd = do
 
 onRequest :: View id () -> View id () -> View id ()
 onRequest a b = do
-  el (att "class" "progress") a
-  el (att "class" "complete") b
+  el (parent "request" (display Block) . display None) a
+  el (parent "request" (display None) . display Block) b
 
 
 -- I'd rather not make ANOTHER copy of liveButton
