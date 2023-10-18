@@ -30,7 +30,7 @@ instance {-# OVERLAPS #-} (ToColor a) => ToClassName a where
 
 -- | Hyphneate classnames
 (-.) :: (ToClassName a) => ClassName -> a -> ClassName
-(ClassName mp n) -. a = ClassName mp $ n <> "-" <> toClassName a
+(ClassName n) -. a = ClassName $ n <> "-" <> toClassName a
 
 
 infixl 6 -.

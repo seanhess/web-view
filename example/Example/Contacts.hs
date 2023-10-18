@@ -75,7 +75,7 @@ viewAll us = onRequest loading $ do
       el (border 1) $ do
         liveView (Contact u.id) $ viewContact u
  where
-  loading = el (parent "progress" (bg Red)) "Loading..."
+  loading = el (parent "progress" (hover |: bg Red)) "Loading..."
 
 
 contact :: (Page :> es, Users :> es) => Contact -> ContactAction -> Eff es (View Contact ())

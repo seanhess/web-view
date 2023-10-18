@@ -61,7 +61,7 @@ selector = Selector Nothing Nothing
 
 selectorText :: Selector -> T.Text
 selectorText s =
-  parent s.parent <> "." <> addPseudo s.pseudo (classNameElementText Nothing s.className)
+  parent s.parent <> "." <> addPseudo s.pseudo (classNameElementText s.parent Nothing s.className)
  where
   parent Nothing = ""
   parent (Just p) = "." <> p <> " "
@@ -71,28 +71,19 @@ selectorText s =
     pseudoText p <> "\\:" <> c <> ":" <> pseudoText p
 
 
-data ClassName = ClassName
-  { parent :: Maybe Text
-  , text :: Text
+newtype ClassName = ClassName
+  { text :: Text
   }
-  deriving (Eq, Ord, Generic, ToJSON)
-
-
-instance IsString ClassName where
-  fromString s = ClassName Nothing (pack s)
-
-
-classNameAddParent :: Text -> ClassName -> ClassName
-classNameAddParent p (ClassName _ c) = ClassName (Just p) c
+  deriving newtype (Eq, Ord, IsString, ToJSON)
 
 
 -- | The class name as it appears in the element
-classNameElementText :: Maybe Pseudo -> ClassName -> Text
-classNameElementText mp c =
-  parent c.parent <> addPseudo mp c.text
+classNameElementText :: Maybe Text -> Maybe Pseudo -> ClassName -> Text
+classNameElementText mp mps c =
+  addPseudo mps . addParent mp $ c.text
  where
-  parent Nothing = ""
-  parent (Just p) = p <> "-"
+  addParent Nothing cn = cn
+  addParent (Just p) cn = p <> "-" <> cn
 
   addPseudo :: Maybe Pseudo -> Text -> Text
   addPseudo Nothing cn = cn
@@ -256,4 +247,4 @@ flatAttributes t =
 
   classAttValue :: [Class] -> T.Text
   classAttValue cx =
-    T.intercalate " " $ fmap (\c -> classNameElementText c.selector.pseudo c.selector.className) cx
+    T.intercalate " " $ fmap (\c -> classNameElementText c.selector.parent c.selector.pseudo c.selector.className) cx
