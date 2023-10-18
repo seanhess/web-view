@@ -34,18 +34,22 @@ async function sendAction(id:string, action:string, form?:FormData) {
 }
 
 listenClick(async function(target:HTMLElement, action:string) {
-  // console.log("CLICK!", target.id, action)
-
-  let ret = await sendAction(target.id, action)
-  target.innerHTML = ret
+  console.log("CLICK", target.id, action)
+  runAction(target, action)
 })
 
 listenFormSubmit(async function(target:HTMLElement, action:string, form:FormData) {
   console.log("FORM", target.id, action,form)
+  runAction(target, action, form)
+})
 
+
+async function runAction(target:HTMLElement, action:string, form?:FormData) {
+  target.classList.add("request")
   let ret = await sendAction(target.id, action, form)
   target.innerHTML = ret
-})
+  target.classList.remove("request")
+}
 
 function toSearch(form?:FormData):URLSearchParams | undefined {
   if (!form) return undefined

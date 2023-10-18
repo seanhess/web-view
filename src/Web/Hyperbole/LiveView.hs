@@ -13,7 +13,7 @@ class (Param id, Param (Action id)) => LiveView id where
 
 liveView :: (LiveView id, Param id) => id -> View id () -> View ctx ()
 liveView vid vw = do
-  el (att "id" (toParam vid))
+  el (att "id" (toParam vid) . att "class" "live-view")
     $ addContext vid vw
 
 
@@ -31,6 +31,12 @@ liveButton :: (LiveView id, Param (Action id), Param id) => Action id -> Mod -> 
 liveButton a f cd = do
   c <- context
   tag "button" (dataAction a . dataTarget c . f) cd
+
+
+onRequest :: View id () -> View id () -> View id ()
+onRequest a b = do
+  el (att "class" "progress") a
+  el (att "class" "complete") b
 
 
 -- I'd rather not make ANOTHER copy of liveButton

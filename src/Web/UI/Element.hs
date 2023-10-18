@@ -1,5 +1,6 @@
 module Web.UI.Element where
 
+import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Text (Text)
 import Web.UI.Style
@@ -13,16 +14,16 @@ tag nm f ct = do
   let st = runView ctx ct
   let elm = f $ Element nm [] [] st.contents
   addContent $ Node elm
-  addClasses $ classList st.classStyles
+  addClasses $ M.elems st.css
   addClasses $ mconcat elm.classes
 
 
 addClasses :: [Class] -> View c ()
 addClasses clss = do
-  modStyles $ \cm -> foldr addClsDef cm clss
+  modCss $ \cm -> foldr addClsDef cm clss
  where
-  addClsDef :: Class -> ClassStyles -> ClassStyles
-  addClsDef c = M.insert c.className c.classProperties
+  addClsDef :: Class -> Map Selector Class -> Map Selector Class
+  addClsDef c = M.insert c.selector c
 
 
 addContent :: Content -> View c ()
@@ -37,10 +38,6 @@ insertContents cs = modContents insert
   insert [Node e] = [Node $ insertEl e]
   insert cnt = cnt <> cs
   insertEl e = e{children = e.children <> cs}
-
-
-classList :: ClassStyles -> [Class]
-classList m = map (uncurry Class) $ M.toList m
 
 
 -- | Set an attribute, replacing existing value

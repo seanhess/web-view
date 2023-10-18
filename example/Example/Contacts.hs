@@ -7,6 +7,7 @@ import Data.String.Conversions
 import Effectful
 import Effectful.Dispatch.Dynamic
 import Example.Colors
+import Example.Effects.Debug
 import Example.Effects.Users
 import Web.Hyperbole
 import Web.UI
@@ -41,19 +42,20 @@ instance LiveView Contacts where
   type Action Contacts = ContactsAction
 
 
-page :: forall es. (Page :> es, Users :> es) => Eff es ()
+page :: forall es. (Page :> es, Users :> es, Debug :> es) => Eff es ()
 page = do
   pageAction contacts
   pageAction contact
   pageLoad $ do
     us <- usersAll
     pure $ do
-      col (pad 10 . gap 10) $ do
+      col (pad 10 . gap 10 . parent "woot" (bg Green)) $ do
         liveView Contacts $ viewAll us
 
 
-contacts :: (Page :> es, Users :> es) => Contacts -> ContactsAction -> Eff es (View Contacts ())
+contacts :: (Page :> es, Users :> es, Debug :> es) => Contacts -> ContactsAction -> Eff es (View Contacts ())
 contacts _ Reload = do
+  send $ Delay 1000
   us <- usersAll
   pure $ viewAll us
 contacts _ (Delete uid) = do
@@ -63,14 +65,17 @@ contacts _ (Delete uid) = do
 
 
 viewAll :: [User] -> View Contacts ()
-viewAll us = do
+viewAll us = onRequest loading $ do
   row (gap 10) $ do
+    -- I want to change something, then run ANOTHER event on load
     liveButton Reload (bg GrayLight) "Reload"
     target (Contact 2) $ liveButton Edit (bg GrayLight) "Edit 2"
   row (pad 10 . gap 10) $ do
     forM_ us $ \u -> do
       el (border 1) $ do
         liveView (Contact u.id) $ viewContact u
+ where
+  loading = el_ "Loading..."
 
 
 contact :: (Page :> es, Users :> es) => Contact -> ContactAction -> Eff es (View Contact ())

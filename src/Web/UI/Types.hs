@@ -9,7 +9,7 @@ import Data.Text qualified as T
 import Effectful
 import Effectful.Reader.Static
 import Effectful.State.Static.Local as ES
-import GHC.Generics
+import GHC.Generics (Generic)
 
 
 -- import Data.Text.Lazy qualified as L
@@ -22,60 +22,107 @@ type Attribute = (Name, AttValue)
 type Attributes = Map Name AttValue
 
 
+type Styles = Map Name StyleValue
+
+
 data Class = Class
-  { className :: ClassName
-  , classProperties :: Map Name StyleValue
+  { name :: ClassName
+  , selector :: Selector
+  , properties :: Styles
+  , parent :: Maybe Text
   }
 
 
 instance ToJSON Class where
-  toJSON c = toJSON c.className
+  toJSON c = toJSON c.name
 
 
-className :: Class -> Text
-className c = classNameText c.className
+-- what uniquely identifies this? The selector
 
-
-classNameSelector :: ClassName -> Text
-classNameSelector (ClassName Nothing n) = n
-classNameSelector (ClassName ps n) =
-  pseudoText ps <> "\\:" <> n <> ":" <> pseudoText ps
-
-
--- prefixedName :: Maybe Text -> Text -> Text
--- prefixedName Nothing t = t
--- prefixedName (Just p) t = p <> "." <> t
-
-classNameText :: ClassName -> Text
-classNameText (ClassName Nothing n) = n
-classNameText (ClassName ps n) =
-  pseudoText ps <> ":" <> n
-
-
-pseudoText :: Maybe Pseudo -> Text
-pseudoText Nothing = ""
-pseudoText (Just p) = T.toLower $ pack $ show p
-
-
-data ClassName = ClassName
-  { pseudo :: Maybe Pseudo
-  , -- , prefix :: Maybe Text
-    name :: Text
+newtype Selector = Selector
+  { className :: Text
   }
-  deriving (Eq)
+  deriving newtype (Eq, Ord, IsString, ToJSON)
 
 
-instance IsString ClassName where
-  fromString s = ClassName Nothing (pack s)
+selectorAddPseudo :: Pseudo -> Selector -> Selector
+selectorAddPseudo p s =
+  s{className = pseudoText p <> "\\:" <> s.className <> ":" <> pseudoText p}
 
 
-instance Ord ClassName where
-  compare a b = compare (classNameText a) (classNameText b)
+selectorText :: Maybe Text -> Selector -> T.Text
+selectorText mp s =
+  parent mp <> "." <> s.className
+ where
+  parent Nothing = ""
+  parent (Just p) = "." <> p <> " "
 
 
-instance ToJSON ClassName where
-  toJSON a = String (classNameText a)
+newtype ClassName = ClassName {text :: Text}
+  deriving newtype (Eq, IsString, ToJSON, Semigroup)
 
+
+classNameAddPseudo :: Pseudo -> ClassName -> ClassName
+classNameAddPseudo p (ClassName c) =
+  ClassName $ pseudoText p <> ":" <> c
+
+
+classNameAddParent :: Text -> ClassName -> ClassName
+classNameAddParent p (ClassName cn) =
+  ClassName $ p <> "-" <> cn
+
+
+-- | The class name as it appears in the element
+classNameElementText :: Maybe Text -> ClassName -> Text
+classNameElementText mp (ClassName cn) =
+  parent mp <> cn
+ where
+  parent Nothing = ""
+  parent (Just p) = p <> "-"
+
+
+defaultSelector :: ClassName -> Selector
+defaultSelector (ClassName t) = Selector t
+
+
+-- className :: Class -> Text
+-- className c = classNameText c.className
+
+-- classNameSelector :: ClassName -> Text
+-- classNameSelector (ClassName Nothing n) = n
+-- classNameSelector (ClassName (Just ps) n) =
+--   pseudoText ps <> "\\:" <> n <> ":" <> pseudoText ps
+--
+--
+-- -- prefixedName :: Maybe Text -> Text -> Text
+-- -- prefixedName Nothing t = t
+-- -- prefixedName (Just p) t = p <> "." <> t
+--
+-- classNameText :: ClassName -> Text
+-- classNameText (ClassName Nothing n) = n
+-- classNameText (ClassName (Just ps) n) =
+--   pseudoText ps <> ":" <> n
+
+pseudoText :: Pseudo -> Text
+pseudoText p = T.toLower $ pack $ show p
+
+
+-- data ClassName = ClassName
+--   { pseudo :: Maybe Pseudo
+--   , -- , prefix :: Maybe Text
+--     name :: Text
+--   }
+--   deriving (Eq)
+--
+--
+-- instance IsString ClassName where
+--   fromString s = ClassName Nothing (pack s)
+
+-- instance Ord Selector where
+--   compare a b = compare (classNameText a) (classNameText b)
+
+-- instance ToJSON ClassName where
+--   toJSON a = String (classNameText a)
 
 data Pseudo
   = Hover
@@ -150,15 +197,12 @@ newtype View a = View (State ViewState a)
 -}
 data ViewState = ViewState
   { contents :: [Content]
-  , classStyles :: ClassStyles
+  , css :: Map Selector Class
   }
 
 
 instance Semigroup ViewState where
-  va <> vb = ViewState (va.contents <> vb.contents) (va.classStyles <> vb.classStyles)
-
-
-type ClassStyles = Map ClassName (Map Name StyleValue)
+  va <> vb = ViewState (va.contents <> vb.contents) (va.css <> vb.css)
 
 
 newtype View ctx a = View {viewState :: Eff [Reader ctx, State ViewState] a}
@@ -183,9 +227,9 @@ modContents f = View $ do
   ES.modify $ \s -> s{contents = f s.contents}
 
 
-modStyles :: (ClassStyles -> ClassStyles) -> View c ()
-modStyles f = View $ do
-  ES.modify $ \s -> s{classStyles = f s.classStyles}
+modCss :: (Map Selector Class -> Map Selector Class) -> View c ()
+modCss f = View $ do
+  ES.modify $ \s -> s{css = f s.css}
 
 
 context :: View c c
@@ -232,4 +276,4 @@ flatAttributes t =
 
   classAttValue :: [Class] -> T.Text
   classAttValue cx =
-    T.intercalate " " $ fmap className cx
+    T.intercalate " " $ fmap (\c -> classNameElementText c.parent c.name) cx

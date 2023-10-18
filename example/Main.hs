@@ -15,6 +15,7 @@ import Effectful
 import Effectful.Dispatch.Dynamic
 import Effectful.State.Static.Local
 import Example.Contacts qualified as Contacts
+import Example.Effects.Debug
 import Example.Effects.Users as Users
 import GHC.Generics (Generic)
 import Network.HTTP.Types (Method, QueryItem, methodPost, status200, status404)
@@ -35,10 +36,23 @@ main = do
     $ app users
 
 
+data AppRoute
+  = Main
+  | Hello Hello
+  | Contacts
+  | Echo
+  deriving (Show, Generic, Eq, Route)
+
+
+data Hello
+  = Greet Text
+  deriving (Show, Generic, Eq, Route)
+
+
 app :: UserStore -> Application
-app users = waiApplication document (runUsersIO users . runPageWai . router)
+app users = waiApplication document (runUsersIO users . runPageWai . runDebugIO . router)
  where
-  router :: (Page :> es, Users :> es) => AppRoute -> Eff es ()
+  router :: (Page :> es, Users :> es, Debug :> es) => AppRoute -> Eff es ()
   router (Hello h) = hello h
   router Echo = do
     f <- formData
@@ -55,38 +69,24 @@ app users = waiApplication document (runUsersIO users . runPageWai . router)
   hello (Greet s) = view $ el (pad 10) "GREET" >> text s
 
 
--- send Respond
-data AppRoute
-  = Main
-  | Hello Hello
-  | Contacts
-  | Echo
-  deriving (Show, Generic, Eq, Route)
-
-
-data Hello
-  = Greet Text
-  deriving (Show, Generic, Eq, Route)
-
+document :: BL.ByteString -> BL.ByteString
+document cnt =
+  [i|<html>
+    <head>
+      <title>Hyperbole Examples</title>
+      <script type="text/javascript" src="/main.js"></script>
+      <style type type="text/css">#{cssResetEmbed}</style>
+    </head>
+    <body>#{cnt}</body>
+  </html>|]
 
 -- document :: BL.ByteString -> BL.ByteString
 -- document cnt =
 --   [i|<html>
 --     <head>
 --       <title>Hyperbole Examples</title>
---       <script type="text/javascript" src="/main.js"></script>
+--       <script type="text/javascript">#{scriptEmbed}</script>
 --       <style type type="text/css">#{cssResetEmbed}</style>
 --     </head>
 --     <body>#{cnt}</body>
 --   </html>|]
-
-document :: BL.ByteString -> BL.ByteString
-document cnt =
-  [i|<html>
-    <head>
-      <title>Hyperbole Examples</title>
-      <script type="text/javascript">#{scriptEmbed}</script>
-      <style type type="text/css">#{cssResetEmbed}</style>
-    </head>
-    <body>#{cnt}</body>
-  </html>|]

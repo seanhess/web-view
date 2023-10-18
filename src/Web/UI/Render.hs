@@ -1,10 +1,13 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module Web.UI.Render where
 
 import Data.ByteString.Lazy qualified as BL
+import Data.Map (Map)
 import Data.Map qualified as M
+import Data.String.Interpolate (i)
 import Data.Text qualified as T
 import Data.Text.Lazy (Text)
 import Data.Text.Lazy qualified as L
@@ -87,7 +90,7 @@ renderLazyText c u = L.intercalate "\n" content
     u
 
   css :: [T.Text]
-  css = renderCSS $ (.classStyles) $ runView c u
+  css = renderCSS $ (.css) $ runView c u
 
   styleElement :: Content
   styleElement =
@@ -107,15 +110,14 @@ renderContent (Node d) = L.unlines $ htmlTag indentAll d
 renderContent (Text t) = L.fromStrict t
 
 
-renderCSS :: ClassStyles -> [T.Text]
-renderCSS m = map renderClass $ toClasses m
+renderCSS :: Map Selector Class -> [T.Text]
+renderCSS = map renderClass . M.elems
  where
-  toClasses = map toClass . M.toList
-  toClass (n, p) = Class n p
-
   renderClass :: Class -> T.Text
-  renderClass (Class n p) =
-    "." <> classNameSelector n <> " " <> "{" <> T.intercalate "; " (map renderProp $ M.toList p) <> "}"
+  renderClass c =
+    let sel = selectorText c.parent c.selector
+        props = T.intercalate "; " (map renderProp $ M.toList c.properties)
+     in [i|#{sel} { #{props} }|]
 
   renderProp :: (T.Text, StyleValue) -> T.Text
   renderProp (p, cv) = p <> ":" <> renderStyle cv
