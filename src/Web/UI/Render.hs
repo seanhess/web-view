@@ -115,7 +115,7 @@ renderCSS = map renderClass . M.elems
  where
   renderClass :: Class -> T.Text
   renderClass c =
-    let sel = selectorText c.parent c.selector
+    let sel = selectorText c.selector
         props = T.intercalate "; " (map renderProp $ M.toList c.properties)
      in [i|#{sel} { #{props} }|]
 

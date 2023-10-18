@@ -30,7 +30,7 @@ instance {-# OVERLAPS #-} (ToColor a) => ToClassName a where
 
 -- | Hyphneate classnames
 (-.) :: (ToClassName a) => ClassName -> a -> ClassName
-(ClassName n) -. a = ClassName $ n <> "-" <> toClassName a
+(ClassName mp n) -. a = ClassName mp $ n <> "-" <> toClassName a
 
 
 infixl 6 -.
@@ -44,7 +44,7 @@ modClasses cx t =
 
 -- | Add a single class attribute.
 cls1 :: ClassName -> Styles -> Mod
-cls1 cn ss = modClasses [Class cn (defaultSelector cn) ss Nothing]
+cls1 cn ss = modClasses [Class cn (defaultSelector cn) ss]
 
 
 width :: PxRem -> Mod
@@ -194,7 +194,8 @@ infixr 9 |:
 parent :: Text -> Mod -> Mod
 parent p = modLastClasses $ \c ->
   c
-    { parent = Just p
+    { selector = selectorAddParent p c.selector
+    , name = classNameAddParent p c.name
     }
 
 
