@@ -65,8 +65,8 @@ contacts _ (Delete uid) = do
 
 
 viewAll :: [User] -> View Contacts ()
-viewAll us = onRequest loading $ do
-  row (gap 10 . parent "request" (bg Red)) $ do
+viewAll us = do
+  row (gap 10) $ do
     -- I want to change something, then run ANOTHER event on load
     liveButton Reload (bg GrayLight) "Reload"
     target (Contact 2) $ liveButton Edit (bg GrayLight) "Edit 2"
@@ -74,11 +74,9 @@ viewAll us = onRequest loading $ do
     forM_ us $ \u -> do
       el (border 1) $ do
         liveView (Contact u.id) $ viewContact u
- where
-  loading = el (parent "progress" (hover |: bg Red)) "Loading..."
 
 
-contact :: (Page :> es, Users :> es) => Contact -> ContactAction -> Eff es (View Contact ())
+contact :: (Page :> es, Users :> es, Debug :> es) => Contact -> ContactAction -> Eff es (View Contact ())
 contact (Contact uid) a = do
   u <- userFind uid
   action u a
@@ -88,6 +86,7 @@ contact (Contact uid) a = do
   action u Edit = do
     pure $ viewEdit u
   action u' Save = do
+    send $ Delay 1000
     u <- userFormData u'.id
     send $ SaveUser u
     pure $ viewContact u
@@ -112,7 +111,7 @@ viewContact u = do
 
 
 viewEdit :: User -> View Contact ()
-viewEdit u = do
+viewEdit u = onRequest loading $ do
   liveForm Save (pad 10 . gap 10) $ do
     label id $ do
       text "First Name"
@@ -131,6 +130,8 @@ viewEdit u = do
     liveButton View id (text "Cancel")
 
     target Contacts $ liveButton (Delete u.id) (bg Red) (text "Delete")
+ where
+  loading = el (bg Red) "Loading..."
 
 
 userFormData :: (Page :> es) => Int -> Eff es User
