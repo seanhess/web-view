@@ -45,6 +45,7 @@ htmlTag ind tag =
   htmlContent :: Content -> [Text]
   htmlContent (Node t) = htmlTag ind t
   htmlContent (Text t) = [L.fromStrict t]
+  htmlContent (Raw t) = [L.fromStrict t]
 
   htmlChildren :: [Content] -> [Text]
   htmlChildren cts =
@@ -108,6 +109,7 @@ renderLazyByteString c = L.encodeUtf8 . renderLazyText c
 renderContent :: Content -> Text
 renderContent (Node d) = L.unlines $ htmlTag indentAll d
 renderContent (Text t) = L.fromStrict t
+renderContent (Raw t) = L.fromStrict t
 
 
 renderCSS :: Map Selector Class -> [T.Text]
@@ -136,3 +138,4 @@ showView c v =
 showContent :: Content -> [Text]
 showContent (Node t) = htmlTag indentAll t
 showContent (Text t) = [L.fromStrict t]
+showContent (Raw t) = [L.fromStrict t]

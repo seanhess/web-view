@@ -155,11 +155,14 @@ instance ToJSON Element where
 data Content
   = Node Element
   | Text Text
+  | Raw Text
 
 
 instance ToJSON Content where
   toJSON (Node el) = toJSON el
   toJSON (Text t) = String t
+  -- TODO: fix json
+  toJSON (Raw t) = String t
 
 
 {- | Views contain their contents, and a list of all styles mentioned during their rendering

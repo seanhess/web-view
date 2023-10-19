@@ -13,7 +13,7 @@ class (Param id, Param (Action id)) => LiveView id where
 
 liveView :: (LiveView id, Param id) => id -> View id () -> View ctx ()
 liveView vid vw = do
-  el (att "id" (toParam vid) . att "class" "live-view")
+  el (att "id" (toParam vid) . flexCol)
     $ addContext vid vw
 
 
@@ -35,8 +35,8 @@ liveButton a f cd = do
 
 onRequest :: View id () -> View id () -> View id ()
 onRequest a b = do
-  el (parent "request" (display Block) . display None) a
-  el (parent "request" (display None) . display Block) b
+  el (parent "request" flexCol . display None) a
+  el (parent "request" (display None) . flexCol) b
 
 
 -- | Internal

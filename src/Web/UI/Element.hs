@@ -74,6 +74,10 @@ text :: Text -> View c ()
 text t = addContent $ Text t
 
 
+raw :: Text -> View c ()
+raw t = addContent $ Raw t
+
+
 none :: View c ()
 none = pure ()
 
