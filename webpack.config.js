@@ -3,6 +3,7 @@ const path = require('path');
 
 module.exports = {
   entry: "./client/index.ts",
+  mode: "production",
   module: {
     rules: [
       {

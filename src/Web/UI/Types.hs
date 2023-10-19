@@ -105,22 +105,22 @@ data StyleValue
   = Px Int
   | Rem Float
   | Hex HexColor
-  | RGB String
-  | Value String
+  | RGB Text
+  | Value Text
 
 
 instance IsString StyleValue where
-  fromString = Value
+  fromString = Value . pack
 
 
 instance Show StyleValue where
-  show (Value s) = s
+  show (Value s) = unpack s
   show (Px n) = show n <> "px"
   show (Rem s) = show s <> "rem"
   show (Hex (HexColor s)) = "#" <> unpack (T.dropWhile (== '#') s)
   -- it needs to have a string?
   -- this might need to get more complicated
-  show (RGB s) = "rgb(" <> s <> ")"
+  show (RGB s) = "rgb(" <> unpack s <> ")"
 
 
 newtype HexColor = HexColor Text
@@ -223,12 +223,21 @@ mapRoot f = modContents mapContents
   mapContents cts = cts
 
 
-data TRBL a = TRBL
-  { top :: a
-  , right :: a
-  , bottom :: a
-  , left :: a
-  }
+data Sides a
+  = All a
+  | TRBL a a a a
+  | X a
+  | Y a
+  | XY a a
+
+
+instance (Num a) => Num (Sides a) where
+  a + _ = a
+  a * _ = a
+  abs a = a
+  negate a = a
+  signum a = a
+  fromInteger n = All (fromInteger n)
 
 
 -- | Attributes that include classes

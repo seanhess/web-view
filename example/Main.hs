@@ -17,6 +17,7 @@ import Effectful.State.Static.Local
 import Example.Contacts qualified as Contacts
 import Example.Effects.Debug
 import Example.Effects.Users as Users
+import Example.Layout qualified as Layout
 import GHC.Generics (Generic)
 import Network.HTTP.Types (Method, QueryItem, methodPost, status200, status404)
 import Network.Wai ()
@@ -29,9 +30,9 @@ import Web.UI
 
 main :: IO ()
 main = do
-  putStrLn "Starting Examples on :3001"
+  putStrLn "Starting Examples on http://localhost:3003"
   users <- initUsers
-  run 3001
+  run 3003
     $ staticPolicy (addBase "dist")
     $ app users
 
@@ -40,6 +41,7 @@ data AppRoute
   = Main
   | Hello Hello
   | Contacts
+  | Layout
   | Echo
   deriving (Show, Generic, Eq, Route)
 
@@ -60,11 +62,13 @@ app users = waiApplication document (runUsersIO users . runPageWai . runDebugIO 
       el id "ECHO:"
       text $ cs $ show f
   router Contacts = Contacts.page
+  router Layout = Layout.page
   router Main = view $ do
     col (gap 10 . pad 10) $ do
       el (bold . fontSize 32) "Examples"
       link (routeUrl (Hello (Greet "World"))) id "Hello World"
       link (routeUrl Contacts) id "Contacts"
+      link (routeUrl Layout) id "Layout"
 
   hello (Greet s) = view $ el (pad 10) "GREET" >> text s
 
@@ -74,7 +78,7 @@ document cnt =
   [i|<html>
     <head>
       <title>Hyperbole Examples</title>
-      <script type="text/javascript" src="/main.js"></script>
+      <script type="text/javascript" src="/hyperbole.js"></script>
       <style type type="text/css">#{cssResetEmbed}</style>
     </head>
     <body>#{cnt}</body>

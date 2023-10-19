@@ -1,8 +1,11 @@
 module Web.UI.Element where
 
+import Control.Monad (forM_)
 import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Text (Text)
+import Effectful
+import Effectful.Writer.Static.Local
 import Web.UI.Style
 import Web.UI.Types
 import Web.UI.Url
@@ -60,7 +63,7 @@ button = tag "button"
 
 
 -- | Convert from text directly to view. You should not have to use this. Use `text` instead
-data Head
+data Head = Head
 
 
 data Base
@@ -93,6 +96,10 @@ html = tag "html" id
 
 body :: View c () -> View c ()
 body = tag "body" id
+
+
+layout :: Mod -> View c () -> View c ()
+layout f = el (rootLayout . f)
 
 
 row :: Mod -> View c () -> View c ()
@@ -148,39 +155,44 @@ stylesheet :: Text -> View c ()
 stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
 
 
--- table :: Mod -> [dt] -> Writer [TableColumn dt] () -> View c ()
--- table f dts wcs = do
---   let cols = execWriter wcs
---   tag "table" (f . borderCollapse) $ do
---     tag "thead" id $ do
---       tag "tr" id $ do
---         forM_ cols $ \tc -> do
---           tc.headCell.fromCell
---     tag "tbody" id $ do
---       forM_ dts $ \dt -> do
---         tag "tr" id $ do
---           forM_ cols $ \tc -> do
---             (tc.dataCell dt).fromCell
---  where
---   borderCollapse :: Mod
---   borderCollapse = cls1 $ Class "brd-cl" [("border-collapse", "collapse")]
---
--- tcol :: Cell Head () -> (dt -> Cell Data ()) -> Writer [TableColumn dt] ()
--- tcol hd view = tell [TableColumn hd view]
---
--- data TableColumn dt = TableColumn
---   { headCell :: Cell Head ()
---   , dataCell :: dt -> Cell Data ()
---   }
---
--- data Data
--- newtype Cell t a = Cell {fromCell :: Eff es a}
---
--- th :: Mod -> Eff es () -> Cell Head ()
--- th f c = Cell $ tag "th" f c
---
--- td :: Mod -> Eff es () -> Cell Data ()
--- td f c = Cell $ tag "td" f c
+table :: Mod -> [dt] -> Eff '[Writer [TableColumn dt]] () -> View c ()
+table f dts wcs = do
+  let cols = runPureEff . execWriter $ wcs
+  tag "table" (f . borderCollapse) $ do
+    tag "thead" id $ do
+      tag "tr" id $ do
+        forM_ cols $ \tc -> do
+          addContext Head tc.headCell
+    tag "tbody" id $ do
+      forM_ dts $ \dt -> do
+        tag "tr" id $ do
+          forM_ cols $ \tc -> do
+            addContext dt $ tc.dataCell dt
+ where
+  borderCollapse :: Mod
+  borderCollapse = cls1 "brd-cl" [("border-collapse", "collapse")]
+
+
+tcol :: forall dt es. (Writer [TableColumn dt] :> es) => View Head () -> (dt -> View dt ()) -> Eff es ()
+tcol hd view = do
+  tell ([TableColumn hd view] :: [TableColumn dt])
+
+
+data TableColumn dt = TableColumn
+  { headCell :: View Head ()
+  , dataCell :: dt -> View dt ()
+  }
+
+
+-- newtype Cell t a = Cell {fromCell :: View () ()}
+
+th :: Mod -> View () () -> View Head ()
+th f c = addContext () $ tag "th" f c
+
+
+td :: Mod -> View () () -> View dt ()
+td f c = addContext () $ tag "td" f c
+
 
 link :: Url -> Mod -> View c () -> View c ()
 link u f = tag "a" (f . att "href" (fromUrl u))

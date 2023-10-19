@@ -3,6 +3,7 @@
 
 module Web.UI.Style where
 
+import Data.Map qualified as M
 import Data.Text (Text, pack, toLower)
 import Data.Text qualified as T
 import Web.UI.Types
@@ -44,30 +45,24 @@ modClasses cx t =
 
 
 -- | Add a single class attribute.
-cls1 :: ClassName -> Styles -> Mod
-cls1 cn ss = modClasses [Class (selector cn) ss]
+cls1 :: ClassName -> [(Name, StyleValue)] -> Mod
+cls1 cn ss = modClasses [Class (selector cn) (M.fromList ss)]
 
 
 width :: PxRem -> Mod
 width n = cls1 ("w" -. n) [("width", pxRem n), ("flex-shrink", "0")]
 
 
-pad :: PxRem -> Mod
-pad n = cls1 ("pad" -. n) [("padding", pxRem n)]
+height :: PxRem -> Mod
+height n = cls1 ("h" -. n) [("height", pxRem n), ("flex-shrink", "0")]
 
 
-padY :: PxRem -> Mod
-padY n =
-  cls1
-    ("pady" -. n)
-    [("padding-top", pxRem n), ("padding-bottom", pxRem n)]
-
-
-padX :: PxRem -> Mod
-padX n =
-  cls1
-    ("padx" -. n)
-    [("padding-left", pxRem n), ("padding-right", pxRem n)]
+pad :: Sides PxRem -> Mod
+pad (All n) = cls1 ("pad" -. n) [("padding", pxRem n)]
+pad (Y n) = cls1 ("pady" -. n) [("padding-top", pxRem n), ("padding-bottom", pxRem n)]
+pad (X n) = cls1 ("padx" -. n) [("padding-left", pxRem n), ("padding-right", pxRem n)]
+pad (XY x y) = cls1 ("pad" -. x -. y) [("padding-left", pxRem x), ("padding-right", pxRem x), ("padding-top", pxRem y), ("padding-bottom", pxRem y)]
+pad (TRBL t r b l) = cls1 ("pad" -. t -. r -. b -. l) [("padding-top", pxRem t), ("padding-right", pxRem r), ("padding-bottom", pxRem b), ("padding-left", pxRem l)]
 
 
 gap :: PxRem -> Mod
@@ -76,6 +71,11 @@ gap n = cls1 ("gap" -. n) [("gap", pxRem n)]
 
 grow :: Mod
 grow = cls1 "grow" [("flex-grow", "1")]
+
+
+-- | Allow items to become smaller than their contents. This is not the opposite of grow!
+collapse :: Mod
+collapse = cls1 "collapse" [("min-width", "0")]
 
 
 fontSize :: PxRem -> Mod
@@ -116,10 +116,6 @@ rounded :: PxRem -> Mod
 rounded n = cls1 ("rnd" -. n) [("border-radius", pxRem n)]
 
 
-border :: PxRem -> Mod
-border p = cls1 ("brd" -. p) [("border", pxRem p), ("border-style", "solid")]
-
-
 data Display
   = None
   | Block
@@ -134,44 +130,35 @@ display d = cls1 ("dsp" -. d) [("display", val d)]
   val Block = "block"
 
 
-borderY :: PxRem -> Mod
-borderY p =
+border :: Sides PxRem -> Mod
+border (All p) = cls1 ("brd" -. p) [("border", pxRem p), ("border-style", "solid")]
+border (Y p) =
   cls1
     ("brdy" -. p)
-    [ ("border-top", pxRem p)
-    , ("border-bottom", pxRem p)
-    , ("border-style", "solid")
+    [ ("border-top-width", pxRem p)
+    , ("border-bottom-width", pxRem p)
     ]
-
-
-borderX :: PxRem -> Mod
-borderX p =
+border (X p) =
   cls1
     ("brdx" -. p)
-    [ ("border-left", pxRem p)
-    , ("border-right", pxRem p)
-    , ("border-style", "solid")
+    [ ("border-left-width", pxRem p)
+    , ("border-right-width", pxRem p)
     ]
-
-
-border' :: TRBL PxRem -> Mod
-border' s =
+border (XY x y) =
   cls1
-    ("brdtrbl" -. s.top -. s.right -. s.bottom -. s.left)
-    [ ("border-top", pxRem s.top)
-    , ("border-right", pxRem s.right)
-    , ("border-bottom", pxRem s.bottom)
-    , ("border-left", pxRem s.left)
-    , ("border-style", "solid")
+    ("brd" -. x -. y)
+    [ ("border-top-width", pxRem y)
+    , ("border-right-width", pxRem x)
+    , ("border-bottom-width", pxRem y)
+    , ("border-left-width", pxRem x)
     ]
-
-
-borderR :: PxRem -> Mod
-borderR p =
+border (TRBL t r b l) =
   cls1
-    ("brdr" -. p)
-    [ ("border-right", pxRem p)
-    , ("border-style", "solid")
+    ("brd" -. t -. r -. b -. l)
+    [ ("border-top-width", pxRem t)
+    , ("border-right-width", pxRem r)
+    , ("border-bottom-width", pxRem b)
+    , ("border-left-width", pxRem l)
     ]
 
 
@@ -230,7 +217,7 @@ pxRem n = Rem (fromIntegral n / 16.0)
 
 
 rgb :: Int -> Int -> Int -> StyleValue
-rgb rd gr bl = RGB $ mconcat [show rd, " ", show gr, " ", show bl]
+rgb rd gr bl = RGB $ mconcat [pack (show rd), " ", pack (show gr), " ", pack (show bl)]
 
 
 class ToColor a where
@@ -243,3 +230,45 @@ class ToColor a where
 instance ToColor HexColor where
   colorValue c = c
   colorName (HexColor a) = T.dropWhile (== '#') a
+
+
+-- | Sets the root layout so filling columns makes sense
+rootLayout :: Mod
+rootLayout =
+  cls1
+    "layout"
+    -- [ ("white-space", "pre")
+    [ ("width", "100%")
+    , ("height", "100%")
+    , ("min-height", "100%")
+    , ("z-index", "0")
+    ]
+    . flexCol
+
+
+truncate :: Mod
+truncate =
+  cls1
+    "truncate"
+    [ ("white-space", "nowrap")
+    , ("overflow", "hidden")
+    , ("text-overflow", "ellipsis")
+    ]
+
+
+type Seconds = Float
+
+
+data TransitionProperty
+  = Width
+  | Height
+  deriving (Show)
+
+
+transition :: TransitionProperty -> Float -> Mod
+transition p n =
+  cls1
+    "tt"
+    [ ("transition-duration", Value (pack (show n) <> "s"))
+    , ("transition-property", Value $ T.toLower $ pack $ show p)
+    ]

@@ -11,7 +11,7 @@ import Web.UI.Url
 
 
 routeUrl :: (Route a) => a -> Url
-routeUrl a = Url False $ routePaths a
+routeUrl a = Url True $ routePaths a
 
 
 pathSegments :: Text -> [Text]

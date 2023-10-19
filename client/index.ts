@@ -1,5 +1,6 @@
-// import { hydrate, patch, render, DOMNode, m, VNode, Flags, style } from 'million';
-// import { fromDomNodeToVNode, fromStringToDomNode } from 'million/utils';
+import { hydrate, patch, render, DOMNode, m, VNode, Flags, style } from 'million';
+import { fromDomNodeToVNode, fromStringToDomNode, fromStringToVNode} from 'million/utils';
+
 // import { listenEvents } from './events';
 // import { WEBSOCKET_ADDRESS, Messages } from './Messages'
 // import { INIT_PAGE, INIT_STATE, State, Class } from './types';
@@ -10,7 +11,7 @@ import  { listenClick, listenFormSubmit } from './events'
 // const CONTENT_ID = "yeti-root-content"
 
 // console.log("VERSION 2", INIT_PAGE, INIT_STATE)
-console.log("TEST INTERFACE?")
+console.log("Hyperbole 0.1.3")
 
 // const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 // const address = `${protocol}//${window.location.host}`
@@ -47,7 +48,12 @@ listenFormSubmit(async function(target:HTMLElement, action:string, form:FormData
 async function runAction(target:HTMLElement, action:string, form?:FormData) {
   target.classList.add("request")
   let ret = await sendAction(target.id, action, form)
-  target.innerHTML = ret
+
+  // Patch the local target instead of replacing
+  let nodes:VNode[] = fromStringToVNode(ret)
+  let newTarget = m("div", {"id": target.id, "class": target.getAttribute('class')}, nodes)
+  patch(target, newTarget)
+
   target.classList.remove("request")
 }
 

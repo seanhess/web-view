@@ -107,7 +107,7 @@ viewContact u = do
       label id (text "Age")
       text (cs $ show u.age)
 
-    liveButton Edit (bg Green . hover |: bg GreenLight) "Edit"
+    liveButton Edit (bg Primary . hover |: bg PrimaryLight) "Edit"
 
 
 viewEdit :: User -> View Contact ()
@@ -129,9 +129,9 @@ viewEdit u = onRequest loading $ do
 
     liveButton View id (text "Cancel")
 
-    target Contacts $ liveButton (Delete u.id) (bg Red) (text "Delete")
+    target Contacts $ liveButton (Delete u.id) (bg Secondary) (text "Delete")
  where
-  loading = el (bg Red) "Loading..."
+  loading = el (bg Secondary) "Loading..."
 
 
 userFormData :: (Page :> es) => Int -> Eff es User

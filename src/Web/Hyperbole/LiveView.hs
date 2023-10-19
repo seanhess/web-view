@@ -20,7 +20,7 @@ liveView vid vw = do
 liveForm :: (LiveView id, Param (Action id), Param id) => Action id -> Mod -> View id () -> View id ()
 liveForm a f cd = do
   c <- context
-  tag "form" (dataAction a . dataTarget c . f . flexCol) cd
+  tag "form" (onSubmit a . dataTarget c . f . flexCol) cd
 
 
 submitButton :: Mod -> View c () -> View c ()
@@ -30,7 +30,7 @@ submitButton f = tag "button" (att "type" "submit" . f)
 liveButton :: (LiveView id, Param (Action id), Param id) => Action id -> Mod -> View id () -> View id ()
 liveButton a f cd = do
   c <- context
-  tag "button" (dataAction a . dataTarget c . f) cd
+  tag "button" (dataOnClick a . dataTarget c . f) cd
 
 
 onRequest :: View id () -> View id () -> View id ()
@@ -39,14 +39,18 @@ onRequest a b = do
   el (parent "request" (display None) . display Block) b
 
 
--- I'd rather not make ANOTHER copy of liveButton
+-- | Internal
+dataOnClick :: (Param a) => a -> Mod
+dataOnClick = att "data-on-click" . toParam
 
-dataAction :: (Param a) => a -> Mod
-dataAction = att "data-action" . toParam
 
-
+-- | Internal
 dataTarget :: (Param a) => a -> Mod
 dataTarget = att "data-target" . toParam
+
+
+onSubmit :: (Param a) => a -> Mod
+onSubmit = att "data-on-submit" . toParam
 
 
 -- | Change the target of any code running inside, allowing actions to target other live views on the page
@@ -70,6 +74,7 @@ class Param a where
 instance Param Integer
 instance Param Float
 instance Param Int
+instance Param ()
 
 
 instance Param Text where
