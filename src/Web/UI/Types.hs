@@ -4,6 +4,7 @@ import Data.Aeson
 import Data.Map (Map)
 import Data.Map.Strict qualified as M
 import Data.String (IsString (..))
+import Data.String.Interpolate (i)
 import Data.Text (Text, pack, unpack)
 import Data.Text qualified as T
 import Effectful
@@ -38,30 +39,42 @@ instance ToJSON Class where
 data Selector = Selector
   { parent :: Maybe Text
   , pseudo :: Maybe Pseudo
+  , media :: Maybe Media
   , className :: ClassName
   }
   deriving (Eq, Ord, Generic, ToJSON)
 
 
 instance IsString Selector where
-  fromString s = Selector Nothing Nothing (fromString s)
+  fromString s = Selector Nothing Nothing Nothing (fromString s)
+
+
+data Media
+  = MinWidth Int
+  | MaxWidth Int
+  deriving (Eq, Ord, Generic)
+  deriving anyclass (ToJSON)
 
 
 selectorAddPseudo :: Pseudo -> Selector -> Selector
-selectorAddPseudo ps (Selector pr _ cn) = Selector pr (Just ps) cn
+selectorAddPseudo ps (Selector pr _ m cn) = Selector pr (Just ps) m cn
+
+
+selectorAddMedia :: Media -> Selector -> Selector
+selectorAddMedia m (Selector pr ps _ cn) = Selector pr ps (Just m) cn
 
 
 selectorAddParent :: Text -> Selector -> Selector
-selectorAddParent p (Selector _ ps c) = Selector (Just p) ps c
+selectorAddParent p (Selector _ ps m c) = Selector (Just p) ps m c
 
 
 selector :: ClassName -> Selector
-selector = Selector Nothing Nothing
+selector = Selector Nothing Nothing Nothing
 
 
 selectorText :: Selector -> T.Text
 selectorText s =
-  parent s.parent <> "." <> addPseudo s.pseudo (classNameElementText s.parent Nothing s.className)
+  parent s.parent <> "." <> addPseudo s.pseudo (classNameElementText s.media s.parent Nothing s.className)
  where
   parent Nothing = ""
   parent (Just p) = "." <> p <> " "
@@ -78,9 +91,9 @@ newtype ClassName = ClassName
 
 
 -- | The class name as it appears in the element
-classNameElementText :: Maybe Text -> Maybe Pseudo -> ClassName -> Text
-classNameElementText mp mps c =
-  addPseudo mps . addParent mp $ c.text
+classNameElementText :: Maybe Media -> Maybe Text -> Maybe Pseudo -> ClassName -> Text
+classNameElementText mm mp mps c =
+  addMedia mm . addPseudo mps . addParent mp $ c.text
  where
   addParent Nothing cn = cn
   addParent (Just p) cn = p <> "-" <> cn
@@ -89,6 +102,13 @@ classNameElementText mp mps c =
   addPseudo Nothing cn = cn
   addPseudo (Just p) cn =
     pseudoText p <> ":" <> cn
+
+  addMedia :: Maybe Media -> Text -> Text
+  addMedia Nothing cn = cn
+  addMedia (Just (MinWidth n)) cn =
+    [i|mmnw#{n}-#{cn}|]
+  addMedia (Just (MaxWidth n)) cn =
+    [i|mmxw#{n}-#{cn}|]
 
 
 pseudoText :: Pseudo -> Text
@@ -259,4 +279,4 @@ flatAttributes t =
 
   classAttValue :: [Class] -> T.Text
   classAttValue cx =
-    T.intercalate " " $ fmap (\c -> classNameElementText c.selector.parent c.selector.pseudo c.selector.className) cx
+    T.intercalate " " $ fmap (\c -> classNameElementText c.selector.media c.selector.parent c.selector.pseudo c.selector.className) cx

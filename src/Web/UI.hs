@@ -21,6 +21,7 @@ module Web.UI
   , Content
   , Mod
   , Sides (..)
+  , Media (..)
   , module Web.UI.Url
   ) where
 

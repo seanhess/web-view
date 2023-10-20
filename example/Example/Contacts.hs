@@ -107,7 +107,7 @@ viewContact u = do
       label id (text "Age")
       text (cs $ show u.age)
 
-    liveButton Edit (bg Primary . hover |: bg PrimaryLight) "Edit"
+    liveButton Edit (bg Primary . color White . hover (bg PrimaryLight . color Dark)) "Edit"
 
 
 viewEdit :: User -> View Contact ()

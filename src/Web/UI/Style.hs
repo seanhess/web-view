@@ -177,17 +177,17 @@ pointer :: Mod
 pointer = cls1 "pointer" [("cursor", "pointer")]
 
 
-hover :: Pseudo
-hover = Hover
+hover :: Mod -> Mod
+hover f = Hover |: f
 
 
-active :: Pseudo
-active = Active
+active :: Mod -> Mod
+active f = Active |: f
 
 
 -- Add a pseudo-class like Hover to your style
 (|:) :: Pseudo -> Mod -> Mod
-(|:) ps = modLastClasses $ \c ->
+(|:) ps = modClassMod $ \c ->
   c
     { selector = selectorAddPseudo ps c.selector
     }
@@ -196,22 +196,30 @@ active = Active
 infixr 9 |:
 
 
+media :: Media -> Mod -> Mod
+media m = modClassMod $ \c ->
+  c
+    { selector = selectorAddMedia m c.selector
+    }
+
+
 parent :: Text -> Mod -> Mod
-parent p = modLastClasses $ \c ->
+parent p = modClassMod $ \c ->
   c
     { selector = selectorAddParent p c.selector
     }
 
 
-modLastClasses :: (Class -> Class) -> Mod -> Mod
-modLastClasses fc fm el =
-  let el' = fm el
-   in case el'.classes of
-        [] -> el'
-        (new : cx) ->
-          -- this is a bit of a hack
-          -- we know that the last class added is the one to be modified
-          el'{classes = map fc new : cx}
+modClassMod :: (Class -> Class) -> Mod -> Mod
+modClassMod fc fm el =
+  -- apply the function to all classes added by the mod
+  -- ignore
+  let el' = fm $ Element "none" [] [] []
+   in el
+        { classes = el.classes <> (map fc <$> el'.classes)
+        , attributes = el.attributes <> el'.attributes
+        , children = el.children <> el'.children
+        }
 
 
 pxRem :: PxRem -> StyleValue

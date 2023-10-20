@@ -5,6 +5,7 @@
 module Web.UI.Render where
 
 import Data.ByteString.Lazy qualified as BL
+import Data.Function ((&))
 import Data.Map (Map)
 import Data.Map qualified as M
 import Data.String.Interpolate (i)
@@ -119,7 +120,16 @@ renderCSS = map renderClass . M.elems
   renderClass c =
     let sel = selectorText c.selector
         props = T.intercalate "; " (map renderProp $ M.toList c.properties)
-     in [i|#{sel} { #{props} }|]
+     in [i|#{sel} { #{props} }|] & addMedia c.selector.media
+
+  addMedia Nothing css = css
+  addMedia (Just m) css =
+    let mc = mediaCriteria m
+     in [i|@media #{mc} { #{css} }|]
+
+  mediaCriteria :: Media -> Text
+  mediaCriteria (MinWidth n) = let v = Px n in [i|(min-width: #{v})|]
+  mediaCriteria (MaxWidth n) = let v = Px n in [i|(max-width: #{v})|]
 
   renderProp :: (T.Text, StyleValue) -> T.Text
   renderProp (p, cv) = p <> ":" <> renderStyle cv
