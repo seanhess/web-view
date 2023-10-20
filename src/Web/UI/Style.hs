@@ -53,6 +53,10 @@ width :: PxRem -> Mod
 width n = cls1 ("w" -. n) [("width", pxRem n), ("flex-shrink", "0")]
 
 
+minWidth :: PxRem -> Mod
+minWidth n = cls1 ("mw" -. n) [("min-width", pxRem n)]
+
+
 height :: PxRem -> Mod
 height n = cls1 ("h" -. n) [("height", pxRem n), ("flex-shrink", "0")]
 
