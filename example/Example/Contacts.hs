@@ -1,5 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-
 module Example.Contacts where
 
 import Control.Monad (forM_)
@@ -62,7 +60,6 @@ page = do
 
 contacts :: (Page :> es, Users :> es, Debug :> es) => Contacts -> ContactsAction -> Eff es (View Contacts ())
 contacts _ (Reload mf) = do
-  -- send $ Delay 1000
   us <- usersAll
   pure $ viewAll mf us
 contacts _ (Delete uid) = do
@@ -72,21 +69,19 @@ contacts _ (Delete uid) = do
 
 
 viewAll :: Maybe Filter -> [User] -> View Contacts ()
-viewAll mf us = do
+viewAll fil us = do
   row (gap 10) $ do
-    -- I want to change something, then run ANOTHER event on load
     liveButton (Reload Nothing) (bg GrayLight) "Reload"
 
-    i <- context
-    tag "select" (att "name" "active" . att "data-on-change" "" . dataTarget i) $ do
-      opt Nothing ""
-      opt (Just Active) "Active"
-      opt (Just Inactive) "Inactive"
+    liveSelect Reload fil $ do
+      option Nothing id ""
+      option (Just Active) id "Active!"
+      option (Just Inactive) id "Inactive"
 
     target (Contact 2) $ liveButton Edit (bg GrayLight) "Edit 2"
 
   row (pad 10 . gap 10) $ do
-    let filtered = filter (filterUsers mf) us
+    let filtered = filter (filterUsers fil) us
     forM_ filtered $ \u -> do
       el (border 1) $ do
         liveView (Contact u.id) $ viewContact u
@@ -94,11 +89,6 @@ viewAll mf us = do
   filterUsers Nothing _ = True
   filterUsers (Just Active) u = u.isActive
   filterUsers (Just Inactive) u = not u.isActive
-
-  opt mf' t = do
-    tag "option" (att "value" (toParam (Reload mf')) . selected (mf' == mf)) t
-
-  selected b = if b then att "selected" "true" else id
 
 
 contact :: (Page :> es, Users :> es, Debug :> es) => Contact -> ContactAction -> Eff es (View Contact ())
@@ -141,25 +131,25 @@ viewContact u = do
 
 viewEdit :: User -> View Contact ()
 viewEdit u =
-  -- onRequest loading $ do
-  liveForm Save (pad 10 . gap 10) $ do
-    label id $ do
-      text "First Name"
-      input (name "firstName" . value u.firstName)
+  onRequest loading $ do
+    liveForm Save (pad 10 . gap 10) $ do
+      label id $ do
+        text "First Name"
+        input (name "firstName" . value u.firstName)
 
-    label id $ do
-      text "Last Name"
-      input (name "lastName" . value u.lastName)
+      label id $ do
+        text "Last Name"
+        input (name "lastName" . value u.lastName)
 
-    label id $ do
-      text "Age"
-      input (name "age" . value (cs $ show u.age))
+      label id $ do
+        text "Age"
+        input (name "age" . value (cs $ show u.age))
 
-    submitButton id "Submit"
+      submitButton id "Submit"
 
-    liveButton View id (text "Cancel")
+      liveButton View id (text "Cancel")
 
-    target Contacts $ liveButton (Delete u.id) (bg Secondary) (text "Delete")
+      target Contacts $ liveButton (Delete u.id) (bg Secondary) (text "Delete")
  where
   loading = el (bg Secondary) "Loading..."
 

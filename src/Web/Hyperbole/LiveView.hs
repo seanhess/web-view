@@ -80,3 +80,36 @@ instance Param ()
 instance Param Text where
   parseParam = pure
   toParam = id
+
+
+liveSelect
+  :: (LiveView id, Param id)
+  => (opt -> Action id)
+  -> opt
+  -> View (Option opt id) ()
+  -> View id ()
+liveSelect toAction sel options = do
+  c <- context
+  tag "select" (att "data-on-change" "" . dataTarget c) $ do
+    addContext (Option toAction sel) options
+
+
+option
+  :: (LiveView id, Param (Action id), Param id, Eq opt)
+  => opt
+  -> Mod
+  -> View (Option opt id) ()
+  -> View (Option opt id) ()
+option opt f cnt = do
+  os <- context
+  tag "option" (att "value" (toParam (os.toAction opt)) . isSelected (opt == os.selected) . f) cnt
+
+
+isSelected :: Bool -> Mod
+isSelected b = if b then att "selected" "true" else id
+
+
+data Option opt id = Option
+  { toAction :: opt -> Action id
+  , selected :: opt
+  }
