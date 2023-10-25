@@ -25,7 +25,7 @@ import Web.UI
 
 data Page :: Effect where
   RespondView :: View () () -> Page m ()
-  GetEvent :: (Param act, Param id, LiveView id) => Page m (Maybe (Event id act))
+  GetEvent :: (LiveView id action) => Page m (Maybe (Event id action))
   GetForm :: Page m Form
   PageError :: PageError -> Page m a
 
@@ -99,7 +99,7 @@ pageLoad pg = do
   view vw
 
 
-pageAction :: forall id es. (Page :> es, LiveView id, Param id, Param (Action id), Show id) => (id -> Action id -> Eff es (View id ())) -> Eff es ()
+pageAction :: forall id action es. (Page :> es, LiveView id action, Show id) => (id -> action -> Eff es (View id ())) -> Eff es ()
 pageAction handle = do
   -- this continues if it doesn't match!
   mev <- send GetEvent

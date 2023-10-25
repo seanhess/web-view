@@ -26,7 +26,9 @@ data Contacts = Contacts
   deriving (Show, Read, Param)
 
 
--- yeah, look, if we have ANY other action, we have to include the thing in every event
+instance LiveView Contact ContactAction
+
+
 data ContactsAction
   = Reload (Maybe Filter)
   | Delete Int
@@ -39,12 +41,7 @@ data Filter
   deriving (Show, Read, Eq)
 
 
-instance LiveView Contact where
-  type Action Contact = ContactAction
-
-
-instance LiveView Contacts where
-  type Action Contacts = ContactsAction
+instance LiveView Contacts ContactsAction
 
 
 page :: forall es. (Page :> es, Users :> es, Debug :> es) => Eff es ()
