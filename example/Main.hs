@@ -33,7 +33,7 @@ main = do
   putStrLn "Starting Examples on http://localhost:3003"
   users <- initUsers
   run 3003
-    $ staticPolicy (addBase "dist")
+    $ staticPolicy (addBase "client/dist")
     $ app users
 
 

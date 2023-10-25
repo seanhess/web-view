@@ -16,7 +16,7 @@ trap cleanup EXIT
 
 
 # client-side files
-npx webpack -w &
+(cd client && npx webpack -w &)
 
 # Recompile package.yaml on changes
 watchexec -e hs,yaml hpack &

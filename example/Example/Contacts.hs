@@ -28,10 +28,17 @@ data Contacts = Contacts
   deriving (Show, Read, Param)
 
 
+-- yeah, look, if we have ANY other action, we have to include the thing in every event
 data ContactsAction
-  = Reload
+  = Reload (Maybe Filter)
   | Delete Int
   deriving (Show, Read, Param)
+
+
+data Filter
+  = Active
+  | Inactive
+  deriving (Show, Read, Eq)
 
 
 instance LiveView Contact where
@@ -50,30 +57,48 @@ page = do
     us <- usersAll
     pure $ do
       col (pad 10 . gap 10) $ do
-        liveView Contacts $ viewAll us
+        liveView Contacts $ viewAll Nothing us
 
 
 contacts :: (Page :> es, Users :> es, Debug :> es) => Contacts -> ContactsAction -> Eff es (View Contacts ())
-contacts _ Reload = do
-  send $ Delay 1000
+contacts _ (Reload mf) = do
+  -- send $ Delay 1000
   us <- usersAll
-  pure $ viewAll us
+  pure $ viewAll mf us
 contacts _ (Delete uid) = do
   userDelete uid
   us <- usersAll
-  pure $ viewAll us
+  pure $ viewAll Nothing us
 
 
-viewAll :: [User] -> View Contacts ()
-viewAll us = do
+viewAll :: Maybe Filter -> [User] -> View Contacts ()
+viewAll mf us = do
   row (gap 10) $ do
     -- I want to change something, then run ANOTHER event on load
-    liveButton Reload (bg GrayLight) "Reload"
+    liveButton (Reload Nothing) (bg GrayLight) "Reload"
+
+    i <- context
+    tag "select" (att "name" "active" . att "data-on-change" "" . dataTarget i) $ do
+      opt Nothing ""
+      opt (Just Active) "Active"
+      opt (Just Inactive) "Inactive"
+
     target (Contact 2) $ liveButton Edit (bg GrayLight) "Edit 2"
+
   row (pad 10 . gap 10) $ do
-    forM_ us $ \u -> do
+    let filtered = filter (filterUsers mf) us
+    forM_ filtered $ \u -> do
       el (border 1) $ do
         liveView (Contact u.id) $ viewContact u
+ where
+  filterUsers Nothing _ = True
+  filterUsers (Just Active) u = u.isActive
+  filterUsers (Just Inactive) u = not u.isActive
+
+  opt mf' t = do
+    tag "option" (att "value" (toParam (Reload mf')) . selected (mf' == mf)) t
+
+  selected b = if b then att "selected" "true" else id
 
 
 contact :: (Page :> es, Users :> es, Debug :> es) => Contact -> ContactAction -> Eff es (View Contact ())
@@ -104,14 +129,19 @@ viewContact u = do
       text u.lastName
 
     el_ $ do
-      label id (text "Age")
+      label id (text "Age:")
       text (cs $ show u.age)
+
+    el_ $ do
+      label id (text "Active:")
+      text (cs $ show u.isActive)
 
     liveButton Edit (bg Primary . color White . hover (bg PrimaryLight . color Dark)) "Edit"
 
 
 viewEdit :: User -> View Contact ()
-viewEdit u = onRequest loading $ do
+viewEdit u =
+  -- onRequest loading $ do
   liveForm Save (pad 10 . gap 10) $ do
     label id $ do
       text "First Name"

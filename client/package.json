@@ -19,6 +19,6 @@
     "webpack-cli": "^4.10.0"
   },
   "dependencies": {
-    "million": "^1.12.6-beta.0"
+    "omdomdom": "^0.3.2"
   }
 }

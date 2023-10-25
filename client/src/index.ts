@@ -1,11 +1,13 @@
-import { hydrate, patch, render, DOMNode, m, VNode, Flags, style } from 'million';
-import { fromDomNodeToVNode, fromStringToDomNode, fromStringToVNode} from 'million/utils';
+import { render, patch, create } from "omdomdom/lib/omdomdom.es.js"
+
+
+
 
 // import { listenEvents } from './events';
 // import { WEBSOCKET_ADDRESS, Messages } from './Messages'
 // import { INIT_PAGE, INIT_STATE, State, Class } from './types';
 // import { fromVDOM, VDOM } from './vdom'
-import  { listenClick, listenFormSubmit } from './events'
+import  { listenChange, listenClick, listenFormSubmit } from './events'
 
 
 // const CONTENT_ID = "yeti-root-content"
@@ -17,6 +19,23 @@ console.log("Hyperbole 0.1.3")
 // const address = `${protocol}//${window.location.host}`
 // const socket = new WebSocket(address)
 
+
+
+
+listenClick(async function(target:HTMLElement, action:string) {
+  console.log("CLICK", target.id, action)
+  runAction(target, action)
+})
+
+listenFormSubmit(async function(target:HTMLElement, action:string, form:FormData) {
+  console.log("FORM", target.id, action,form)
+  runAction(target, action, form)
+})
+
+listenChange(async function(target:HTMLElement, action:string) {
+  console.log("CHANGE", target.id, action)
+  runAction(target, action)
+})
 
 async function sendAction(id:string, action:string, form?:FormData) {
   let url = new URL(window.location.href)
@@ -34,25 +53,18 @@ async function sendAction(id:string, action:string, form?:FormData) {
   return res.text()
 }
 
-listenClick(async function(target:HTMLElement, action:string) {
-  console.log("CLICK", target.id, action)
-  runAction(target, action)
-})
-
-listenFormSubmit(async function(target:HTMLElement, action:string, form:FormData) {
-  console.log("FORM", target.id, action,form)
-  runAction(target, action, form)
-})
-
-
 async function runAction(target:HTMLElement, action:string, form?:FormData) {
   target.classList.add("request")
   let ret = await sendAction(target.id, action, form)
 
   // Patch the local target instead of replacing
-  let nodes:VNode[] = fromStringToVNode(ret)
-  let newTarget = m("div", {"id": target.id, "class": target.getAttribute('class')}, nodes)
-  patch(target, newTarget)
+  const wrapper = document.createElement("div")
+  wrapper.setAttribute("id", target.id)
+  wrapper.setAttribute("class", target.getAttribute("class"))
+  wrapper.innerHTML = ret
+
+  const next = create(wrapper)
+  patch(next, create(target))
 
   target.classList.remove("request")
 }
@@ -62,6 +74,7 @@ function toSearch(form?:FormData):URLSearchParams | undefined {
     
   const params = new URLSearchParams()
 
+
   form.forEach((value, key) => {
     params.append(key, value as string)
   })
@@ -69,6 +82,21 @@ function toSearch(form?:FormData):URLSearchParams | undefined {
   return params
 }
 
+
+
+
+// function init() {
+//   let root = document.body
+//
+//   let nodes:VNode[] = fromStringToVNode(root.innerHTML) as VNode[]
+//   let newRoot = m("body", {}, nodes)
+//   // console.log("PATCH", root, newRoot)
+//   patch(root, newRoot)
+// }
+
+// document.addEventListener("DOMContentLoaded", () => {
+//   // init()
+// })
 
 // socket.addEventListener('open', (event) => {
 //   console.log("Opened")

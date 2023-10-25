@@ -13,4 +13,4 @@ import Web.UI.Embed
 
 
 scriptEmbed :: ByteString
-scriptEmbed = $(embedFile "dist/hyperbole.js")
+scriptEmbed = $(embedFile "client/dist/hyperbole.js")
