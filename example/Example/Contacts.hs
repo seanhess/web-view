@@ -70,7 +70,7 @@ viewAll fil us = do
   row (gap 10) $ do
     liveButton (Reload Nothing) (bg GrayLight) "Reload"
 
-    liveSelect Reload fil $ do
+    liveSelect Reload (== fil) $ do
       option Nothing id ""
       option (Just Active) id "Active!"
       option (Just Inactive) id "Inactive"

@@ -90,17 +90,14 @@ title :: Text -> View c ()
 title = tag "title" id . text
 
 
-head :: View c () -> View c ()
-head = tag "head" id
+-- head :: View c () -> View c ()
+-- head = tag "head" id
 
+-- html :: View c () -> View c ()
+-- html = tag "html" id
 
-html :: View c () -> View c ()
-html = tag "html" id
-
-
-body :: View c () -> View c ()
-body = tag "body" id
-
+-- body :: View c () -> View c ()
+-- body = tag "body" id
 
 layout :: Mod -> View c () -> View c ()
 layout f = el (rootLayout . f)
@@ -162,14 +159,14 @@ stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
 table :: Mod -> [dt] -> Eff '[Writer [TableColumn dt]] () -> View c ()
 table f dts wcs = do
   let cols = runPureEff . execWriter $ wcs
-  tag "table" (f . borderCollapse) $ do
+  tag "table" borderCollapse $ do
     tag "thead" id $ do
-      tag "tr" id $ do
+      tag "tr" f $ do
         forM_ cols $ \tc -> do
           addContext Head tc.headCell
     tag "tbody" id $ do
       forM_ dts $ \dt -> do
-        tag "tr" id $ do
+        tag "tr" f $ do
           forM_ cols $ \tc -> do
             addContext dt $ tc.dataCell dt
  where

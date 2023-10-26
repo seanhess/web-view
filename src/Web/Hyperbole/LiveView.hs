@@ -36,8 +36,8 @@ liveButton a f cd = do
 
 onRequest :: View id () -> View id () -> View id ()
 onRequest a b = do
-  el (parent "request" flexCol . display None) a
-  el (parent "request" (display None) . flexCol) b
+  el (parent "hyp-loading" flexCol . display None) a
+  el (parent "hyp-loading" (display None) . flexCol) b
 
 
 -- | Internal
@@ -58,13 +58,13 @@ target vid vw =
 liveSelect
   :: (LiveView id action)
   => (opt -> action)
-  -> opt
+  -> (opt -> Bool)
   -> View (Option opt id action) ()
   -> View id ()
-liveSelect toAction sel options = do
+liveSelect toAction isSel options = do
   c <- context
   tag "select" (att "data-on-change" "" . dataTarget c) $ do
-    addContext (Option toAction sel) options
+    addContext (Option toAction isSel) options
 
 
 option
@@ -75,16 +75,16 @@ option
   -> View (Option opt id action) ()
 option opt f cnt = do
   os <- context
-  tag "option" (att "value" (toParam (os.toAction opt)) . isSelected (opt == os.selected) . f) cnt
+  tag "option" (att "value" (toParam (os.toAction opt)) . selected (os.selected opt) . f) cnt
 
 
-isSelected :: Bool -> Mod
-isSelected b = if b then att "selected" "true" else id
+selected :: Bool -> Mod
+selected b = if b then att "selected" "true" else id
 
 
 data Option opt id action = Option
   { toAction :: opt -> action
-  , selected :: opt
+  , selected :: opt -> Bool
   }
 
 

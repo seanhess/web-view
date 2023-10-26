@@ -8,7 +8,7 @@ export function listenClick(cb:(target:HTMLElement, action:string) => void): voi
     // clicks can fire on internal elements. Find the parent with a click handler
     let source = el.closest("[data-on-click]") as HTMLElement
 
-    console.log("CLICK", source?.dataset.onClick)
+    // console.log("CLICK", source?.dataset.onClick)
 
     // they should all have an action and target
     if (source?.dataset.onClick && source?.dataset.target) {
@@ -34,7 +34,7 @@ export function listenChange(cb:(target:HTMLElement, action:string) => void): vo
     // clicks can fire on internal elements. Find the parent with a click handler
     let source = el.closest("[data-on-change]") as HTMLInputElement
 
-    console.log("CHANGE!", source.value)
+    // console.log("CHANGE!", source.value)
 
     // they should all have an action and target
     if (source?.dataset.target && source.value) {

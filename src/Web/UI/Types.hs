@@ -81,7 +81,7 @@ selectorText s =
 
   addPseudo Nothing c = c
   addPseudo (Just p) c =
-    pseudoText p <> "\\:" <> c <> ":" <> pseudoText p
+    pseudoText p <> "\\:" <> c <> ":" <> pseudoSuffix p
 
 
 newtype ClassName = ClassName
@@ -115,9 +115,17 @@ pseudoText :: Pseudo -> Text
 pseudoText p = T.toLower $ pack $ show p
 
 
+pseudoSuffix :: Pseudo -> Text
+pseudoSuffix Even = "nth-child(even)"
+pseudoSuffix Odd = "nth-child(odd)"
+pseudoSuffix p = pseudoText p
+
+
 data Pseudo
   = Hover
   | Active
+  | Even
+  | Odd
   deriving (Show, Eq, Ord, Generic, ToJSON)
 
 
@@ -127,6 +135,7 @@ data StyleValue
   | Hex HexColor
   | RGB Text
   | Value Text
+  | Milliseconds Int
 
 
 instance IsString StyleValue where
@@ -141,6 +150,7 @@ instance Show StyleValue where
   -- it needs to have a string?
   -- this might need to get more complicated
   show (RGB s) = "rgb(" <> unpack s <> ")"
+  show (Milliseconds s) = show s <> "ms"
 
 
 newtype HexColor = HexColor Text

@@ -18,8 +18,9 @@ console.log("Hyperbole 0.1.3")
 // const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 // const address = `${protocol}//${window.location.host}`
 // const socket = new WebSocket(address)
+//
 
-
+let rootStyles: HTMLStyleElement;
 
 
 listenClick(async function(target:HTMLElement, action:string) {
@@ -54,26 +55,32 @@ async function sendAction(id:string, action:string, form?:FormData) {
 }
 
 async function runAction(target:HTMLElement, action:string, form?:FormData) {
-  target.classList.add("request")
+
+  let timeout = setTimeout(() => {
+    // add loading after 200ms, not right away
+    target.classList.add("hyp-loading")
+  }, 200)
+
+
   let ret = await sendAction(target.id, action, form)
+  let res = parseResponse(ret)
 
-  // Patch the local target instead of replacing
-  const wrapper = document.createElement("div")
-  wrapper.setAttribute("id", target.id)
-  wrapper.setAttribute("class", target.getAttribute("class"))
-  wrapper.innerHTML = ret
-
-  const next = create(wrapper)
+  // Patch the node
+  const next = create(res.content)
   patch(next, create(target))
 
-  target.classList.remove("request")
+  // Now update the style sheet
+  addCSS(res.css.textContent)
+
+  // Remove loading and clear add timeout
+  clearTimeout(timeout)
+  target.classList.remove("hyp-loading")
 }
 
 function toSearch(form?:FormData):URLSearchParams | undefined {
   if (!form) return undefined
     
   const params = new URLSearchParams()
-
 
   form.forEach((value, key) => {
     params.append(key, value as string)
@@ -82,21 +89,36 @@ function toSearch(form?:FormData):URLSearchParams | undefined {
   return params
 }
 
+function addCSS(text:string) {
+  let rules = text.split("\n")
+  rules.forEach((rule) => {
+    rootStyles.sheet.insertRule(rule)
+  })
+}
 
+type Response = {
+  content: HTMLElement
+  css: HTMLStyleElement
+}
 
+function parseResponse(ret:string):Response {
+  const parser = new DOMParser()
+  const doc = parser.parseFromString(ret, 'text/html')
+  const css = doc.querySelector("style") as HTMLStyleElement
+  const content = doc.querySelector("div") as HTMLElement
 
-// function init() {
-//   let root = document.body
-//
-//   let nodes:VNode[] = fromStringToVNode(root.innerHTML) as VNode[]
-//   let newRoot = m("body", {}, nodes)
-//   // console.log("PATCH", root, newRoot)
-//   patch(root, newRoot)
-// }
+  return {
+    content: content,
+    css: css
+  }
+}
 
-// document.addEventListener("DOMContentLoaded", () => {
-//   // init()
-// })
+function init() {
+  rootStyles = document.querySelector('style')
+}
+
+document.addEventListener("DOMContentLoaded", init)
+
 
 // socket.addEventListener('open', (event) => {
 //   console.log("Opened")

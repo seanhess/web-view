@@ -20,10 +20,14 @@ class ToClassName a where
 
 
 instance ToClassName Int
+instance ToClassName Float
 
 
 instance ToClassName Text where
   toClassName = id
+
+
+instance ToClassName TransitionProperty
 
 
 instance {-# OVERLAPS #-} (ToColor a) => ToClassName a where
@@ -185,6 +189,14 @@ active :: Mod -> Mod
 active f = Active |: f
 
 
+even :: Mod -> Mod
+even f = Even |: f
+
+
+odd :: Mod -> Mod
+odd f = Odd |: f
+
+
 -- Add a pseudo-class like Hover to your style
 (|:) :: Pseudo -> Mod -> Mod
 (|:) ps = modClassMod $ \c ->
@@ -268,7 +280,7 @@ truncate =
     ]
 
 
-type Seconds = Float
+type Ms = Int
 
 
 data TransitionProperty
@@ -277,10 +289,10 @@ data TransitionProperty
   deriving (Show)
 
 
-transition :: TransitionProperty -> Float -> Mod
-transition p n =
+transition :: TransitionProperty -> Ms -> Mod
+transition p ms =
   cls1
-    "tt"
-    [ ("transition-duration", Value (pack (show n) <> "s"))
+    ("t" -. p -. ms)
+    [ ("transition-duration", Milliseconds ms)
     , ("transition-property", Value $ T.toLower $ pack $ show p)
     ]

@@ -15,6 +15,7 @@ data AppColor
   | Primary
   | PrimaryLight
   | Secondary
+  | SecondaryLight
   deriving (Show)
 
 
@@ -27,6 +28,7 @@ instance ToColor AppColor where
   colorValue Primary = "#2C74BB"
   colorValue PrimaryLight = "#3281cf"
   colorValue Secondary = "#5CADDB"
+  colorValue SecondaryLight = "#8CFDAB"
   -- colorValue Success = "67C837"
   colorValue Success = "#D5E6DE"
   colorValue Error = "#F3D8DA"

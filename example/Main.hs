@@ -18,6 +18,7 @@ import Example.Contacts qualified as Contacts
 import Example.Effects.Debug
 import Example.Effects.Users as Users
 import Example.Layout qualified as Layout
+import Example.Transitions qualified as Transitions
 import GHC.Generics (Generic)
 import Network.HTTP.Types (Method, QueryItem, methodPost, status200, status404)
 import Network.Wai ()
@@ -42,6 +43,7 @@ data AppRoute
   | Hello Hello
   | Contacts
   | Layout
+  | Transitions
   | Echo
   deriving (Show, Generic, Eq, Route)
 
@@ -63,12 +65,14 @@ app users = waiApplication document (runUsersIO users . runPageWai . runDebugIO 
       text $ cs $ show f
   router Contacts = Contacts.page
   router Layout = Layout.page
+  router Transitions = Transitions.page
   router Main = view $ do
     col (gap 10 . pad 10) $ do
       el (bold . fontSize 32) "Examples"
       link (routeUrl (Hello (Greet "World"))) id "Hello World"
       link (routeUrl Contacts) id "Contacts"
       link (routeUrl Layout) id "Layout"
+      link (routeUrl Transitions) id "Transitions"
 
   hello (Greet s) = view $ el (pad 10) "GREET" >> text s
 

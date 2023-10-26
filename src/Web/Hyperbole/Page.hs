@@ -106,5 +106,5 @@ pageAction handle = do
   case mev of
     Just (Event vid act) -> do
       vw <- handle vid act
-      view $ addContext vid vw
+      view $ liveView vid vw
     _ -> pure ()

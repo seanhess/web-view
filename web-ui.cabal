@@ -84,6 +84,7 @@ executable example
       Example.Effects.Debug
       Example.Effects.Users
       Example.Layout
+      Example.Transitions
       Paths_web_ui
   autogen-modules:
       Paths_web_ui
