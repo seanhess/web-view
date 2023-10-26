@@ -128,15 +128,15 @@ renderCSS = map renderClass . M.elems
      in [i|@media #{mc} { #{css} }|]
 
   mediaCriteria :: Media -> Text
-  mediaCriteria (MinWidth n) = let v = Px n in [i|(min-width: #{v})|]
-  mediaCriteria (MaxWidth n) = let v = Px n in [i|(max-width: #{v})|]
+  mediaCriteria (MinWidth n) = [i|(min-width: #{n}px)|]
+  mediaCriteria (MaxWidth n) = [i|(max-width: #{n}px)|]
 
   renderProp :: (T.Text, StyleValue) -> T.Text
   renderProp (p, cv) = p <> ":" <> renderStyle cv
 
 
 renderStyle :: StyleValue -> T.Text
-renderStyle v = T.pack $ show v
+renderStyle (StyleValue v) = T.pack v
 
 
 showView :: c -> View c () -> Text

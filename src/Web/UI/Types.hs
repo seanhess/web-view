@@ -1,3 +1,6 @@
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module Web.UI.Types where
 
 import Data.Aeson
@@ -11,6 +14,7 @@ import Effectful
 import Effectful.Reader.Static
 import Effectful.State.Static.Local as ES
 import GHC.Generics (Generic)
+import Text.Casing (kebab)
 
 
 -- import Data.Text.Lazy qualified as L
@@ -129,35 +133,97 @@ data Pseudo
   deriving (Show, Eq, Ord, Generic, ToJSON)
 
 
-data StyleValue
-  = Px Int
-  | Rem Float
-  | Hex HexColor
-  | RGB Text
-  | Value Text
-  | Milliseconds Int
+newtype StyleValue = StyleValue String
+  deriving newtype (IsString, Show)
 
 
-instance IsString StyleValue where
-  fromString = Value . pack
+class ToStyleValue a where
+  toStyleValue :: a -> StyleValue
+  default toStyleValue :: (Show a) => a -> StyleValue
+  toStyleValue = StyleValue . kebab . show
 
 
-instance Show StyleValue where
-  show (Value s) = unpack s
-  show (Px n) = show n <> "px"
-  show (Rem s) = show s <> "rem"
-  show (Hex (HexColor s)) = "#" <> unpack (T.dropWhile (== '#') s)
-  -- it needs to have a string?
-  -- this might need to get more complicated
-  show (RGB s) = "rgb(" <> unpack s <> ")"
-  show (Milliseconds s) = show s <> "ms"
+instance ToStyleValue String where
+  toStyleValue = StyleValue
+
+
+instance ToStyleValue Text where
+  toStyleValue = StyleValue . unpack
+
+
+instance ToStyleValue Int
+
+
+-- newtype Px = Px Int deriving (Show)
+--
+--
+-- instance ToStyleValue Px where
+--   toStyleValue (Px n) = StyleValue $ show n <> "px"
+--
+--
+-- newtype Rem = Rem Float deriving (Show)
+--
+--
+-- instance ToStyleValue Rem where
+--   toStyleValue (Rem f) = StyleValue $ showFFloat (Just 3) f "" <> "rem"
+
+-- Px, converted to Rem
+newtype PxRem = PxRem Int
+  deriving newtype (Show, ToClassName, Num)
+
+
+instance ToStyleValue PxRem where
+  toStyleValue (PxRem 0) = "0px"
+  toStyleValue (PxRem 1) = "1px"
+  toStyleValue (PxRem n) = StyleValue $ show ((fromIntegral n :: Float) / 16.0) <> "rem"
+
+
+newtype Ms = Ms Int deriving (Show)
+
+
+instance ToStyleValue Ms where
+  toStyleValue (Ms n) = StyleValue $ show n <> "ms"
 
 
 newtype HexColor = HexColor Text
 
 
+instance ToStyleValue HexColor where
+  toStyleValue (HexColor s) = StyleValue $ "#" <> unpack (T.dropWhile (== '#') s)
+
+
 instance IsString HexColor where
   fromString = HexColor . T.dropWhile (== '#') . T.pack
+
+
+class ToClassName a where
+  toClassName :: a -> Text
+  default toClassName :: (Show a) => a -> Text
+  toClassName = T.toLower . T.pack . show
+
+
+instance ToClassName Int
+instance ToClassName Float
+
+
+instance ToClassName Text where
+  toClassName = id
+
+
+instance {-# OVERLAPS #-} (ToColor a) => ToClassName a where
+  toClassName = colorName
+
+
+class ToColor a where
+  colorValue :: a -> HexColor
+  colorName :: a -> Text
+  default colorName :: (Show a) => a -> Text
+  colorName = T.toLower . pack . show
+
+
+instance ToColor HexColor where
+  colorValue c = c
+  colorName (HexColor a) = T.dropWhile (== '#') a
 
 
 attribute :: Name -> AttValue -> Attribute

@@ -1,6 +1,7 @@
 module Web.UI.Element where
 
 import Control.Monad (forM_)
+import Data.Function ((&))
 import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Text (Text)
@@ -171,7 +172,7 @@ table f dts wcs = do
             addContext dt $ tc.dataCell dt
  where
   borderCollapse :: Mod
-  borderCollapse = cls1 "brd-cl" [("border-collapse", "collapse")]
+  borderCollapse = addClass $ cls "brd-cl" & prop @Text "border-collapse" "collapse"
 
 
 tcol :: forall dt es. (Writer [TableColumn dt] :> es) => View Head () -> (dt -> View dt ()) -> Eff es ()

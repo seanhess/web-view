@@ -25,7 +25,7 @@ page = do
   pageAction content
 
   pageLoad $ do
-    pure $ row (pad 20) $ el (bg GrayLight . pad 20) $ do
+    pure $ row (pad 20) $ do
       liveView Contents viewSmall
 
 
@@ -38,19 +38,19 @@ content _ Collapse = do
 
 viewSmall :: View Contents ()
 viewSmall = do
-  col (gap 10 . transition Height 500 . height 80) $ do
-    liveButton Expand btn "Expand"
+  col (gap 10 . transition MaxHeight 500 . maxHeight 0 . border 1 . pad 20) $ do
     el id "Hello"
+    liveButton Expand btn "Expand"
 
 
 viewBig :: View Contents ()
-viewBig = col (gap 10 . transition Height 500 . height 220) $ do
-  liveButton Collapse (bg Secondary . hover (bg SecondaryLight) . color White . pad 10) "Collapse"
+viewBig = col (gap 10 . transition MaxHeight 500 . maxHeight 1000 . border 1 . pad 20) $ do
   el_ "One"
   el_ "Two"
   el_ "Three"
   el_ "Four"
   el_ "Five"
+  liveButton Collapse (bg Secondary . hover (bg SecondaryLight) . color White . pad 10) "Collapse"
 
 
 btn :: Mod
