@@ -13,7 +13,7 @@ import  { listenChange, listenClick, listenFormSubmit } from './events'
 // const CONTENT_ID = "yeti-root-content"
 
 // console.log("VERSION 2", INIT_PAGE, INIT_STATE)
-console.log("Hyperbole 0.1.3")
+console.log("Hyperbole 0.1.4")
 
 // const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 // const address = `${protocol}//${window.location.host}`
@@ -65,12 +65,13 @@ async function runAction(target:HTMLElement, action:string, form?:FormData) {
   let ret = await sendAction(target.id, action, form)
   let res = parseResponse(ret)
 
+  // First, update the stylesheet
+  addCSS(res.css.textContent)
+
   // Patch the node
   const next = create(res.content)
   patch(next, create(target))
 
-  // Now update the style sheet
-  addCSS(res.css.textContent)
 
   // Remove loading and clear add timeout
   clearTimeout(timeout)
