@@ -61,7 +61,6 @@ async function runAction(target:HTMLElement, action:string, form?:FormData) {
     target.classList.add("hyp-loading")
   }, 200)
 
-
   let ret = await sendAction(target.id, action, form)
   let res = parseResponse(ret)
 
@@ -69,9 +68,9 @@ async function runAction(target:HTMLElement, action:string, form?:FormData) {
   addCSS(res.css.textContent)
 
   // Patch the node
-  const next = create(res.content)
-  patch(next, create(target))
-
+  const next:VNode = create(res.content)
+  const old:VNode = create(target)
+  patch(next, old)
 
   // Remove loading and clear add timeout
   clearTimeout(timeout)
@@ -121,6 +120,7 @@ function init() {
 document.addEventListener("DOMContentLoaded", init)
 
 
+
 // socket.addEventListener('open', (event) => {
 //   console.log("Opened")
 // })
@@ -156,3 +156,28 @@ document.addEventListener("DOMContentLoaded", init)
 //   }
 // }
 
+
+type VNode = {
+  // One of three value types are used:
+  // - The tag name of the element
+  // - "text" if text node
+  // - "comment" if comment node
+  type: string
+
+  // An object whose key/value pairs are the attribute
+  // name and value, respectively
+  attributes: [string: string]
+
+  // Is set to `true` if a node is an `svg`, which tells
+  // Omdomdom to treat it, and its children, as such
+  isSVGContext: Boolean
+
+  // The content of a "text" or "comment" node
+  content: string
+
+  // An array of virtual node children
+  children: Array<VNode>
+
+  // The real DOM node
+  node: Node
+}

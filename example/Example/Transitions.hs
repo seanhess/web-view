@@ -38,18 +38,15 @@ content _ Collapse = do
 
 viewSmall :: View Contents ()
 viewSmall = do
-  col (gap 10 . transition MaxHeight 500 . maxHeight 0 . border 1 . pad 20) $ do
+  col (gap 10 . border 1 . pad 20 . transition 300 (Height 200)) $ do
     el id "Hello"
     liveButton Expand btn "Expand"
 
 
 viewBig :: View Contents ()
-viewBig = col (gap 10 . transition MaxHeight 500 . maxHeight 1000 . border 1 . pad 20) $ do
+viewBig = col (gap 10 . border 1 . pad 20 . transition 300 (Height 400)) $ do
   el_ "One"
-  el_ "Two"
-  el_ "Three"
-  el_ "Four"
-  el_ "Five"
+  el_ "TWO"
   liveButton Collapse (bg Secondary . hover (bg SecondaryLight) . color White . pad 10) "Collapse"
 
 

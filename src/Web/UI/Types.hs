@@ -178,7 +178,9 @@ instance ToStyleValue PxRem where
   toStyleValue (PxRem n) = StyleValue $ show ((fromIntegral n :: Float) / 16.0) <> "rem"
 
 
-newtype Ms = Ms Int deriving (Show)
+newtype Ms = Ms Int
+  deriving (Show)
+  deriving newtype (Num, ToClassName)
 
 
 instance ToStyleValue Ms where

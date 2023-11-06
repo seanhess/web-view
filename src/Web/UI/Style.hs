@@ -1,12 +1,11 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Web.UI.Style where
 
 import Data.Function ((&))
 import Data.Map qualified as M
 import Data.Text (Text)
 import Web.UI.Types
-
-
-instance ToClassName TransitionProperty
 
 
 -- | Hyphneate classnames
@@ -58,13 +57,6 @@ height n =
     $ cls ("h" -. n)
     & prop "height" n
     & prop @Int "flex-shrink" 0
-
-
-maxHeight :: PxRem -> Mod
-maxHeight n =
-  addClass
-    $ cls ("mh" -. n)
-    & prop "max-height" n
 
 
 pad :: Sides PxRem -> Mod
@@ -297,19 +289,25 @@ truncate =
     & prop @Text "text-overflow" "ellipsis"
 
 
+-- You MUST set the height/width manually when you attempt to transition it
 data TransitionProperty
-  = Width
-  | Height
-  | MaxHeight
-  deriving (Show, ToStyleValue)
+  = Width PxRem
+  | Height PxRem
+  deriving (Show)
 
 
-transition :: TransitionProperty -> Int -> Mod
-transition p ms =
-  addClass
-    $ cls ("t" -. p -. ms)
-    & prop "transition-duration" (Ms ms)
-    & prop "transition-property" p
+-- what does it need? To know it's calculated height, right?
+transition :: Ms -> TransitionProperty -> Mod
+transition ms = \case
+  (Height n) -> trans "height" n
+  (Width n) -> trans "width" n
+ where
+  trans p px =
+    addClass
+      $ cls ("t" -. px -. p -. ms)
+      & prop "transition-duration" ms
+      & prop "transition-property" p
+      & prop p px
 
 
 data Align
