@@ -31,6 +31,7 @@ library
       Web.UI
       Web.UI.Element
       Web.UI.Embed
+      Web.UI.Layout
       Web.UI.Render
       Web.UI.Style
       Web.UI.Types

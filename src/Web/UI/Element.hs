@@ -100,9 +100,6 @@ title = tag "title" id . text
 -- body :: View c () -> View c ()
 -- body = tag "body" id
 
-layout :: Mod -> View c () -> View c ()
-layout f = el (rootLayout . f)
-
 
 row :: Mod -> View c () -> View c ()
 row f = el (flexRow . f)

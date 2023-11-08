@@ -266,18 +266,6 @@ rgb :: Int -> Int -> Int -> StyleValue
 rgb rd gr bl = StyleValue $ mconcat [show rd, " ", show gr, " ", show bl]
 
 
--- | Sets the root layout so filling columns makes sense
-rootLayout :: Mod
-rootLayout =
-  flexCol
-    . addClass
-      ( cls "layout"
-          -- [ ("white-space", "pre")
-          & prop @Text "width" "100%"
-          & prop @Text "height" "100%"
-          & prop @Text "min-height" "100%"
-          & prop @Text "z-index" "0"
-      )
 
 
 truncate :: Mod

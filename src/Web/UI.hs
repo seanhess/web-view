@@ -14,6 +14,9 @@ module Web.UI
   , ToColor (..)
   , HexColor (..)
 
+    -- * Layout
+  , module Web.UI.Layout
+
     -- * Types
   , View
   , context
@@ -26,6 +29,7 @@ module Web.UI
   ) where
 
 import Web.UI.Element
+import Web.UI.Layout
 import Web.UI.Render
 import Web.UI.Style
 import Web.UI.Types
