@@ -9,44 +9,41 @@ import Data.Function ((&))
 import Data.Map (Map)
 import Data.Map qualified as M
 import Data.String.Interpolate (i)
-import Data.Text qualified as T
-import Data.Text.Lazy (Text)
+import Data.Text (Text, intercalate, pack, unlines, unwords)
 import Data.Text.Lazy qualified as L
-import Data.Text.Lazy.Encoding qualified as L
+import Data.Text.Lazy.Encoding qualified as LE
 import Web.UI.Element (insertContents)
+import Prelude hiding (unlines, unwords)
 
 -- import Debug.Trace
 import Web.UI.Types
 
 
-type Indent = Int
-
-
-htmlTag :: ([Text] -> [Text]) -> Element -> [Text]
+htmlTag :: (Text -> Text) -> Element -> [Text]
 htmlTag ind tag =
   case tag.children of
     [] ->
-      -- autoClosing creates a bug in chrome. An auto-closed div
+      -- auto closing creates a bug in chrome. An auto-closed div
       -- absorbs the next children
       [open <> htmlAtts (flatAttributes tag) <> ">" <> close]
     -- single text node
     [Text t] ->
       -- SINGLE text node, just display it indented
-      [open <> htmlAtts (flatAttributes tag) <> ">" <> L.fromStrict t <> close]
+      [open <> htmlAtts (flatAttributes tag) <> ">" <> t <> close]
     _ ->
       mconcat
         [ [open <> htmlAtts (flatAttributes tag) <> ">"]
-        , ind $ htmlChildren tag.children
+        , ind <$> htmlChildren tag.children
         , [close]
         ]
  where
-  open = "<" <> L.fromStrict tag.name
-  close = "</" <> L.fromStrict tag.name <> ">"
+  open = "<" <> tag.name
+  close = "</" <> tag.name <> ">"
 
   htmlContent :: Content -> [Text]
   htmlContent (Node t) = htmlTag ind t
-  htmlContent (Text t) = [L.fromStrict t]
-  htmlContent (Raw t) = [L.fromStrict t]
+  htmlContent (Text t) = [t]
+  htmlContent (Raw t) = [t]
 
   htmlChildren :: [Content] -> [Text]
   htmlChildren cts =
@@ -57,69 +54,57 @@ htmlTag ind tag =
   htmlAtts (FlatAttributes []) = ""
   htmlAtts (FlatAttributes as) =
     " "
-      <> L.intercalate " " (map htmlAtt $ M.toList as)
+      <> unwords (map htmlAtt $ M.toList as)
    where
     htmlAtt (k, v) =
-      L.fromStrict $ k <> "=" <> "'" <> v <> "'"
-
-
-indentation :: Text
-indentation = "  "
-
-
-indentAll :: [Text] -> [Text]
-indentAll = fmap indent
+      k <> "=" <> "'" <> v <> "'"
 
 
 indent :: Text -> Text
-indent t = indentation <> t
+indent t = "  " <> t
 
 
-noIndent :: Indent -> [Text] -> [Text]
-noIndent _ ts = ts
-
-
-renderLazyText :: forall c. c -> View c () -> Text
-renderLazyText c u = L.intercalate "\n" content
+renderText :: forall c. c -> View c () -> Text
+renderText c u = intercalate "\n" content
  where
   -- T.intercalate "\n" (content <> style css)
   content :: [Text]
-  content = map renderContent $ (.contents) $ runView c addCss
+  content = map (unlines . renderContent) $ (.contents) $ runView c addCss
 
   addCss :: View c ()
   addCss = do
     insertContents [styleElement]
     u
 
-  css :: [T.Text]
+  css :: [Text]
   css = renderCSS $ (.css) $ runView c u
 
   styleElement :: Content
   styleElement =
-    Node $ Element "style" [] [("type", "text/css")] [Text $ T.intercalate "\n" css]
+    Node $ Element "style" [] [("type", "text/css")] [Text $ intercalate "\n" css]
 
 
-renderText :: c -> View c () -> T.Text
-renderText c = L.toStrict . renderLazyText c
+renderLazyText :: c -> View c () -> L.Text
+renderLazyText c = L.fromStrict . renderText c
 
 
 renderLazyByteString :: c -> View c () -> BL.ByteString
-renderLazyByteString c = L.encodeUtf8 . renderLazyText c
+renderLazyByteString c = LE.encodeUtf8 . renderLazyText c
 
 
-renderContent :: Content -> Text
-renderContent (Node d) = L.unlines $ htmlTag indentAll d
-renderContent (Text t) = L.fromStrict t
-renderContent (Raw t) = L.fromStrict t
+renderContent :: Content -> [Text]
+renderContent (Node t) = htmlTag indent t
+renderContent (Text t) = [t]
+renderContent (Raw t) = [t]
 
 
-renderCSS :: Map Selector Class -> [T.Text]
+renderCSS :: Map Selector Class -> [Text]
 renderCSS = map renderClass . M.elems
  where
-  renderClass :: Class -> T.Text
+  renderClass :: Class -> Text
   renderClass c =
     let sel = selectorText c.selector
-        props = T.intercalate "; " (map renderProp $ M.toList c.properties)
+        props = intercalate "; " (map renderProp $ M.toList c.properties)
      in [i|#{sel} { #{props} }|] & addMedia c.selector.media
 
   addMedia Nothing css = css
@@ -131,21 +116,15 @@ renderCSS = map renderClass . M.elems
   mediaCriteria (MinWidth n) = [i|(min-width: #{n}px)|]
   mediaCriteria (MaxWidth n) = [i|(max-width: #{n}px)|]
 
-  renderProp :: (T.Text, StyleValue) -> T.Text
+  renderProp :: (Text, StyleValue) -> Text
   renderProp (p, cv) = p <> ":" <> renderStyle cv
 
 
-renderStyle :: StyleValue -> T.Text
-renderStyle (StyleValue v) = T.pack v
+renderStyle :: StyleValue -> Text
+renderStyle (StyleValue v) = pack v
 
 
 showView :: c -> View c () -> Text
 showView c v =
   let st = runView c v
-   in L.unlines $ mconcat $ map showContent st.contents
-
-
-showContent :: Content -> [Text]
-showContent (Node t) = htmlTag indentAll t
-showContent (Text t) = [L.fromStrict t]
-showContent (Raw t) = [L.fromStrict t]
+   in unlines $ mconcat $ map renderContent st.contents

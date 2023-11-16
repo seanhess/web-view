@@ -17,8 +17,6 @@ import GHC.Generics (Generic)
 import Text.Casing (kebab)
 
 
--- import Data.Text.Lazy qualified as L
-
 type Name = Text
 type AttValue = Text
 
@@ -308,7 +306,7 @@ context :: View c c
 context = View ask
 
 
--- we want to convert an existing view to a new context, discarding the old one
+-- | Run a view with a different context
 addContext :: cx -> View cx () -> View c ()
 addContext ctx vw = do
   -- runs the sub-view in a different context, saving its state
@@ -332,6 +330,7 @@ data Sides a
   | XY a a
 
 
+-- Num instance is just to support literals
 instance (Num a) => Num (Sides a) where
   a + _ = a
   a * _ = a
@@ -341,7 +340,7 @@ instance (Num a) => Num (Sides a) where
   fromInteger n = All (fromInteger n)
 
 
--- | Attributes that include classes
+-- | Attributes, inclusive of class
 newtype FlatAttributes = FlatAttributes {attributes :: Attributes}
   deriving (Generic)
   deriving newtype (ToJSON)
