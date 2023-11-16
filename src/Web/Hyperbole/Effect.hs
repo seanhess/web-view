@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Web.Hyperbole.Page where
+module Web.Hyperbole.Effect where
 
 import Control.Monad (join)
 import Data.ByteString
@@ -17,30 +17,30 @@ import Network.HTTP.Types (Query)
 import Network.Wai
 import Web.FormUrlEncoded (Form)
 import Web.FormUrlEncoded qualified as Form
-import Web.Hyperbole.LiveView
+import Web.Hyperbole.HyperView
 import Web.UI
 
 
 -- you can't automatically derive FromHttpApiData. I don't like it!
 
-data Page :: Effect where
-  RespondView :: View () () -> Page m ()
-  GetEvent :: (LiveView id action) => Page m (Maybe (Event id action))
-  GetForm :: Page m Form
-  PageError :: PageError -> Page m a
+data Hyperbole :: Effect where
+  RespondView :: View () () -> Hyperbole m ()
+  GetEvent :: (HyperView id action) => Hyperbole m (Maybe (Event id action))
+  GetForm :: Hyperbole m Form
+  HyperError :: HyperError -> Hyperbole m a
 
 
-type instance DispatchOf Page = 'Dynamic
+type instance DispatchOf Hyperbole = 'Dynamic
 
 
 data Event id act = Event id act
 
 
-runPageWai
+runHyperbole
   :: (Wai :> es)
-  => Eff (Page : es) a
+  => Eff (Hyperbole : es) a
   -> Eff es a
-runPageWai = interpret $ \_ -> \case
+runHyperbole = interpret $ \_ -> \case
   RespondView vw -> do
     let bd = renderLazyByteString () vw
     send $ ResHeader "Content-Type" "text/html"
@@ -54,8 +54,8 @@ runPageWai = interpret $ \_ -> \case
       act <- parseParam ta
       pure $ Event vid act
   GetForm -> Wai.formData
-  PageError NotFound -> send $ Interrupt Wai.NotFound
-  PageError (ParseError e) -> send $ Interrupt $ Wai.ParseError e
+  HyperError NotFound -> send $ Interrupt Wai.NotFound
+  HyperError (ParseError e) -> send $ Interrupt $ Wai.ParseError e
  where
   lookupParam :: ByteString -> Query -> Maybe Text
   lookupParam p q =
@@ -68,43 +68,40 @@ runPageWai = interpret $ \_ -> \case
       <*> lookupParam "action" q
 
 
-formData :: (Page :> es) => Eff es Form
+formData :: (Hyperbole :> es) => Eff es Form
 formData = send GetForm
 
 
-param :: (Page :> es, Param a) => Text -> Form -> Eff es a
+-- | Read a required form parameter
+param :: (Hyperbole :> es, Param a) => Text -> Form -> Eff es a
 param p f = do
   -- param is required
-  either (send . PageError . ParseError) pure $ do
+  either (send . HyperError . ParseError) pure $ do
     t <- Form.lookupUnique p f
     maybe (Left [i|could not parseParam: '#{t}'|]) pure $ parseParam t
 
 
-view :: (Page :> es) => View () () -> Eff es ()
-view = send . RespondView
+notFound :: (Hyperbole :> es) => Eff es a
+notFound = send (HyperError NotFound)
 
 
-notFound :: (Page :> es) => Eff es a
-notFound = send (PageError NotFound)
-
-
-data PageError
+data HyperError
   = NotFound
   | ParseError Text
 
 
-pageLoad :: (Page :> es) => Eff es (View () ()) -> Eff es ()
-pageLoad pg = do
+load :: (Hyperbole :> es) => Eff es (View () ()) -> Eff es ()
+load pg = do
   vw <- pg
-  view vw
+  send $ RespondView vw
 
 
-pageAction :: forall id action es. (Page :> es, LiveView id action, Show id) => (id -> action -> Eff es (View id ())) -> Eff es ()
-pageAction handle = do
-  -- this continues if it doesn't match!
+hyper :: forall id action es. (Hyperbole :> es, HyperView id action) => (id -> action -> Eff es (View id ())) -> Eff es ()
+hyper run = do
+  -- Get an event matching our type. If it doesn't match, skip to the next handler
   mev <- send GetEvent
   case mev of
     Just (Event vid act) -> do
-      vw <- handle vid act
-      view $ liveView vid vw
+      vw <- run vid act
+      send $ RespondView $ viewId vid vw
     _ -> pure ()

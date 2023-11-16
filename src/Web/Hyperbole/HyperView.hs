@@ -1,7 +1,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE FunctionalDependencies #-}
 
-module Web.Hyperbole.LiveView where
+module Web.Hyperbole.HyperView where
 
 import Data.Text
 import Text.Read
@@ -9,16 +9,16 @@ import Web.UI
 
 
 -- | Associate a live id with a set of actions
-class (Param id, Param action) => LiveView id action | id -> action
+class (Param id, Param action) => HyperView id action | id -> action
 
 
-liveView :: forall id action ctx. (LiveView id action) => id -> View id () -> View ctx ()
-liveView vid vw = do
+viewId :: forall id action ctx. (HyperView id action) => id -> View id () -> View ctx ()
+viewId vid vw = do
   el (att "id" (toParam vid) . flexCol)
     $ addContext vid vw
 
 
-liveForm :: (LiveView id action) => action -> Mod -> View id () -> View id ()
+liveForm :: (HyperView id action) => action -> Mod -> View id () -> View id ()
 liveForm a f cd = do
   c <- context
   tag "form" (onSubmit a . dataTarget c . f . flexCol) cd
@@ -28,7 +28,7 @@ submitButton :: Mod -> View c () -> View c ()
 submitButton f = tag "button" (att "type" "submit" . f)
 
 
-liveButton :: (LiveView id action) => action -> Mod -> View id () -> View id ()
+liveButton :: (HyperView id action) => action -> Mod -> View id () -> View id ()
 liveButton a f cd = do
   c <- context
   tag "button" (att "data-on-click" (toParam a) . dataTarget c . f) cd
@@ -50,13 +50,13 @@ onSubmit = att "data-on-submit" . toParam
 
 
 -- | Change the target of any code running inside, allowing actions to target other live views on the page
-target :: (LiveView id action) => id -> View id () -> View a ()
+target :: (HyperView id action) => id -> View id () -> View a ()
 target vid vw =
   addContext vid vw
 
 
 liveSelect
-  :: (LiveView id action)
+  :: (HyperView id action)
   => (opt -> action)
   -> (opt -> Bool)
   -> View (Option opt id action) ()
@@ -68,7 +68,7 @@ liveSelect toAction isSel options = do
 
 
 option
-  :: (LiveView id action, Eq opt)
+  :: (HyperView id action, Eq opt)
   => opt
   -> Mod
   -> View (Option opt id action) ()

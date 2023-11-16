@@ -6,7 +6,8 @@ import Effectful
 import Effectful.Dispatch.Dynamic
 import Example.Colors
 import Example.Effects.Debug
-import Example.Effects.Users
+import Example.Effects.Users (User (..), Users)
+import Example.Effects.Users qualified as Users
 import Web.Hyperbole
 import Web.UI
 
@@ -19,20 +20,17 @@ data ContactAction
   = Edit
   | Save
   | View
-  deriving (Show, Read, Param)
+  deriving (Show, Read, Param, HyperView Contact)
 
 
 data Contacts = Contacts
   deriving (Show, Read, Param)
 
 
-instance LiveView Contact ContactAction
-
-
 data ContactsAction
   = Reload (Maybe Filter)
   | Delete Int
-  deriving (Show, Read, Param)
+  deriving (Show, Read, Param, HyperView Contacts)
 
 
 data Filter
@@ -41,32 +39,30 @@ data Filter
   deriving (Show, Read, Eq)
 
 
-instance LiveView Contacts ContactsAction
-
-
-page :: forall es. (Page :> es, Users :> es, Debug :> es) => Eff es ()
+page :: forall es. (Hyperbole :> es, Users :> es, Debug :> es) => Eff es ()
 page = do
-  pageAction contacts
-  pageAction contact
-  pageLoad $ do
+  hyper contacts
+  hyper contact
+
+  load $ do
     us <- usersAll
     pure $ do
       col (pad 10 . gap 10) $ do
-        liveView Contacts $ viewAll Nothing us
+        viewId Contacts $ allContactsView Nothing us
 
 
-contacts :: (Page :> es, Users :> es, Debug :> es) => Contacts -> ContactsAction -> Eff es (View Contacts ())
+contacts :: (Hyperbole :> es, Users :> es, Debug :> es) => Contacts -> ContactsAction -> Eff es (View Contacts ())
 contacts _ (Reload mf) = do
   us <- usersAll
-  pure $ viewAll mf us
+  pure $ allContactsView mf us
 contacts _ (Delete uid) = do
   userDelete uid
   us <- usersAll
-  pure $ viewAll Nothing us
+  pure $ allContactsView Nothing us
 
 
-viewAll :: Maybe Filter -> [User] -> View Contacts ()
-viewAll fil us = do
+allContactsView :: Maybe Filter -> [User] -> View Contacts ()
+allContactsView fil us = do
   row (gap 10) $ do
     liveButton (Reload Nothing) (bg GrayLight) "Reload"
 
@@ -81,31 +77,31 @@ viewAll fil us = do
     let filtered = filter (filterUsers fil) us
     forM_ filtered $ \u -> do
       el (border 1) $ do
-        liveView (Contact u.id) $ viewContact u
+        viewId (Contact u.id) $ contactView u
  where
   filterUsers Nothing _ = True
   filterUsers (Just Active) u = u.isActive
   filterUsers (Just Inactive) u = not u.isActive
 
 
-contact :: (Page :> es, Users :> es, Debug :> es) => Contact -> ContactAction -> Eff es (View Contact ())
+contact :: (Hyperbole :> es, Users :> es, Debug :> es) => Contact -> ContactAction -> Eff es (View Contact ())
 contact (Contact uid) a = do
   u <- userFind uid
   action u a
  where
   action u View = do
-    pure $ viewContact u
+    pure $ contactView u
   action u Edit = do
-    pure $ viewEdit u
-  action u' Save = do
-    send $ Delay 1000
-    u <- userFormData u'.id
-    send $ SaveUser u
-    pure $ viewContact u
+    pure $ contactEdit u
+  action u Save = do
+    delay 1000
+    u' <- userFormData u.id
+    userSave u'
+    pure $ contactView u'
 
 
-viewContact :: User -> View Contact ()
-viewContact u = do
+contactView :: User -> View Contact ()
+contactView u = do
   col (pad 10 . gap 10) $ do
     el_ $ do
       label id (text "First Name:")
@@ -126,8 +122,8 @@ viewContact u = do
     liveButton Edit (bg Primary . color White . hover (bg PrimaryLight . color Dark)) "Edit"
 
 
-viewEdit :: User -> View Contact ()
-viewEdit u =
+contactEdit :: User -> View Contact ()
+contactEdit u =
   onRequest loading $ do
     liveForm Save (pad 10 . gap 10) $ do
       label id $ do
@@ -151,7 +147,7 @@ viewEdit u =
   loading = el (bg Secondary) "Loading..."
 
 
-userFormData :: (Page :> es) => Int -> Eff es User
+userFormData :: (Hyperbole :> es) => Int -> Eff es User
 userFormData uid = do
   f <- formData
   firstName <- param "firstName" f
@@ -160,19 +156,19 @@ userFormData uid = do
   pure $ User uid firstName lastName age True
 
 
-userFind :: (Page :> es, Users :> es) => Int -> Eff es User
+userFind :: (Hyperbole :> es, Users :> es) => Int -> Eff es User
 userFind uid = do
-  mu <- send (LoadUser uid)
+  mu <- send (Users.LoadUser uid)
   maybe notFound pure mu
 
 
 usersAll :: (Users :> es) => Eff es [User]
-usersAll = send LoadUsers
+usersAll = send Users.LoadUsers
 
 
 userSave :: (Users :> es) => User -> Eff es ()
-userSave = send . SaveUser
+userSave = send . Users.SaveUser
 
 
 userDelete :: (Users :> es) => Int -> Eff es ()
-userDelete = send . DeleteUser
+userDelete = send . Users.DeleteUser

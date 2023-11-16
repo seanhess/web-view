@@ -24,9 +24,9 @@ library
       Effectful.Wai
       Web.Hyperbole
       Web.Hyperbole.Application
+      Web.Hyperbole.Effect
       Web.Hyperbole.Embed
-      Web.Hyperbole.LiveView
-      Web.Hyperbole.Page
+      Web.Hyperbole.HyperView
       Web.Hyperbole.Route
       Web.UI
       Web.UI.Element

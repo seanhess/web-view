@@ -41,39 +41,34 @@ runUsersIO
   -> Eff (Users : es) a
   -> Eff es a
 runUsersIO var = interpret $ \_ -> \case
-  LoadUser uid -> Example.Effects.Users.load var uid
-  LoadUsers -> Example.Effects.Users.all var
-  SaveUser u -> Example.Effects.Users.save var u
-  ModifyUser uid f -> Example.Effects.Users.modify var uid f
-  DeleteUser uid -> Example.Effects.Users.delete var uid
+  LoadUser uid -> load uid
+  LoadUsers -> loadAll
+  SaveUser u -> save u
+  ModifyUser uid f -> modify uid f
+  DeleteUser uid -> delete uid
+ where
+  load :: (MonadIO m) => Int -> m (Maybe User)
+  load uid = do
+    us <- liftIO $ readMVar var
+    pure $ M.lookup uid us
 
+  save :: (MonadIO m) => User -> m ()
+  save u = do
+    liftIO $ modifyMVar_ var $ \us -> pure $ M.insert u.id u us
 
-load :: (MonadIO m) => UserStore -> Int -> m (Maybe User)
-load var uid = do
-  us <- liftIO $ readMVar var
-  pure $ M.lookup uid us
+  loadAll :: (MonadIO m) => m [User]
+  loadAll = do
+    us <- liftIO $ readMVar var
+    pure $ M.elems us
 
+  modify :: (MonadIO m) => Int -> (User -> User) -> m ()
+  modify uid f = liftIO $ do
+    modifyMVar_ var $ \us -> do
+      pure $ M.adjust f uid us
 
-save :: (MonadIO m) => UserStore -> User -> m ()
-save var u = do
-  liftIO $ modifyMVar_ var $ \us -> pure $ M.insert u.id u us
-
-
-all :: (MonadIO m) => UserStore -> m [User]
-all var = do
-  us <- liftIO $ readMVar var
-  pure $ M.elems us
-
-
-modify :: (MonadIO m) => UserStore -> Int -> (User -> User) -> m ()
-modify var uid f = liftIO $ do
-  modifyMVar_ var $ \us -> do
-    pure $ M.adjust f uid us
-
-
-delete :: (MonadIO m) => UserStore -> Int -> m ()
-delete var uid = do
-  liftIO $ modifyMVar_ var $ \us -> pure $ M.delete uid us
+  delete :: (MonadIO m) => Int -> m ()
+  delete uid = do
+    liftIO $ modifyMVar_ var $ \us -> pure $ M.delete uid us
 
 
 initUsers :: (MonadIO m) => m UserStore

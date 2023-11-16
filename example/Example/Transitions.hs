@@ -13,23 +13,20 @@ data Contents = Contents
 data Action
   = Expand
   | Collapse
-  deriving (Show, Read, Param)
-
-
-instance LiveView Contents Action
+  deriving (Show, Read, Param, HyperView Contents)
 
 
 -- need to be able to set bg color of page, sure
-page :: (Page :> es) => Eff es ()
+page :: (Hyperbole :> es) => Eff es ()
 page = do
-  pageAction content
+  hyper content
 
-  pageLoad $ do
+  load $ do
     pure $ row (pad 20) $ do
-      liveView Contents viewSmall
+      viewId Contents viewSmall
 
 
-content :: (Page :> es) => Contents -> Action -> Eff es (View Contents ())
+content :: (Hyperbole :> es) => Contents -> Action -> Eff es (View Contents ())
 content _ Expand = do
   pure viewBig
 content _ Collapse = do

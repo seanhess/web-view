@@ -29,3 +29,7 @@ runDebugIO = interpret $ \_ -> \case
 
 dump :: (Debug :> es, Show a) => String -> a -> Eff es ()
 dump msg a = send $ Dump msg a
+
+
+delay :: (Debug :> es) => Milliseconds -> Eff es ()
+delay n = send $ Delay n

@@ -22,7 +22,7 @@ import Example.Transitions qualified as Transitions
 import GHC.Generics (Generic)
 import Network.HTTP.Types (Method, QueryItem, methodPost, status200, status404)
 import Network.Wai ()
-import Network.Wai.Handler.Warp (run)
+import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Handler.WebSockets (websocketsOr)
 import Network.Wai.Middleware.Static (addBase, staticPolicy)
 import Web.Hyperbole
@@ -33,7 +33,7 @@ main :: IO ()
 main = do
   putStrLn "Starting Examples on http://localhost:3003"
   users <- initUsers
-  run 3003
+  Warp.run 3003
     $ staticPolicy (addBase "client/dist")
     $ app users
 
@@ -54,19 +54,19 @@ data Hello
 
 
 app :: UserStore -> Application
-app users = waiApplication document (runUsersIO users . runPageWai . runDebugIO . router)
+app users = waiApplication document (runUsersIO users . runHyperbole . runDebugIO . router)
  where
-  router :: (Page :> es, Users :> es, Debug :> es) => AppRoute -> Eff es ()
+  router :: (Hyperbole :> es, Users :> es, Debug :> es) => AppRoute -> Eff es ()
   router (Hello h) = hello h
   router Echo = do
     f <- formData
-    view $ col id $ do
+    load $ pure $ col id $ do
       el id "ECHO:"
       text $ cs $ show f
   router Contacts = Contacts.page
   router Layout = Layout.page
   router Transitions = Transitions.page
-  router Main = view $ do
+  router Main = load $ pure $ do
     col (gap 10 . pad 10) $ do
       el (bold . fontSize 32) "Examples"
       link (routeUrl (Hello (Greet "World"))) id "Hello World"
@@ -74,19 +74,22 @@ app users = waiApplication document (runUsersIO users . runPageWai . runDebugIO 
       link (routeUrl Layout) id "Layout"
       link (routeUrl Transitions) id "Transitions"
 
-  hello (Greet s) = view $ el (pad 10) "GREET" >> text s
+  -- example sub-router
+  hello (Greet s) = load $ pure $ do
+    el (pad 10 . gap 10) $ do
+      text "Greetings, "
+      text s
 
-
-document :: BL.ByteString -> BL.ByteString
-document cnt =
-  [i|<html>
-    <head>
-      <title>Hyperbole Examples</title>
-      <script type="text/javascript" src="/hyperbole.js"></script>
-      <style type type="text/css">#{cssResetEmbed}</style>
-    </head>
-    <body>#{cnt}</body>
-  </html>|]
+  document :: BL.ByteString -> BL.ByteString
+  document cnt =
+    [i|<html>
+      <head>
+        <title>Hyperbole Examples</title>
+        <script type="text/javascript" src="/hyperbole.js"></script>
+        <style type type="text/css">#{cssResetEmbed}</style>
+      </head>
+      <body>#{cnt}</body>
+    </html>|]
 
 -- document :: BL.ByteString -> BL.ByteString
 -- document cnt =
