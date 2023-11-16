@@ -64,7 +64,7 @@ button = tag "button"
 
 
 -- | Convert from text directly to view. You should not have to use this. Use `text` instead
-data Head = Head
+newtype Head a = Head a
 
 
 data Base
@@ -99,7 +99,6 @@ title = tag "title" id . text
 
 -- body :: View c () -> View c ()
 -- body = tag "body" id
-
 
 row :: Mod -> View c () -> View c ()
 row f = el (flexRow . f)
@@ -154,14 +153,15 @@ stylesheet :: Text -> View c ()
 stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
 
 
-table :: Mod -> [dt] -> Eff '[Writer [TableColumn dt]] () -> View c ()
+table :: Mod -> [dt] -> Eff '[Writer [TableColumn c dt]] () -> View c ()
 table f dts wcs = do
+  c <- context
   let cols = runPureEff . execWriter $ wcs
   tag "table" borderCollapse $ do
     tag "thead" id $ do
       tag "tr" f $ do
         forM_ cols $ \tc -> do
-          addContext Head tc.headCell
+          addContext (Head c) tc.headCell
     tag "tbody" id $ do
       forM_ dts $ \dt -> do
         tag "tr" f $ do
@@ -172,21 +172,23 @@ table f dts wcs = do
   borderCollapse = addClass $ cls "brd-cl" & prop @Text "border-collapse" "collapse"
 
 
-tcol :: forall dt es. (Writer [TableColumn dt] :> es) => View Head () -> (dt -> View dt ()) -> Eff es ()
+tcol :: forall dt c es. (Writer [TableColumn c dt] :> es) => View (Head c) () -> (dt -> View dt ()) -> Eff es ()
 tcol hd view = do
-  tell ([TableColumn hd view] :: [TableColumn dt])
+  tell ([TableColumn hd view] :: [TableColumn c dt])
 
 
-data TableColumn dt = TableColumn
-  { headCell :: View Head ()
+data TableColumn c dt = TableColumn
+  { headCell :: View (Head c) ()
   , dataCell :: dt -> View dt ()
   }
 
 
 -- newtype Cell t a = Cell {fromCell :: View () ()}
 
-th :: Mod -> View () () -> View Head ()
-th f c = addContext () $ tag "th" f c
+th :: Mod -> View c () -> View (Head c) ()
+th f cnt = do
+  Head c <- context
+  addContext c $ tag "th" f cnt
 
 
 td :: Mod -> View () () -> View dt ()
@@ -195,3 +197,7 @@ td f c = addContext () $ tag "td" f c
 
 link :: Url -> Mod -> View c () -> View c ()
 link u f = tag "a" (f . att "href" (fromUrl u))
+
+
+pre :: Mod -> Text -> View c ()
+pre f t = tag "pre" f (text t)

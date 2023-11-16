@@ -1,6 +1,6 @@
 name:               web-ui
-version:            0.1.5
-synopsis:           Typed HTML UIs with simplified layout, and ergonomic composition of styles. Inspired by Tailwindcss
+version:            0.1.6
+synopsis:           Typed HTML UIs with simplified layout, and ergonomic composition of styles. Inspired by Tailwindcss and Elm UI
 homepage:           https://github.com/seanhess/web-ui
 license:            BSD-3-Clause
 license-file:       LICENSE
