@@ -39,7 +39,7 @@ data Filter
   deriving (Show, Read, Eq)
 
 
-page :: forall es. (Hyperbole :> es, Users :> es, Debug :> es) => Eff es ()
+page :: forall es. (Hyperbole :> es, Users :> es, Debug :> es) => Page es ()
 page = do
   hyper contacts
   hyper contact

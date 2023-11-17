@@ -21,11 +21,9 @@ import Web.Hyperbole.HyperView
 import Web.UI
 
 
--- you can't automatically derive FromHttpApiData. I don't like it!
-
 data Hyperbole :: Effect where
-  RespondView :: View () () -> Hyperbole m ()
   GetEvent :: (HyperView id action) => Hyperbole m (Maybe (Event id action))
+  RespondView :: View () () -> Hyperbole m ()
   GetForm :: Hyperbole m Form
   HyperError :: HyperError -> Hyperbole m a
 
@@ -46,6 +44,9 @@ runHyperbole = interpret $ \_ -> \case
     send $ ResHeader "Content-Type" "text/html"
     send $ ResBody ContentHtml bd
     Wai.continue
+  GetForm -> Wai.formData
+  HyperError NotFound -> send $ Interrupt Wai.NotFound
+  HyperError (ParseError e) -> send $ Interrupt $ Wai.ParseError e
   GetEvent -> do
     q <- fmap queryString <$> send $ Wai.Request
     pure $ do
@@ -53,9 +54,6 @@ runHyperbole = interpret $ \_ -> \case
       vid <- parseParam ti
       act <- parseParam ta
       pure $ Event vid act
-  GetForm -> Wai.formData
-  HyperError NotFound -> send $ Interrupt Wai.NotFound
-  HyperError (ParseError e) -> send $ Interrupt $ Wai.ParseError e
  where
   lookupParam :: ByteString -> Query -> Maybe Text
   lookupParam p q =
@@ -90,14 +88,26 @@ data HyperError
   | ParseError Text
 
 
-load :: (Hyperbole :> es) => Eff es (View () ()) -> Eff es ()
-load pg = do
-  vw <- pg
+newtype Page es a = Page (Eff es a)
+  deriving newtype (Applicative, Monad, Functor)
+
+
+-- | Load the entire page when no HyperViews match
+load
+  :: (Hyperbole :> es)
+  => Eff es (View () ())
+  -> Page es ()
+load run = Page $ do
+  vw <- run
   send $ RespondView vw
 
 
-hyper :: forall id action es. (Hyperbole :> es, HyperView id action) => (id -> action -> Eff es (View id ())) -> Eff es ()
-hyper run = do
+-- | Handle a HyperView. If the event matches our handler, respond with the fragment
+hyper
+  :: (Hyperbole :> es, HyperView id action)
+  => (id -> action -> Eff es (View id ()))
+  -> Page es ()
+hyper run = Page $ do
   -- Get an event matching our type. If it doesn't match, skip to the next handler
   mev <- send GetEvent
   case mev of
@@ -105,3 +115,10 @@ hyper run = do
       vw <- run vid act
       send $ RespondView $ viewId vid vw
     _ -> pure ()
+
+
+page
+  :: (Hyperbole :> es)
+  => Page es ()
+  -> Eff es ()
+page (Page eff) = eff

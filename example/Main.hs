@@ -57,16 +57,16 @@ app :: UserStore -> Application
 app users = waiApplication document (runUsersIO users . runHyperbole . runDebugIO . router)
  where
   router :: (Hyperbole :> es, Users :> es, Debug :> es) => AppRoute -> Eff es ()
-  router (Hello h) = hello h
-  router Echo = do
+  router (Hello h) = page $ hello h
+  router Echo = page $ load $ do
     f <- formData
-    load $ pure $ col id $ do
+    pure $ col id $ do
       el id "ECHO:"
       text $ cs $ show f
-  router Contacts = Contacts.page
-  router Layout = Layout.page
-  router Transitions = Transitions.page
-  router Main = load $ pure $ do
+  router Contacts = page Contacts.page
+  router Layout = page Layout.page
+  router Transitions = page Transitions.page
+  router Main = page $ load $ pure $ do
     col (gap 10 . pad 10) $ do
       el (bold . fontSize 32) "Examples"
       link (routeUrl (Hello (Greet "World"))) id "Hello World"

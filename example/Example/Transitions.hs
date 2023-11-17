@@ -17,7 +17,7 @@ data Action
 
 
 -- need to be able to set bg color of page, sure
-page :: (Hyperbole :> es) => Eff es ()
+page :: (Hyperbole :> es) => Page es ()
 page = do
   hyper content
 

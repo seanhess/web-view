@@ -7,7 +7,7 @@ import Web.UI
 
 
 -- need to be able to set bg color of page, sure
-page :: (Hyperbole :> es) => Eff es ()
+page :: (Hyperbole :> es) => Page es ()
 page = load $ do
   pure $ do
     layout (bg GrayLight . big flexRow) $ do
