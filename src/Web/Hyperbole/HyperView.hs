@@ -18,18 +18,18 @@ viewId vid vw = do
     $ addContext vid vw
 
 
-liveForm :: (HyperView id action) => action -> Mod -> View id () -> View id ()
-liveForm a f cd = do
+form :: (HyperView id action) => action -> Mod -> View id () -> View id ()
+form a f cd = do
   c <- context
   tag "form" (onSubmit a . dataTarget c . f . flexCol) cd
 
 
-submitButton :: Mod -> View c () -> View c ()
-submitButton f = tag "button" (att "type" "submit" . f)
+submit :: Mod -> View c () -> View c ()
+submit f = tag "button" (att "type" "submit" . f)
 
 
-liveButton :: (HyperView id action) => action -> Mod -> View id () -> View id ()
-liveButton a f cd = do
+button :: (HyperView id action) => action -> Mod -> View id () -> View id ()
+button a f cd = do
   c <- context
   tag "button" (att "data-on-click" (toParam a) . dataTarget c . f) cd
 
@@ -55,13 +55,13 @@ target vid vw =
   addContext vid vw
 
 
-liveSelect
+dropdown
   :: (HyperView id action)
   => (opt -> action)
   -> (opt -> Bool)
   -> View (Option opt id action) ()
   -> View id ()
-liveSelect toAction isSel options = do
+dropdown toAction isSel options = do
   c <- context
   tag "select" (att "data-on-change" "" . dataTarget c) $ do
     addContext (Option toAction isSel) options

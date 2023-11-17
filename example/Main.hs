@@ -66,7 +66,7 @@ app users = waiApplication document (runUsersIO users . runHyperbole . runDebugI
   router Contacts = page Contacts.page
   router Layout = page Layout.page
   router Transitions = page Transitions.page
-  router Main = page $ load $ pure $ do
+  router Main = view $ do
     col (gap 10 . pad 10) $ do
       el (bold . fontSize 32) "Examples"
       link (routeUrl (Hello (Greet "World"))) id "Hello World"
@@ -75,10 +75,12 @@ app users = waiApplication document (runUsersIO users . runHyperbole . runDebugI
       link (routeUrl Transitions) id "Transitions"
 
   -- example sub-router
-  hello (Greet s) = load $ pure $ do
-    el (pad 10 . gap 10) $ do
-      text "Greetings, "
-      text s
+  hello :: (Hyperbole :> es, Debug :> es) => Hello -> Page es ()
+  hello (Greet s) = load $ do
+    pure $ do
+      el (pad 10 . gap 10) $ do
+        text "Greetings, "
+        text s
 
   document :: BL.ByteString -> BL.ByteString
   document cnt =

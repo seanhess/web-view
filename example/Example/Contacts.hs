@@ -9,7 +9,7 @@ import Example.Effects.Debug
 import Example.Effects.Users (User (..), Users)
 import Example.Effects.Users qualified as Users
 import Web.Hyperbole
-import Web.UI
+import Web.UI hiding (button, form)
 
 
 data Contact = Contact Int
@@ -43,7 +43,6 @@ page :: forall es. (Hyperbole :> es, Users :> es, Debug :> es) => Page es ()
 page = do
   hyper contacts
   hyper contact
-
   load $ do
     us <- usersAll
     pure $ do
@@ -64,14 +63,14 @@ contacts _ (Delete uid) = do
 allContactsView :: Maybe Filter -> [User] -> View Contacts ()
 allContactsView fil us = do
   row (gap 10) $ do
-    liveButton (Reload Nothing) (bg GrayLight) "Reload"
+    button (Reload Nothing) (bg GrayLight) "Reload"
 
-    liveSelect Reload (== fil) $ do
+    dropdown Reload (== fil) $ do
       option Nothing id ""
       option (Just Active) id "Active!"
       option (Just Inactive) id "Inactive"
 
-    target (Contact 2) $ liveButton Edit (bg GrayLight) "Edit 2"
+    target (Contact 2) $ button Edit (bg GrayLight) "Edit 2"
 
   row (pad 10 . gap 10) $ do
     let filtered = filter (filterUsers fil) us
@@ -119,13 +118,13 @@ contactView u = do
       label id (text "Active:")
       text (cs $ show u.isActive)
 
-    liveButton Edit (bg Primary . color White . hover (bg PrimaryLight . color Dark)) "Edit"
+    button Edit (bg Primary . color White . hover (bg PrimaryLight . color Dark)) "Edit"
 
 
 contactEdit :: User -> View Contact ()
 contactEdit u =
   onRequest loading $ do
-    liveForm Save (pad 10 . gap 10) $ do
+    form Save (pad 10 . gap 10) $ do
       label id $ do
         text "First Name"
         input (name "firstName" . value u.firstName)
@@ -138,11 +137,11 @@ contactEdit u =
         text "Age"
         input (name "age" . value (cs $ show u.age))
 
-      submitButton id "Submit"
+      submit id "Submit"
 
-      liveButton View id (text "Cancel")
+      button View id (text "Cancel")
 
-      target Contacts $ liveButton (Delete u.id) (bg Secondary) (text "Delete")
+      target Contacts $ button (Delete u.id) (bg Secondary) (text "Delete")
  where
   loading = el (bg Secondary) "Loading..."
 

@@ -22,9 +22,9 @@ import Web.UI
 
 
 data Hyperbole :: Effect where
+  GetForm :: Hyperbole m Form
   GetEvent :: (HyperView id action) => Hyperbole m (Maybe (Event id action))
   RespondView :: View () () -> Hyperbole m ()
-  GetForm :: Hyperbole m Form
   HyperError :: HyperError -> Hyperbole m a
 
 
@@ -83,6 +83,11 @@ notFound :: (Hyperbole :> es) => Eff es a
 notFound = send (HyperError NotFound)
 
 
+-- | Set the response to the view. Note that `page` already expects a view to be returned from the effect
+view :: (Hyperbole :> es) => View () () -> Eff es ()
+view = send . RespondView
+
+
 data HyperError
   = NotFound
   | ParseError Text
@@ -99,7 +104,7 @@ load
   -> Page es ()
 load run = Page $ do
   vw <- run
-  send $ RespondView vw
+  view vw
 
 
 -- | Handle a HyperView. If the event matches our handler, respond with the fragment
@@ -113,7 +118,7 @@ hyper run = Page $ do
   case mev of
     Just (Event vid act) -> do
       vw <- run vid act
-      send $ RespondView $ viewId vid vw
+      view $ viewId vid vw
     _ -> pure ()
 
 
