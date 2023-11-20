@@ -18,8 +18,41 @@ import Prelude hiding (unlines, unwords)
 import Web.View.Types
 
 
-htmlTag :: (Text -> Text) -> Element -> [Text]
-htmlTag ind tag =
+renderText :: forall c. c -> View c () -> Text
+renderText c u = intercalate "\n" content
+ where
+  -- T.intercalate "\n" (content <> style css)
+  content :: [Text]
+  content = map (unlines . renderContent) $ (.contents) $ runView c addCss
+
+  addCss :: View c ()
+  addCss = do
+    insertContents [styleElement]
+    u
+
+  css :: [Text]
+  css = renderCSS $ (.css) $ runView c u
+
+  styleElement :: Content
+  styleElement =
+    Node $ Element "style" [] [("type", "text/css")] [Text $ intercalate "\n" css]
+
+  renderContent :: Content -> [Text]
+  renderContent (Node t) = renderTag indent t
+  renderContent (Text t) = [t]
+  renderContent (Raw t) = [t]
+
+
+renderLazyText :: c -> View c () -> L.Text
+renderLazyText c = L.fromStrict . renderText c
+
+
+renderLazyByteString :: c -> View c () -> BL.ByteString
+renderLazyByteString c = LE.encodeUtf8 . renderLazyText c
+
+
+renderTag :: (Text -> Text) -> Element -> [Text]
+renderTag ind tag =
   case tag.children of
     [] ->
       -- auto closing creates a bug in chrome. An auto-closed div
@@ -40,7 +73,7 @@ htmlTag ind tag =
   close = "</" <> tag.name <> ">"
 
   htmlContent :: Content -> [Text]
-  htmlContent (Node t) = htmlTag ind t
+  htmlContent (Node t) = renderTag ind t
   htmlContent (Text t) = [t]
   htmlContent (Raw t) = [t]
 
@@ -57,44 +90,6 @@ htmlTag ind tag =
    where
     htmlAtt (k, v) =
       k <> "=" <> "'" <> v <> "'"
-
-
-indent :: Text -> Text
-indent t = "  " <> t
-
-
-renderText :: forall c. c -> View c () -> Text
-renderText c u = intercalate "\n" content
- where
-  -- T.intercalate "\n" (content <> style css)
-  content :: [Text]
-  content = map (unlines . renderContent) $ (.contents) $ runView c addCss
-
-  addCss :: View c ()
-  addCss = do
-    insertContents [styleElement]
-    u
-
-  css :: [Text]
-  css = renderCSS $ (.css) $ runView c u
-
-  styleElement :: Content
-  styleElement =
-    Node $ Element "style" [] [("type", "text/css")] [Text $ intercalate "\n" css]
-
-
-renderLazyText :: c -> View c () -> L.Text
-renderLazyText c = L.fromStrict . renderText c
-
-
-renderLazyByteString :: c -> View c () -> BL.ByteString
-renderLazyByteString c = LE.encodeUtf8 . renderLazyText c
-
-
-renderContent :: Content -> [Text]
-renderContent (Node t) = htmlTag indent t
-renderContent (Text t) = [t]
-renderContent (Raw t) = [t]
 
 
 renderCSS :: CSS -> [Text]
@@ -118,15 +113,12 @@ renderCSS = map renderClass . M.elems
   renderProp :: (Text, StyleValue) -> Text
   renderProp (p, cv) = p <> ":" <> renderStyle cv
 
+  renderStyle :: StyleValue -> Text
+  renderStyle (StyleValue v) = pack v
 
-renderStyle :: StyleValue -> Text
-renderStyle (StyleValue v) = pack v
 
-
-showView :: c -> View c () -> Text
-showView c v =
-  let st = runView c v
-   in unlines $ mconcat $ map renderContent st.contents
+indent :: Text -> Text
+indent t = "  " <> t
 
 
 -- | The css selector for this style
@@ -168,6 +160,11 @@ classNameElementText mm mp mps c =
     [i|mmxw#{n}-#{cn}|]
 
 
+pseudoText :: Pseudo -> Text
+pseudoText p = toLower $ pack $ show p
+
+
+-- | The 'Web.View.Types.Attributes' for an element, inclusive of class.
 flatAttributes :: Element -> FlatAttributes
 flatAttributes t =
   FlatAttributes
@@ -180,6 +177,7 @@ flatAttributes t =
   classAttValue cx =
     unwords $ fmap (\c -> classNameElementText c.selector.media c.selector.parent c.selector.pseudo c.selector.className) cx
 
-
-pseudoText :: Pseudo -> Text
-pseudoText p = toLower $ pack $ show p
+-- showView :: c -> View c () -> Text
+-- showView c v =
+--   let st = runView c v
+--    in unlines $ mconcat $ map renderContent st.contents

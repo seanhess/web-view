@@ -256,7 +256,7 @@ instance (Num a) => Num (Sides a) where
   fromInteger n = All (fromInteger n)
 
 
--- | Element's attributes do not include class, which is separated. FlatAttributes include the class attribute
+-- | Element's attributes do not include class, which is separated. FlatAttributes generate the class attribute and include it
 newtype FlatAttributes = FlatAttributes {attributes :: Attributes}
   deriving (Generic)
 
