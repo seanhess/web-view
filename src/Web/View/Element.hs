@@ -9,7 +9,6 @@ import Effectful
 import Effectful.Writer.Static.Local
 import Web.View.Style
 import Web.View.Types
-import Web.View.Url
 
 
 tag :: Text -> Mod -> View c () -> View c ()
@@ -172,8 +171,6 @@ data TableColumn c dt = TableColumn
   }
 
 
--- newtype Cell t a = Cell {fromCell :: View () ()}
-
 th :: Mod -> View c () -> View (Head c) ()
 th f cnt = do
   Head c <- context
@@ -182,10 +179,6 @@ th f cnt = do
 
 td :: Mod -> View () () -> View dt ()
 td f c = addContext () $ tag "td" f c
-
-
-link :: Url -> Mod -> View c () -> View c ()
-link u f = tag "a" (f . att "href" (fromUrl u))
 
 
 pre :: Mod -> Text -> View c ()

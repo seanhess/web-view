@@ -12,7 +12,7 @@ import Network.HTTP.Types (status200, status301, status400, status404)
 import Network.HTTP.Types.Header (HeaderName)
 import Network.Wai
 import Web.Hyperbole.Route
-import Web.View
+import Web.View.Types (Url (..))
 
 
 waiApplication :: (Route route) => (L.ByteString -> L.ByteString) -> (route -> Eff [Wai, IOE] ()) -> Application
@@ -27,7 +27,7 @@ waiApplication toDoc actions request respond = do
         Right resp -> sendResponse resp
  where
   findRoute [] = Just defRoute
-  findRoute ps = matchRoute ps
+  findRoute ps = matchRoute (Path True ps)
 
   -- convert to document if GET. Subsequent POST requests will only include fragments
   addDocument "GET" bd = toDoc bd
@@ -49,8 +49,8 @@ waiApplication toDoc actions request respond = do
     -- TODO: logging!
     putStrLn $ "Parse Error: " <> cs e
     respond $ responseLBS status400 [contentType ContentText] $ "Parse Error: " <> cs e
-  interrupt (Redirect u) =
-    respond $ responseLBS status301 [("Location", cs $ fromUrl u)] ""
+  interrupt (Redirect (Url u)) =
+    respond $ responseLBS status301 [("Location", cs u)] ""
   interrupt (RespondNow resp) = do
     sendResponse resp
 

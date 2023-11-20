@@ -69,10 +69,10 @@ app users = waiApplication document (runUsersIO users . runHyperbole . runDebugI
   router Main = view $ do
     col (gap 10 . pad 10) $ do
       el (bold . fontSize 32) "Examples"
-      link (routeUrl (Hello (Greet "World"))) id "Hello World"
-      link (routeUrl Contacts) id "Contacts"
-      link (routeUrl Layout) id "Layout"
-      link (routeUrl Transitions) id "Transitions"
+      link (Hello (Greet "World")) id "Hello World"
+      link Contacts id "Contacts"
+      link Layout id "Layout"
+      link Transitions id "Transitions"
 
   -- example sub-router
   hello :: (Hyperbole :> es, Debug :> es) => Hello -> Page es ()

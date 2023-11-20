@@ -5,6 +5,7 @@ module Web.Hyperbole.HyperView where
 
 import Data.Text
 import Text.Read
+import Web.Hyperbole.Route (Route (..), pathUrl)
 import Web.View
 
 
@@ -51,8 +52,7 @@ onSubmit = att "data-on-submit" . toParam
 
 -- | Change the target of any code running inside, allowing actions to target other live views on the page
 target :: (HyperView action id) => id -> View id () -> View a ()
-target vid vw =
-  addContext vid vw
+target = addContext
 
 
 dropdown
@@ -109,3 +109,9 @@ instance Param ()
 instance Param Text where
   parseParam = pure
   toParam = id
+
+
+link :: (Route a) => a -> Mod -> View c () -> View c ()
+link r f cnt = do
+  let Url u = pathUrl . routePath $ r
+  tag "a" (att "href" u . f) cnt

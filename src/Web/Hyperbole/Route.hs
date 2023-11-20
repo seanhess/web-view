@@ -4,40 +4,64 @@ module Web.Hyperbole.Route where
 
 import Control.Applicative ((<|>))
 import Control.Monad (guard)
-import Data.Text as T (Text, dropWhile, pack, splitOn, toLower, unpack)
+import Data.String (IsString (..))
+import Data.Text (Text, dropWhile, dropWhileEnd, intercalate, pack, splitOn, toLower, unpack)
 import GHC.Generics
 import Text.Read (readMaybe)
-import Web.View.Url
+import Web.View.Types (Url (..))
+import Prelude hiding (dropWhile)
 
 
-routeUrl :: (Route a) => a -> Url
-routeUrl a = Url True $ routePaths a
+type IsAbsolute = Bool
+type Segment = Text
+data Path = Path
+  { isAbsolute :: Bool
+  , segments :: [Segment]
+  }
+  deriving (Show)
 
 
-pathSegments :: Text -> [Text]
-pathSegments path = T.splitOn "/" $ T.dropWhile (== '/') path
+-- what if you want a relative url?
+instance IsString Path where
+  fromString s = Path (isRoot s) [cleanSegment $ pack s]
+   where
+    isRoot ('/' : _) = True
+    isRoot _ = False
 
 
 class Route a where
-  matchRoute :: [Text] -> Maybe a
-  routePaths :: a -> [Text]
+  matchRoute :: Path -> Maybe a
+  routePath :: a -> Path
   defRoute :: a
 
 
-  default matchRoute :: (Generic a, GenRoute (Rep a)) => [Text] -> Maybe a
+  default matchRoute :: (Generic a, GenRoute (Rep a)) => Path -> Maybe a
   -- this will match a trailing slash, but not if it is missing
-  matchRoute [""] = pure defRoute
-  matchRoute paths = to <$> genRoute paths
+  matchRoute (Path _ [""]) = pure defRoute
+  matchRoute (Path _ segs) = to <$> genRoute segs
 
 
-  default routePaths :: (Generic a, Eq a, GenRoute (Rep a)) => a -> [Text]
-  routePaths p
-    | p == defRoute = [""]
-    | otherwise = genPaths $ from p
+  default routePath :: (Generic a, Eq a, GenRoute (Rep a)) => a -> Path
+  routePath p
+    | p == defRoute = Path True [""]
+    | otherwise = Path True $ genPaths $ from p
 
 
   default defRoute :: (Generic a, GenRoute (Rep a)) => a
   defRoute = to genFirst
+
+
+pathUrl :: Path -> Url
+pathUrl (Path True ss) = Url $ "/" <> intercalate "/" ss
+pathUrl (Path False ss) = Url $ intercalate "/" ss
+
+
+cleanSegment :: Segment -> Segment
+cleanSegment = dropWhileEnd (== '/') . dropWhile (== '/')
+
+
+pathSegments :: Text -> [Segment]
+pathSegments path = splitOn "/" $ dropWhile (== '/') path
 
 
 class GenRoute f where
@@ -117,13 +141,9 @@ instance (GenRoute a, GenRoute b) => GenRoute (a :*: b) where
 
 
 instance (Route sub) => GenRoute (K1 R sub) where
-  genRoute ts = K1 <$> matchRoute ts
-
-
+  genRoute ts = K1 <$> matchRoute (Path True ts)
   genFirst = K1 defRoute
-
-
-  genPaths (K1 sub) = routePaths sub
+  genPaths (K1 sub) = (routePath sub).segments
 
 
 genRouteRead :: (Read x) => [Text] -> Maybe (K1 R x a)
@@ -133,44 +153,43 @@ genRouteRead _ = Nothing
 
 
 instance Route Text where
-  matchRoute [t] = pure t
+  matchRoute (Path _ [t]) = pure t
   matchRoute _ = Nothing
-  routePaths t = [t]
+  routePath t = Path False [t]
   defRoute = ""
 
 
 instance Route String where
-  matchRoute [t] = pure (unpack t)
+  matchRoute (Path _ [t]) = pure (unpack t)
   matchRoute _ = Nothing
-  routePaths t = [pack t]
+  routePath t = Path False [pack t]
   defRoute = ""
 
 
 instance Route Integer where
   matchRoute = matchRouteRead
-  routePaths = routePathsShow
+  routePath = routePathShow
   defRoute = 0
 
 
 instance Route Int where
   matchRoute = matchRouteRead
-  routePaths = routePathsShow
+  routePath = routePathShow
   defRoute = 0
 
 
 instance (Route a) => Route (Maybe a) where
-  matchRoute [] = pure Nothing
+  matchRoute (Path _ []) = pure Nothing
   matchRoute ps = Just <$> matchRoute ps
-
-
-  routePaths _ = []
+  routePath (Just a) = routePath a
+  routePath Nothing = Path False []
   defRoute = Nothing
 
 
-matchRouteRead :: (Read a) => [Text] -> Maybe a
-matchRouteRead [t] = readMaybe (unpack t)
+matchRouteRead :: (Read a) => Path -> Maybe a
+matchRouteRead (Path _ [t]) = readMaybe (unpack t)
 matchRouteRead _ = Nothing
 
 
-routePathsShow :: (Show a) => a -> [Text]
-routePathsShow a = [pack (show a)]
+routePathShow :: (Show a) => a -> Path
+routePathShow a = Path False [pack (show a)]

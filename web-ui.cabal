@@ -35,7 +35,6 @@ library
       Web.View.Render
       Web.View.Style
       Web.View.Types
-      Web.View.Url
   other-modules:
       Paths_web_ui
   autogen-modules:

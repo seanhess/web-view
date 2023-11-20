@@ -357,3 +357,7 @@ flatAttributes t =
   classAttValue :: [Class] -> T.Text
   classAttValue cx =
     T.intercalate " " $ fmap (\c -> classNameElementText c.selector.media c.selector.parent c.selector.pseudo c.selector.className) cx
+
+
+newtype Url = Url Text
+  deriving newtype (IsString)
