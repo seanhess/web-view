@@ -2,7 +2,6 @@ module Web.View.Element where
 
 import Control.Monad (forM_)
 import Data.Function ((&))
-import Data.Map (Map)
 import Data.Map qualified as M
 import Data.Text (Text)
 import Effectful
@@ -23,20 +22,20 @@ tag nm f ct = do
 
 addClasses :: [Class] -> View c ()
 addClasses clss = do
-  modCss $ \cm -> foldr addClsDef cm clss
+  viewModCss $ \cm -> foldr addClsDef cm clss
  where
-  addClsDef :: Class -> Map Selector Class -> Map Selector Class
+  addClsDef :: Class -> CSS -> CSS
   addClsDef c = M.insert c.selector c
 
 
 addContent :: Content -> View c ()
 addContent ct =
-  modContents (<> [ct])
+  viewModContents (<> [ct])
 
 
 -- Inserts into first child
 insertContents :: [Content] -> View c ()
-insertContents cs = modContents insert
+insertContents cs = viewModContents insert
  where
   insert [Node e] = [Node $ insertEl e]
   insert cnt = cnt <> cs
@@ -138,6 +137,10 @@ stylesheet :: Text -> View c ()
 stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
 
 
+pre :: Mod -> Text -> View c ()
+pre f t = tag "pre" f (text t)
+
+
 table :: Mod -> [dt] -> Eff '[Writer [TableColumn c dt]] () -> View c ()
 table f dts wcs = do
   c <- context
@@ -179,7 +182,3 @@ th f cnt = do
 
 td :: Mod -> View () () -> View dt ()
 td f c = addContext () $ tag "td" f c
-
-
-pre :: Mod -> Text -> View c ()
-pre f t = tag "pre" f (text t)

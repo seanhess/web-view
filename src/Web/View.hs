@@ -8,6 +8,7 @@ module Web.View
   , module Web.View.Element
 
     -- * Mods
+  , Mod
 
     -- * Style
   , module Web.View.Style
@@ -22,7 +23,6 @@ module Web.View
   , context
   , addContext
   , Content
-  , Mod
   , Sides (..)
   , Media (..)
   , Url (..)

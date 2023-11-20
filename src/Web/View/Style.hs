@@ -229,8 +229,11 @@ odd f = Odd |: f
 (|:) :: Pseudo -> Mod -> Mod
 (|:) ps = modClassMod $ \c ->
   c
-    { selector = selectorAddPseudo ps c.selector
+    { selector = addPsuedo c.selector
     }
+ where
+  addPsuedo :: Selector -> Selector
+  addPsuedo (Selector pr _ m cn) = Selector pr (Just ps) m cn
 
 
 infixr 9 |:
@@ -239,15 +242,21 @@ infixr 9 |:
 media :: Media -> Mod -> Mod
 media m = modClassMod $ \c ->
   c
-    { selector = selectorAddMedia m c.selector
+    { selector = addMedia c.selector
     }
+ where
+  addMedia :: Selector -> Selector
+  addMedia (Selector pr ps _ cn) = Selector pr ps (Just m) cn
 
 
 parent :: Text -> Mod -> Mod
 parent p = modClassMod $ \c ->
   c
-    { selector = selectorAddParent p c.selector
+    { selector = addParent c.selector
     }
+ where
+  addParent :: Selector -> Selector
+  addParent (Selector _ ps m c) = Selector (Just p) ps m c
 
 
 modClassMod :: (Class -> Class) -> Mod -> Mod

@@ -6,10 +6,9 @@ module Web.View.Render where
 
 import Data.ByteString.Lazy qualified as BL
 import Data.Function ((&))
-import Data.Map (Map)
 import Data.Map qualified as M
 import Data.String.Interpolate (i)
-import Data.Text (Text, intercalate, pack, unlines, unwords)
+import Data.Text (Text, intercalate, pack, toLower, unlines, unwords)
 import Data.Text.Lazy qualified as L
 import Data.Text.Lazy.Encoding qualified as LE
 import Web.View.Element (insertContents)
@@ -98,7 +97,7 @@ renderContent (Text t) = [t]
 renderContent (Raw t) = [t]
 
 
-renderCSS :: Map Selector Class -> [Text]
+renderCSS :: CSS -> [Text]
 renderCSS = map renderClass . M.elems
  where
   renderClass :: Class -> Text
@@ -128,3 +127,59 @@ showView :: c -> View c () -> Text
 showView c v =
   let st = runView c v
    in unlines $ mconcat $ map renderContent st.contents
+
+
+-- | The css selector for this style
+selectorText :: Selector -> Text
+selectorText s =
+  parent s.parent <> "." <> addPseudo s.pseudo (classNameElementText s.media s.parent Nothing s.className)
+ where
+  parent Nothing = ""
+  parent (Just p) = "." <> p <> " "
+
+  addPseudo Nothing c = c
+  addPseudo (Just p) c =
+    pseudoText p <> "\\:" <> c <> ":" <> pseudoSuffix p
+
+  pseudoSuffix :: Pseudo -> Text
+  pseudoSuffix Even = "nth-child(even)"
+  pseudoSuffix Odd = "nth-child(odd)"
+  pseudoSuffix p = pseudoText p
+
+
+-- | The class name as it appears in the element
+classNameElementText :: Maybe Media -> Maybe Text -> Maybe Pseudo -> ClassName -> Text
+classNameElementText mm mp mps c =
+  addMedia mm . addPseudo mps . addParent mp $ c.text
+ where
+  addParent Nothing cn = cn
+  addParent (Just p) cn = p <> "-" <> cn
+
+  addPseudo :: Maybe Pseudo -> Text -> Text
+  addPseudo Nothing cn = cn
+  addPseudo (Just p) cn =
+    pseudoText p <> ":" <> cn
+
+  addMedia :: Maybe Media -> Text -> Text
+  addMedia Nothing cn = cn
+  addMedia (Just (MinWidth n)) cn =
+    [i|mmnw#{n}-#{cn}|]
+  addMedia (Just (MaxWidth n)) cn =
+    [i|mmxw#{n}-#{cn}|]
+
+
+flatAttributes :: Element -> FlatAttributes
+flatAttributes t =
+  FlatAttributes
+    $ addClass (mconcat t.classes) t.attributes
+ where
+  addClass [] atts = atts
+  addClass cx atts = M.insert "class" (classAttValue cx) atts
+
+  classAttValue :: [Class] -> Text
+  classAttValue cx =
+    unwords $ fmap (\c -> classNameElementText c.selector.media c.selector.parent c.selector.pseudo c.selector.className) cx
+
+
+pseudoText :: Pseudo -> Text
+pseudoText p = toLower $ pack $ show p

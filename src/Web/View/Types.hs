@@ -3,11 +3,8 @@
 
 module Web.View.Types where
 
-import Data.Aeson
 import Data.Map (Map)
-import Data.Map.Strict qualified as M
 import Data.String (IsString (..))
-import Data.String.Interpolate (i)
 import Data.Text (Text, pack, unpack)
 import Data.Text qualified as T
 import Effectful
@@ -17,124 +14,165 @@ import GHC.Generics (Generic)
 import Text.Casing (kebab)
 
 
+-- * Views
+
+
+{- | Views are HTML fragments that carry all atomic css used by any child element.
+
+> view :: View c ()
+> view = col (pad 10 . gap 10) $ do
+>   el (color Red) "Hello"
+>   el_ "World"
+
+They can also have a context which can be used to create type-safe or context-aware elements that accept specific child views. See 'Web.View.Element.table'
+-}
+newtype View context a = View {viewState :: Eff [Reader context, State ViewState] a}
+  deriving newtype (Functor, Applicative, Monad)
+
+
+instance IsString (View context ()) where
+  fromString s = viewModContents (const [Text (pack s)])
+
+
+data ViewState = ViewState
+  { contents :: [Content]
+  , css :: CSS
+  }
+
+
+instance Semigroup ViewState where
+  va <> vb = ViewState (va.contents <> vb.contents) (va.css <> vb.css)
+
+
+-- | Extract the 'ViewState' from a 'View'
+runView :: context -> View context () -> ViewState
+runView ctx (View ef) =
+  runPureEff . execState (ViewState [] []) . runReader ctx $ ef
+
+
+-- | Add or modify the contents of the current view
+viewModContents :: ([Content] -> [Content]) -> View context ()
+viewModContents f = View $ do
+  ES.modify $ \s -> s{contents = f s.contents}
+
+
+-- | Modify the css of the current view
+viewModCss :: (CSS -> CSS) -> View context ()
+viewModCss f = View $ do
+  ES.modify $ \s -> s{css = f s.css}
+
+
+-- | Get the current context
+context :: View context context
+context = View ask
+
+
+-- | Run a view with a specific `context` in a parent 'View' with a different context. This can be used to create type safe view functions, like 'Web.View.Element.table'
+addContext :: context -> View context () -> View c ()
+addContext ctx vw = do
+  -- runs the sub-view in a different context, saving its state
+  -- we need to MERGE it
+  let st = runView ctx vw
+  View $ ES.modify $ \s -> s <> st
+
+
+data Content
+  = Node Element
+  | Text Text
+  | -- | Raw embedded HTML or SVG. See 'Web.View.Element.raw'
+    Raw Text
+
+
+-- | A single HTML tag. Note that the class attribute is stored separately from the rest of the attributes to make adding styles easier
+data Element = Element
+  { name :: Name
+  , classes :: [[Class]]
+  , attributes :: Attributes
+  , children :: [Content]
+  }
+
+
+type Attributes = Map Name AttValue
+type Attribute = (Name, AttValue)
 type Name = Text
 type AttValue = Text
 
 
-type Attribute = (Name, AttValue)
-type Attributes = Map Name AttValue
+-- * Element Modifiers
 
 
-type Styles = Map Name StyleValue
+{- | A function that modifies an element. Allows for ergonomic composition of attributes and styles
+
+> userEmail :: User -> View c ()
+> userEmail user = input (fontSize 16 . active) (text user.email)
+>   where
+>     active = isActive user then bold else id
+-}
+type Mod = Element -> Element
 
 
+-- * Atomic CSS
+
+
+-- | All the atomic classes used in a 'View'
+type CSS = Map Selector Class
+
+
+-- | Atomic classes include a selector and the corresponding styles
 data Class = Class
   { selector :: Selector
   , properties :: Styles
   }
 
 
-instance ToJSON Class where
-  toJSON c = toJSON c.selector
+-- | The styles to apply for a given atomic 'Class'
+type Styles = Map Name StyleValue
 
 
+-- | The selector to use for the given atomic 'Class'
 data Selector = Selector
   { parent :: Maybe Text
   , pseudo :: Maybe Pseudo
   , media :: Maybe Media
   , className :: ClassName
   }
-  deriving (Eq, Ord, Generic, ToJSON)
+  deriving (Eq, Ord)
 
 
 instance IsString Selector where
   fromString s = Selector Nothing Nothing Nothing (fromString s)
 
 
-data Media
-  = MinWidth Int
-  | MaxWidth Int
-  deriving (Eq, Ord, Generic)
-  deriving anyclass (ToJSON)
-
-
-selectorAddPseudo :: Pseudo -> Selector -> Selector
-selectorAddPseudo ps (Selector pr _ m cn) = Selector pr (Just ps) m cn
-
-
-selectorAddMedia :: Media -> Selector -> Selector
-selectorAddMedia m (Selector pr ps _ cn) = Selector pr ps (Just m) cn
-
-
-selectorAddParent :: Text -> Selector -> Selector
-selectorAddParent p (Selector _ ps m c) = Selector (Just p) ps m c
-
-
+-- | Create a 'Selector' given only a 'ClassName'
 selector :: ClassName -> Selector
 selector = Selector Nothing Nothing Nothing
 
 
-selectorText :: Selector -> T.Text
-selectorText s =
-  parent s.parent <> "." <> addPseudo s.pseudo (classNameElementText s.media s.parent Nothing s.className)
- where
-  parent Nothing = ""
-  parent (Just p) = "." <> p <> " "
-
-  addPseudo Nothing c = c
-  addPseudo (Just p) c =
-    pseudoText p <> "\\:" <> c <> ":" <> pseudoSuffix p
-
-
+-- | A class name
 newtype ClassName = ClassName
   { text :: Text
   }
-  deriving newtype (Eq, Ord, IsString, ToJSON)
+  deriving newtype (Eq, Ord, IsString)
 
 
--- | The class name as it appears in the element
-classNameElementText :: Maybe Media -> Maybe Text -> Maybe Pseudo -> ClassName -> Text
-classNameElementText mm mp mps c =
-  addMedia mm . addPseudo mps . addParent mp $ c.text
- where
-  addParent Nothing cn = cn
-  addParent (Just p) cn = p <> "-" <> cn
+{- | Psuedos allow for specifying styles that only apply in certain conditions. See `Web.View.Style.hover` etc
 
-  addPseudo :: Maybe Pseudo -> Text -> Text
-  addPseudo Nothing cn = cn
-  addPseudo (Just p) cn =
-    pseudoText p <> ":" <> cn
-
-  addMedia :: Maybe Media -> Text -> Text
-  addMedia Nothing cn = cn
-  addMedia (Just (MinWidth n)) cn =
-    [i|mmnw#{n}-#{cn}|]
-  addMedia (Just (MaxWidth n)) cn =
-    [i|mmxw#{n}-#{cn}|]
-
-
-pseudoText :: Pseudo -> Text
-pseudoText p = T.toLower $ pack $ show p
-
-
-pseudoSuffix :: Pseudo -> Text
-pseudoSuffix Even = "nth-child(even)"
-pseudoSuffix Odd = "nth-child(odd)"
-pseudoSuffix p = pseudoText p
-
-
+> el (color Primary . hover (color White)) "hello"
+-}
 data Pseudo
   = Hover
   | Active
   | Even
   | Odd
-  deriving (Show, Eq, Ord, Generic, ToJSON)
+  deriving (Show, Eq, Ord)
 
 
+-- | The value of a css style property
 newtype StyleValue = StyleValue String
   deriving newtype (IsString, Show)
 
 
+-- | Use a type as a css style property value
 class ToStyleValue a where
   toStyleValue :: a -> StyleValue
   default toStyleValue :: (Show a) => a -> StyleValue
@@ -152,20 +190,7 @@ instance ToStyleValue Text where
 instance ToStyleValue Int
 
 
--- newtype Px = Px Int deriving (Show)
---
---
--- instance ToStyleValue Px where
---   toStyleValue (Px n) = StyleValue $ show n <> "px"
---
---
--- newtype Rem = Rem Float deriving (Show)
---
---
--- instance ToStyleValue Rem where
---   toStyleValue (Rem f) = StyleValue $ showFFloat (Just 3) f "" <> "rem"
-
--- Px, converted to Rem
+-- | Px, converted to Rem. Allows for the user to change the document font size and have the app scale accordingly. But allows the programmer to code in pixels to match a design
 newtype PxRem = PxRem Int
   deriving newtype (Show, ToClassName, Num)
 
@@ -176,6 +201,7 @@ instance ToStyleValue PxRem where
   toStyleValue (PxRem n) = StyleValue $ show ((fromIntegral n :: Float) / 16.0) <> "rem"
 
 
+-- | Milliseconds, used for transitions
 newtype Ms = Ms Int
   deriving (Show)
   deriving newtype (Num, ToClassName)
@@ -185,17 +211,14 @@ instance ToStyleValue Ms where
   toStyleValue (Ms n) = StyleValue $ show n <> "ms"
 
 
-newtype HexColor = HexColor Text
+-- | Media allows for responsive designs that change based on characteristics of the window. See [Layout Example](https://github.com/seanhess/web-view/blob/master/example/Example/Layout.hs)
+data Media
+  = MinWidth Int
+  | MaxWidth Int
+  deriving (Eq, Ord)
 
 
-instance ToStyleValue HexColor where
-  toStyleValue (HexColor s) = StyleValue $ "#" <> unpack (T.dropWhile (== '#') s)
-
-
-instance IsString HexColor where
-  fromString = HexColor . T.dropWhile (== '#') . T.pack
-
-
+-- | Convert a type into a className segment to generate unique compound style names based on the value
 class ToClassName a where
   toClassName :: a -> Text
   default toClassName :: (Show a) => a -> Text
@@ -214,114 +237,12 @@ instance {-# OVERLAPS #-} (ToColor a) => ToClassName a where
   toClassName = colorName
 
 
-class ToColor a where
-  colorValue :: a -> HexColor
-  colorName :: a -> Text
-  default colorName :: (Show a) => a -> Text
-  colorName = T.toLower . pack . show
+{- | Options for styles that support specifying various sides. This has a "fake" Num instance to support literals
 
-
-instance ToColor HexColor where
-  colorValue c = c
-  colorName (HexColor a) = T.dropWhile (== '#') a
-
-
-attribute :: Name -> AttValue -> Attribute
-attribute n v = (n, v)
-
-
-data Element = Element
-  { name :: Name
-  , classes :: [[Class]]
-  , attributes :: Attributes
-  , children :: [Content]
-  }
-
-
--- optimized for size, [name, atts, [children]]
-instance ToJSON Element where
-  toJSON el =
-    Array
-      [ String el.name
-      , toJSON $ flatAttributes el
-      , toJSON el.children
-      ]
-
-
-data Content
-  = Node Element
-  | Text Text
-  | Raw Text
-
-
-instance ToJSON Content where
-  toJSON (Node el) = toJSON el
-  toJSON (Text t) = String t
-  -- TODO: fix json
-  toJSON (Raw t) = String t
-
-
-{- | Views contain their contents, and a list of all styles mentioned during their rendering
-newtype View a = View (State ViewState a)
-  deriving newtype (Functor, Applicative, Monad, MonadState ViewState)
+> border 5
+> border (X 2)
+> border (TRBL 0 5 0 0)
 -}
-data ViewState = ViewState
-  { contents :: [Content]
-  , css :: Map Selector Class
-  }
-
-
-instance Semigroup ViewState where
-  va <> vb = ViewState (va.contents <> vb.contents) (va.css <> vb.css)
-
-
-newtype View ctx a = View {viewState :: Eff [Reader ctx, State ViewState] a}
-  deriving newtype (Functor, Applicative, Monad)
-
-
-instance IsString (View ctx ()) where
-  fromString s = modContents (const [Text (pack s)])
-
-
-runView :: ctx -> View ctx () -> ViewState
-runView ctx (View ef) =
-  runPureEff . execState (ViewState [] []) . runReader ctx $ ef
-
-
--- | A function that modifies an element. Allows for easy chaining and composition
-type Mod = Element -> Element
-
-
-modContents :: ([Content] -> [Content]) -> View c ()
-modContents f = View $ do
-  ES.modify $ \s -> s{contents = f s.contents}
-
-
-modCss :: (Map Selector Class -> Map Selector Class) -> View c ()
-modCss f = View $ do
-  ES.modify $ \s -> s{css = f s.css}
-
-
-context :: View c c
-context = View ask
-
-
--- | Run a view with a different context
-addContext :: cx -> View cx () -> View c ()
-addContext ctx vw = do
-  -- runs the sub-view in a different context, saving its state
-  -- we need to MERGE it
-  let st = runView ctx vw
-  View $ ES.modify $ \s -> s <> st
-
-
-mapRoot :: Mod -> View c ()
-mapRoot f = modContents mapContents
- where
-  mapContents (Node root : cts) = Node (f root) : cts
-  mapContents cts = cts
-
-
 data Sides a
   = All a
   | TRBL a a a a
@@ -340,24 +261,52 @@ instance (Num a) => Num (Sides a) where
   fromInteger n = All (fromInteger n)
 
 
--- | Attributes, inclusive of class
+-- | Element's attributes do not include class, which is separated. FlatAttributes include the class attribute
 newtype FlatAttributes = FlatAttributes {attributes :: Attributes}
   deriving (Generic)
-  deriving newtype (ToJSON)
-
-
-flatAttributes :: Element -> FlatAttributes
-flatAttributes t =
-  FlatAttributes
-    $ addClass (mconcat t.classes) t.attributes
- where
-  addClass [] atts = atts
-  addClass cx atts = M.insert "class" (classAttValue cx) atts
-
-  classAttValue :: [Class] -> T.Text
-  classAttValue cx =
-    T.intercalate " " $ fmap (\c -> classNameElementText c.selector.media c.selector.parent c.selector.pseudo c.selector.className) cx
 
 
 newtype Url = Url Text
   deriving newtype (IsString)
+
+
+-- ** Colors
+
+
+{- | ToColor allows you to create a type containing your application's colors:
+
+> data AppColor
+>   = White
+>   | Primary
+>   | Dark
+>
+> instance ToColor AppColor where
+>   colorValue White = "#FFF"
+>   colorValue Dark = "#333"
+>   colorValue Primary = "#00F"
+>
+> hello :: View c ()
+> hello = el (bg Primary . color White) "Hello"
+-}
+class ToColor a where
+  colorValue :: a -> HexColor
+  colorName :: a -> Text
+  default colorName :: (Show a) => a -> Text
+  colorName = T.toLower . pack . show
+
+
+instance ToColor HexColor where
+  colorValue c = c
+  colorName (HexColor a) = T.dropWhile (== '#') a
+
+
+-- | Hexidecimal Color. Can be specified with or without the leading '#'. Recommended to use an AppColor type instead of manually using hex colors. See 'Web.View.Types.ToColor'
+newtype HexColor = HexColor Text
+
+
+instance ToStyleValue HexColor where
+  toStyleValue (HexColor s) = StyleValue $ "#" <> unpack (T.dropWhile (== '#') s)
+
+
+instance IsString HexColor where
+  fromString = HexColor . T.dropWhile (== '#') . T.pack
