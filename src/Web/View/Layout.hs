@@ -1,10 +1,10 @@
-module Web.UI.Layout where
+module Web.View.Layout where
 
 import Data.Function
 import Data.Text
-import Web.UI.Element
-import Web.UI.Style
-import Web.UI.Types
+import Web.View.Element
+import Web.View.Style
+import Web.View.Types
 
 
 -- | Sets the root layout so filling columns makes sense

@@ -1,6 +1,6 @@
 module Example.Colors where
 
-import Web.UI
+import Web.View
 
 
 data AppColor

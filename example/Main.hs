@@ -26,7 +26,7 @@ import Network.Wai.Handler.Warp qualified as Warp
 import Network.Wai.Handler.WebSockets (websocketsOr)
 import Network.Wai.Middleware.Static (addBase, staticPolicy)
 import Web.Hyperbole
-import Web.UI
+import Web.View
 
 
 main :: IO ()

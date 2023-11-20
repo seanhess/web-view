@@ -12,7 +12,7 @@ import Network.HTTP.Types (status200, status301, status400, status404)
 import Network.HTTP.Types.Header (HeaderName)
 import Network.Wai
 import Web.Hyperbole.Route
-import Web.UI
+import Web.View
 
 
 waiApplication :: (Route route) => (L.ByteString -> L.ByteString) -> (route -> Eff [Wai, IOE] ()) -> Application

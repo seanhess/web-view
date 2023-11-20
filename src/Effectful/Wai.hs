@@ -16,7 +16,7 @@ import Network.HTTP.Types.Header (HeaderName)
 import Network.Wai as Wai
 import Web.FormUrlEncoded
 import Web.HttpApiData (FromHttpApiData)
-import Web.UI
+import Web.View
 
 
 data Wai :: Effect where

@@ -5,20 +5,20 @@ module Web.Hyperbole.HyperView where
 
 import Data.Text
 import Text.Read
-import Web.UI
+import Web.View
 
 
 -- | Associate a live id with a set of actions
-class (Param id, Param action) => HyperView id action | id -> action
+class (Param id, Param action) => HyperView action id | id -> action
 
 
-viewId :: forall id action ctx. (HyperView id action) => id -> View id () -> View ctx ()
+viewId :: forall id action ctx. (HyperView action id) => id -> View id () -> View ctx ()
 viewId vid vw = do
   el (att "id" (toParam vid) . flexCol)
     $ addContext vid vw
 
 
-form :: (HyperView id action) => action -> Mod -> View id () -> View id ()
+form :: (HyperView action id) => action -> Mod -> View id () -> View id ()
 form a f cd = do
   c <- context
   tag "form" (onSubmit a . dataTarget c . f . flexCol) cd
@@ -28,7 +28,7 @@ submit :: Mod -> View c () -> View c ()
 submit f = tag "button" (att "type" "submit" . f)
 
 
-button :: (HyperView id action) => action -> Mod -> View id () -> View id ()
+button :: (HyperView action id) => action -> Mod -> View id () -> View id ()
 button a f cd = do
   c <- context
   tag "button" (att "data-on-click" (toParam a) . dataTarget c . f) cd
@@ -50,13 +50,13 @@ onSubmit = att "data-on-submit" . toParam
 
 
 -- | Change the target of any code running inside, allowing actions to target other live views on the page
-target :: (HyperView id action) => id -> View id () -> View a ()
+target :: (HyperView action id) => id -> View id () -> View a ()
 target vid vw =
   addContext vid vw
 
 
 dropdown
-  :: (HyperView id action)
+  :: (HyperView action id)
   => (opt -> action)
   -> (opt -> Bool)
   -> View (Option opt id action) ()
@@ -68,7 +68,7 @@ dropdown toAction isSel options = do
 
 
 option
-  :: (HyperView id action, Eq opt)
+  :: (HyperView action id, Eq opt)
   => opt
   -> Mod
   -> View (Option opt id action) ()

@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Web.UI.Embed where
+module Web.View.Embed where
 
 import Data.ByteString
 import Data.FileEmbed

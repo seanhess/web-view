@@ -1,23 +1,23 @@
-module Web.UI
+module Web.View
   ( -- * Render
     renderText
   , renderLazyText
   , renderLazyByteString
 
     -- * Element
-  , module Web.UI.Element
+  , module Web.View.Element
 
     -- * Mods
 
     -- * Style
-  , module Web.UI.Style
+  , module Web.View.Style
   , ToColor (..)
   , HexColor (..)
 
     -- * Layout
-  , module Web.UI.Layout
+  , module Web.View.Layout
 
-    -- * Types
+    -- * Typesweb/ui
   , View
   , context
   , addContext
@@ -25,14 +25,14 @@ module Web.UI
   , Mod
   , Sides (..)
   , Media (..)
-  , module Web.UI.Url
+  , module Web.View.Url
   ) where
 
-import Web.UI.Element
-import Web.UI.Layout
-import Web.UI.Render
-import Web.UI.Style
-import Web.UI.Types
-import Web.UI.Url
+import Web.View.Element
+import Web.View.Layout
+import Web.View.Render
+import Web.View.Style
+import Web.View.Types
+import Web.View.Url
 import Prelude hiding (head)
 

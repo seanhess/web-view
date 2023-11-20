@@ -1,4 +1,4 @@
-module Web.UI.Element where
+module Web.View.Element where
 
 import Control.Monad (forM_)
 import Data.Function ((&))
@@ -7,9 +7,9 @@ import Data.Map qualified as M
 import Data.Text (Text)
 import Effectful
 import Effectful.Writer.Static.Local
-import Web.UI.Style
-import Web.UI.Types
-import Web.UI.Url
+import Web.View.Style
+import Web.View.Types
+import Web.View.Url
 
 
 tag :: Text -> Mod -> View c () -> View c ()
@@ -63,10 +63,6 @@ button :: Mod -> View c () -> View c ()
 button = tag "button"
 
 
--- | Convert from text directly to view. You should not have to use this. Use `text` instead
-newtype Head a = Head a
-
-
 data Base
 data Doc
 
@@ -90,15 +86,6 @@ meta f = tag "meta" f none
 title :: Text -> View c ()
 title = tag "title" id . text
 
-
--- head :: View c () -> View c ()
--- head = tag "head" id
-
--- html :: View c () -> View c ()
--- html = tag "html" id
-
--- body :: View c () -> View c ()
--- body = tag "body" id
 
 row :: Mod -> View c () -> View c ()
 row f = el (flexRow . f)
@@ -141,7 +128,6 @@ value = att "value"
 
 
 script :: Text -> View c ()
--- script (Code code) = tag "script" (att "type" "text/javascript") $ fromText code
 script src = tag "script" (att "type" "text/javascript" . att "src" src) none
 
 
@@ -175,6 +161,9 @@ table f dts wcs = do
 tcol :: forall dt c es. (Writer [TableColumn c dt] :> es) => View (Head c) () -> (dt -> View dt ()) -> Eff es ()
 tcol hd view = do
   tell ([TableColumn hd view] :: [TableColumn c dt])
+
+
+newtype Head a = Head a
 
 
 data TableColumn c dt = TableColumn

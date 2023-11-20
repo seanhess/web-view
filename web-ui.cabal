@@ -28,14 +28,14 @@ library
       Web.Hyperbole.Embed
       Web.Hyperbole.HyperView
       Web.Hyperbole.Route
-      Web.UI
-      Web.UI.Element
-      Web.UI.Embed
-      Web.UI.Layout
-      Web.UI.Render
-      Web.UI.Style
-      Web.UI.Types
-      Web.UI.Url
+      Web.View
+      Web.View.Element
+      Web.View.Embed
+      Web.View.Layout
+      Web.View.Render
+      Web.View.Style
+      Web.View.Types
+      Web.View.Url
   other-modules:
       Paths_web_ui
   autogen-modules:

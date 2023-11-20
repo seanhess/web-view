@@ -1,11 +1,11 @@
 {-# LANGUAGE LambdaCase #-}
 
-module Web.UI.Style where
+module Web.View.Style where
 
 import Data.Function ((&))
 import Data.Map qualified as M
 import Data.Text (Text)
-import Web.UI.Types
+import Web.View.Types
 
 
 -- | Hyphneate classnames
@@ -264,8 +264,6 @@ modClassMod fc fm el =
 
 rgb :: Int -> Int -> Int -> StyleValue
 rgb rd gr bl = StyleValue $ mconcat [show rd, " ", show gr, " ", show bl]
-
-
 
 
 truncate :: Mod

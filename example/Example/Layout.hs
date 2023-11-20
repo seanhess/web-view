@@ -3,7 +3,7 @@ module Example.Layout where
 import Effectful
 import Example.Colors
 import Web.Hyperbole
-import Web.UI
+import Web.View
 
 
 -- need to be able to set bg color of page, sure

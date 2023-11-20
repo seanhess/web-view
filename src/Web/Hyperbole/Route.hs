@@ -7,7 +7,7 @@ import Control.Monad (guard)
 import Data.Text as T (Text, dropWhile, pack, splitOn, toLower, unpack)
 import GHC.Generics
 import Text.Read (readMaybe)
-import Web.UI.Url
+import Web.View.Url
 
 
 routeUrl :: (Route a) => a -> Url

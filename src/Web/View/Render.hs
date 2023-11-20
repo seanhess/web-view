@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
-module Web.UI.Render where
+module Web.View.Render where
 
 import Data.ByteString.Lazy qualified as BL
 import Data.Function ((&))
@@ -12,11 +12,11 @@ import Data.String.Interpolate (i)
 import Data.Text (Text, intercalate, pack, unlines, unwords)
 import Data.Text.Lazy qualified as L
 import Data.Text.Lazy.Encoding qualified as LE
-import Web.UI.Element (insertContents)
+import Web.View.Element (insertContents)
 import Prelude hiding (unlines, unwords)
 
 -- import Debug.Trace
-import Web.UI.Types
+import Web.View.Types
 
 
 htmlTag :: (Text -> Text) -> Element -> [Text]

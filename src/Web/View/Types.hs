@@ -1,7 +1,7 @@
 {-# LANGUAGE DefaultSignatures #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Web.UI.Types where
+module Web.View.Types where
 
 import Data.Aeson
 import Data.Map (Map)

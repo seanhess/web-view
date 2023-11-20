@@ -18,12 +18,12 @@ import Network.Wai
 import Web.FormUrlEncoded (Form)
 import Web.FormUrlEncoded qualified as Form
 import Web.Hyperbole.HyperView
-import Web.UI
+import Web.View
 
 
 data Hyperbole :: Effect where
   GetForm :: Hyperbole m Form
-  GetEvent :: (HyperView id action) => Hyperbole m (Maybe (Event id action))
+  GetEvent :: (HyperView action id) => Hyperbole m (Maybe (Event action id))
   RespondView :: View () () -> Hyperbole m ()
   HyperError :: HyperError -> Hyperbole m a
 
@@ -31,7 +31,10 @@ data Hyperbole :: Effect where
 type instance DispatchOf Hyperbole = 'Dynamic
 
 
-data Event id act = Event id act
+data Event act id = Event
+  { viewId :: id
+  , action :: act
+  }
 
 
 runHyperbole
@@ -109,16 +112,16 @@ load run = Page $ do
 
 -- | Handle a HyperView. If the event matches our handler, respond with the fragment
 hyper
-  :: (Hyperbole :> es, HyperView id action)
+  :: (Hyperbole :> es, HyperView action id)
   => (id -> action -> Eff es (View id ()))
   -> Page es ()
 hyper run = Page $ do
   -- Get an event matching our type. If it doesn't match, skip to the next handler
   mev <- send GetEvent
   case mev of
-    Just (Event vid act) -> do
-      vw <- run vid act
-      view $ viewId vid vw
+    Just event -> do
+      vw <- run event.viewId event.action
+      view $ viewId event.viewId vw
     _ -> pure ()
 
 

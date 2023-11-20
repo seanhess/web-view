@@ -9,34 +9,7 @@ import Example.Effects.Debug
 import Example.Effects.Users (User (..), Users)
 import Example.Effects.Users qualified as Users
 import Web.Hyperbole
-import Web.UI hiding (button, form)
-
-
-data Contact = Contact Int
-  deriving (Show, Read, Param)
-
-
-data ContactAction
-  = Edit
-  | Save
-  | View
-  deriving (Show, Read, Param, HyperView Contact)
-
-
-data Contacts = Contacts
-  deriving (Show, Read, Param)
-
-
-data ContactsAction
-  = Reload (Maybe Filter)
-  | Delete Int
-  deriving (Show, Read, Param, HyperView Contacts)
-
-
-data Filter
-  = Active
-  | Inactive
-  deriving (Show, Read, Eq)
+import Web.View hiding (button, form)
 
 
 page :: forall es. (Hyperbole :> es, Users :> es, Debug :> es) => Page es ()
@@ -48,6 +21,24 @@ page = do
     pure $ do
       col (pad 10 . gap 10) $ do
         viewId Contacts $ allContactsView Nothing us
+
+
+-- Contacts ----------------------------------------------
+
+data Contacts = Contacts
+  deriving (Show, Read, Param, HyperView ContactsAction)
+
+
+data ContactsAction
+  = Reload (Maybe Filter)
+  | Delete Int
+  deriving (Show, Read, Param)
+
+
+data Filter
+  = Active
+  | Inactive
+  deriving (Show, Read, Eq)
 
 
 contacts :: (Hyperbole :> es, Users :> es, Debug :> es) => Contacts -> ContactsAction -> Eff es (View Contacts ())
@@ -81,6 +72,19 @@ allContactsView fil us = do
   filterUsers Nothing _ = True
   filterUsers (Just Active) u = u.isActive
   filterUsers (Just Inactive) u = not u.isActive
+
+
+-- Contact ----------------------------------------------------
+
+data Contact = Contact Int
+  deriving (Show, Read, Param, HyperView ContactAction)
+
+
+data ContactAction
+  = Edit
+  | Save
+  | View
+  deriving (Show, Read, Param)
 
 
 contact :: (Hyperbole :> es, Users :> es, Debug :> es) => Contact -> ContactAction -> Eff es (View Contact ())
