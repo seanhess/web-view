@@ -1,5 +1,4 @@
 {-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Web.View.Types where
 
@@ -17,7 +16,7 @@ import Text.Casing (kebab)
 -- * Views
 
 
-{- | Views are HTML fragments that carry all atomic css used by any child element.
+{- | Views are HTML fragments that carry all atomic 'CSS' used by any child element.
 
 > view :: View c ()
 > view = col (pad 10 . gap 10) $ do
@@ -114,6 +113,8 @@ type Mod = Element -> Element
 -- * Atomic CSS
 
 
+-- TODO: document atomic CSS here?
+
 -- | All the atomic classes used in a 'View'
 type CSS = Map Selector Class
 
@@ -153,6 +154,19 @@ newtype ClassName = ClassName
   { text :: Text
   }
   deriving newtype (Eq, Ord, IsString)
+
+
+-- | Convert a type into a className segment to generate unique compound style names based on the value
+class ToClassName a where
+  toClassName :: a -> Text
+  default toClassName :: (Show a) => a -> Text
+  toClassName = T.toLower . T.pack . show
+
+
+instance ToClassName Int
+instance ToClassName Float
+instance ToClassName Text where
+  toClassName = id
 
 
 {- | Psuedos allow for specifying styles that only apply in certain conditions. See `Web.View.Style.hover` etc
@@ -216,25 +230,6 @@ data Media
   = MinWidth Int
   | MaxWidth Int
   deriving (Eq, Ord)
-
-
--- | Convert a type into a className segment to generate unique compound style names based on the value
-class ToClassName a where
-  toClassName :: a -> Text
-  default toClassName :: (Show a) => a -> Text
-  toClassName = T.toLower . T.pack . show
-
-
-instance ToClassName Int
-instance ToClassName Float
-
-
-instance ToClassName Text where
-  toClassName = id
-
-
-instance {-# OVERLAPS #-} (ToColor a) => ToClassName a where
-  toClassName = colorName
 
 
 {- | Options for styles that support specifying various sides. This has a "fake" Num instance to support literals
