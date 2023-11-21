@@ -12,14 +12,14 @@ import Web.View.Types
 -- * Views
 
 
-{- | Views are HTML fragments that carry all atomic 'CSS' used by any child element.
+{- | Views are HTML fragments that carry all 'CSS' used by any child element.
 
 > view :: View c ()
 > view = col (pad 10 . gap 10) $ do
 >   el bold "Hello"
 >   el_ "World"
 
-They can also have a context which can be used to create type-safe or context-aware elements that accept specific child views. See 'Web.View.Element.table' for an example
+They can also have a context which can be used to create type-safe or context-aware elements. See 'Web.View.Element.table' for an example
 -}
 newtype View context a = View {viewState :: Eff [Reader context, State ViewState] a}
   deriving newtype (Functor, Applicative, Monad)

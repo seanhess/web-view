@@ -4,30 +4,22 @@ cabal-version: 2.2
 --
 -- see: https://github.com/sol/hpack
 
-name:               web-ui
-version:            0.2.0
-synopsis:           Typed HTML UIs with simplified layout, and ergonomic composition of styles. Inspired by Tailwindcss and Elm UI
-license:            BSD-3-Clause
-license-file:       LICENSE
-author:             Sean Hess
-maintainer:         seanhess@gmail.com
-category:           Web
-homepage:           https://github.com/seanhess/web-ui
-build-type:         Simple
+name:           web-view
+version:        0.2.0
+synopsis:       Typed HTML UIs with simplified layout, and ergonomic composition of styles. Inspired by Tailwindcss and Elm UI
+category:       Web
+homepage:       https://github.com/seanhess/web-view
+author:         Sean Hess
+maintainer:     seanhess@gmail.com
+license:        BSD-3-Clause
+license-file:   LICENSE
+build-type:     Simple
 extra-source-files:
     README.md
     CHANGELOG.md
 
 library
   exposed-modules:
-      Effectful.Sockets
-      Effectful.Wai
-      Web.Hyperbole
-      Web.Hyperbole.Application
-      Web.Hyperbole.Effect
-      Web.Hyperbole.Embed
-      Web.Hyperbole.HyperView
-      Web.Hyperbole.Route
       Web.View
       Web.View.Element
       Web.View.Layout
@@ -37,9 +29,9 @@ library
       Web.View.Types
       Web.View.View
   other-modules:
-      Paths_web_ui
+      Paths_web_view
   autogen-modules:
-      Paths_web_ui
+      Paths_web_view
   hs-source-dirs:
       src
   default-extensions:
@@ -80,16 +72,9 @@ library
 executable example
   main-is: Main.hs
   other-modules:
-      BulkUpdate
-      Example.Colors
-      Example.Contacts
-      Example.Effects.Debug
-      Example.Effects.Users
-      Example.Layout
-      Example.Transitions
-      Paths_web_ui
+      Paths_web_view
   autogen-modules:
-      Paths_web_ui
+      Paths_web_view
   hs-source-dirs:
       example
   default-extensions:
@@ -121,11 +106,10 @@ executable example
     , string-interpolate
     , text
     , unordered-containers
-    , wai >=3.0
-    , wai-middleware-static
+    , wai
     , wai-websockets
     , warp
-    , web-ui
+    , web-view
     , websockets
   default-language: GHC2021
 
@@ -133,9 +117,9 @@ test-suite tests
   type: exitcode-stdio-1.0
   main-is: Tests.hs
   other-modules:
-      Paths_web_ui
+      Paths_web_view
   autogen-modules:
-      Paths_web_ui
+      Paths_web_view
   hs-source-dirs:
       test
   default-extensions:

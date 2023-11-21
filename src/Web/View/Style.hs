@@ -156,7 +156,7 @@ hide =
 {- | Set a border around the element
 
 > el (border 1) "all sides"
-> el (border (X 1) "only left and right"
+> el (border (X 1)) "only left and right"
 -}
 border :: Sides PxRem -> Mod
 border (All p) =

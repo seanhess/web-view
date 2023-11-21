@@ -18,6 +18,12 @@ import Prelude hiding (unlines, unwords)
 import Web.View.Types
 
 
+{- | Renders the HTML and corresponding CSS
+
+>>> renderText () $ el bold "Hello"
+<style type='text/css'>.bold { font-weight:bold }</style>
+<div class='bold'>Hello</div>
+-}
 renderText :: c -> View c () -> Text
 renderText c u = intercalate "\n" content
  where

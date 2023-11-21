@@ -1,7 +1,7 @@
-name:               web-ui
+name:               web-view
 version:            0.2.0
 synopsis:           Typed HTML UIs with simplified layout, and ergonomic composition of styles. Inspired by Tailwindcss and Elm UI
-homepage:           https://github.com/seanhess/web-ui
+homepage:           https://github.com/seanhess/web-view
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Sean Hess
@@ -60,8 +60,9 @@ executables:
     main:                Main.hs
     source-dirs:         example
     dependencies:
-    - web-ui
-    - wai-middleware-static
+    - web-view
+    - warp
+    - wai
 
 tests:
   tests:
