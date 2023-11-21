@@ -16,10 +16,10 @@ import Web.View.Types
 
 > view :: View c ()
 > view = col (pad 10 . gap 10) $ do
->   el (color Red) "Hello"
+>   el bold "Hello"
 >   el_ "World"
 
-They can also have a context which can be used to create type-safe or context-aware elements that accept specific child views. See 'Web.View.Element.table'
+They can also have a context which can be used to create type-safe or context-aware elements that accept specific child views. See 'Web.View.Element.table' for an example
 -}
 newtype View context a = View {viewState :: Eff [Reader context, State ViewState] a}
   deriving newtype (Functor, Applicative, Monad)
