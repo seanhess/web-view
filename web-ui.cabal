@@ -30,9 +30,9 @@ library
       Web.Hyperbole.Route
       Web.View
       Web.View.Element
-      Web.View.Embed
       Web.View.Layout
       Web.View.Render
+      Web.View.Reset
       Web.View.Style
       Web.View.Types
   other-modules:

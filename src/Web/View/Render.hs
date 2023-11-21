@@ -18,14 +18,13 @@ import Prelude hiding (unlines, unwords)
 import Web.View.Types
 
 
-renderText :: forall c. c -> View c () -> Text
+renderText :: c -> View c () -> Text
 renderText c u = intercalate "\n" content
  where
   -- T.intercalate "\n" (content <> style css)
   content :: [Text]
-  content = map (unlines . renderContent) $ (.contents) $ runView c addCss
+  content = map (unlines . renderContent) . (.contents) $ runView c addCss
 
-  addCss :: View c ()
   addCss = do
     insertContents [styleElement]
     u

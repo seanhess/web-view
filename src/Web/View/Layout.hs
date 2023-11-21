@@ -7,9 +7,12 @@ import Web.View.Style
 import Web.View.Types
 
 
--- | Sets the root layout so filling columns makes sense
-rootLayout :: Mod
-rootLayout =
+{- | Use `root` on the top-level tag in your document to allow columns to fill the view
+
+> document = col (root . pad 10) myContent
+-}
+root :: Mod
+root =
   flexCol
     . addClass
       ( cls "layout"
@@ -22,17 +25,24 @@ rootLayout =
       )
 
 
+{- | Same as 'root' but as an Element
+
+> document = layout (pad 10) myContent
+-}
 layout :: Mod -> View c () -> View c ()
-layout f = el (rootLayout . f)
+layout f = el (root . f)
 
 
--- | You can make a fixed layout by using layout and putting "scroll" on a child-element
+{- | Make a fixed layout by using layout and putting "scroll" on a child-element
+
+> document = row root $ do
+>   nav id $ "Left Sidebar"
+>   col scroll $ "Main Content"
+-}
 scroll :: Mod
 scroll = addClass $ cls "scroll" & prop @Text "overflow" "auto"
 
 
-data Nav = Nav
-
-
+-- | A Nav element
 nav :: Mod -> View c () -> View c ()
 nav f = tag "nav" (f . flexCol)
