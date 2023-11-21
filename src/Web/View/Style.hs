@@ -90,16 +90,6 @@ gap :: PxRem -> Mod
 gap n = addClass $ cls ("gap" -. n) & prop "gap" n
 
 
--- | Grow to fill the available space in the parent 'Web.View.Element.row' or 'Web.View.Element.col'
-grow :: Mod
-grow = addClass $ cls "grow" & prop @Int "flex-grow" 1
-
-
--- | Allow items to become smaller than their contents. This is not the opposite of grow!
-collapse :: Mod
-collapse = addClass $ cls "collapse" & prop @Int "min-width" 0
-
-
 fontSize :: PxRem -> Mod
 fontSize n = addClass $ cls ("fs" -. n) & prop "font-size" n
 
@@ -214,7 +204,7 @@ Button-like elements:
 
 > btn = pointer . bg Primary . hover (bg PrimaryLight)
 >
-> options = row_ $ do
+> options = row id $ do
 >   el btn "Login"
 >   el btn "Sign Up"
 -}

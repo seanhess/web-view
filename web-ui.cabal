@@ -35,6 +35,7 @@ library
       Web.View.Reset
       Web.View.Style
       Web.View.Types
+      Web.View.View
   other-modules:
       Paths_web_ui
   autogen-modules:

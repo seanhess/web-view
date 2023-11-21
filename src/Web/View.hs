@@ -26,6 +26,8 @@ module Web.View
   , Sides (..)
   , Media (..)
   , Url (..)
+  , tag
+  , att
   ) where
 
 import Web.View.Element
@@ -33,5 +35,6 @@ import Web.View.Layout
 import Web.View.Render
 import Web.View.Style
 import Web.View.Types
+import Web.View.View
 import Prelude hiding (head)
 

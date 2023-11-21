@@ -2,111 +2,63 @@ module Web.View.Element where
 
 import Control.Monad (forM_)
 import Data.Function ((&))
-import Data.Map qualified as M
 import Data.Text (Text)
 import Effectful
 import Effectful.Writer.Static.Local
 import Web.View.Style
 import Web.View.Types
+import Web.View.View
 
 
-tag :: Text -> Mod -> View c () -> View c ()
-tag nm f ct = do
-  ctx <- context
-  let st = runView ctx ct
-  let elm = f $ Element nm [] [] st.contents
-  addContent $ Node elm
-  addClasses $ M.elems st.css
-  addClasses $ mconcat elm.classes
+{- | A basic element
 
-
-addClasses :: [Class] -> View c ()
-addClasses clss = do
-  viewModCss $ \cm -> foldr addClsDef cm clss
- where
-  addClsDef :: Class -> CSS -> CSS
-  addClsDef c = M.insert c.selector c
-
-
-addContent :: Content -> View c ()
-addContent ct =
-  viewModContents (<> [ct])
-
-
--- Inserts into first child
-insertContents :: [Content] -> View c ()
-insertContents cs = viewModContents insert
- where
-  insert [Node e] = [Node $ insertEl e]
-  insert cnt = cnt <> cs
-  insertEl e = e{children = e.children <> cs}
-
-
--- | Set an attribute, replacing existing value
-att :: Name -> AttValue -> Mod
-att n v (Element en ec ea ecs) = Element en ec (M.insert n v ea) ecs
-
-
--- | A basic element
+> el (bold . pad 10) "Hello"
+-}
 el :: Mod -> View c () -> View c ()
 el = tag "div"
 
 
--- | A basic element, with no modifiers
+{- | A basic element, with no modifiers
+
+> el_ "Hello"
+-}
 el_ :: View c () -> View c ()
 el_ = tag "div" id
 
 
-button :: Mod -> View c () -> View c ()
-button = tag "button"
+{- | Add text to a view. Not required for string literals
 
-
-data Base
-data Doc
-
-
+> el_ $ do
+>   "Hello: "
+>   text user.name
+-}
 text :: Text -> View c ()
-text t = addContent $ Text t
+text t = viewAddContent $ Text t
 
 
+{- | Embed static, unescaped HTML or SVG. Take care not to use 'raw' with user-generated content.
+
+> spinner = raw "<svg>...</svg>"
+-}
 raw :: Text -> View c ()
-raw t = addContent $ Raw t
+raw t = viewAddContent $ Raw t
 
 
+{- | Do not any any content
+
+> if isVisible
+>  then content
+>  else none
+-}
 none :: View c ()
 none = pure ()
 
 
-meta :: Mod -> View c ()
-meta f = tag "meta" f none
+pre :: Mod -> Text -> View c ()
+pre f t = tag "pre" f (text t)
 
 
-title :: Text -> View c ()
-title = tag "title" id . text
-
-
-row :: Mod -> View c () -> View c ()
-row f = el (flexRow . f)
-
-
-row_ :: View c () -> View c ()
-row_ = row id
-
-
-col :: Mod -> View c () -> View c ()
-col f = el (flexCol . f)
-
-
-col_ :: View c () -> View c ()
-col_ = col id
-
-
-space :: View c ()
-space = el grow $ pure ()
-
-
-label :: Mod -> View c () -> View c ()
-label = tag "label"
+-- * Inputs
 
 
 form :: Mod -> View c () -> View c ()
@@ -125,6 +77,17 @@ value :: Text -> Mod
 value = att "value"
 
 
+label :: Mod -> View c () -> View c ()
+label = tag "label"
+
+
+button :: Mod -> View c () -> View c ()
+button = tag "button"
+
+
+-- * Head and Metadata
+
+
 script :: Text -> View c ()
 script src = tag "script" (att "type" "text/javascript" . att "src" src) none
 
@@ -137,8 +100,7 @@ stylesheet :: Text -> View c ()
 stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
 
 
-pre :: Mod -> Text -> View c ()
-pre f t = tag "pre" f (text t)
+-- * Tables
 
 
 table :: Mod -> [dt] -> Eff '[Writer [TableColumn c dt]] () -> View c ()

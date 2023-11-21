@@ -11,7 +11,7 @@ import Data.String.Interpolate (i)
 import Data.Text (Text, intercalate, pack, toLower, unlines, unwords)
 import Data.Text.Lazy qualified as L
 import Data.Text.Lazy.Encoding qualified as LE
-import Web.View.Element (insertContents)
+import Web.View.View (View, ViewState (..), runView, viewInsertContents)
 import Prelude hiding (unlines, unwords)
 
 -- import Debug.Trace
@@ -26,7 +26,7 @@ renderText c u = intercalate "\n" content
   content = map (unlines . renderContent) . (.contents) $ runView c addCss
 
   addCss = do
-    insertContents [styleElement]
+    viewInsertContents [styleElement]
     u
 
   css :: [Text]

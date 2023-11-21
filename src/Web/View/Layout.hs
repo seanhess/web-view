@@ -5,11 +5,32 @@ import Data.Text
 import Web.View.Element
 import Web.View.Style
 import Web.View.Types
+import Web.View.View (View, tag)
 
 
-{- | Use `root` on the top-level tag in your document to allow columns to fill the view
+{- | Intuitively create layouts with combindations of 'row', 'col', 'space', and 'grow'.
 
-> document = col (root . pad 10) myContent
+Wrap main content in 'layout' to allow the view to consume vertical screen space
+
+> holygrail :: View c ()
+> holygrail = layout id $ do
+>   row section "Top Bar"
+>   row grow $ do
+>     col section "Left Sidebar"
+>     col section "Main Content"
+>     col section "Right Sidebar"
+>   row section "Bottom Bar"
+>   where section = border 1
+>
+-}
+layout :: Mod -> View c () -> View c ()
+layout f = el (root . f)
+
+
+{- | As `layout` but as a Mod
+
+> holygrail = col root $ do
+>   ...
 -}
 root :: Mod
 root =
@@ -25,19 +46,58 @@ root =
       )
 
 
-{- | Same as 'root' but as an Element
+{- | Lay out children in a column.
 
-> document = layout (pad 10) myContent
+> col grow $ do
+>    el_ "Top"
+>    space
+>    el_ "Bottom"
 -}
-layout :: Mod -> View c () -> View c ()
-layout f = el (root . f)
+col :: Mod -> View c () -> View c ()
+col f = el (flexCol . f)
 
 
-{- | Make a fixed layout by using layout and putting "scroll" on a child-element
+{- | Lay out children in a row
+
+> row id $ do
+>    el_ "Left"
+>    space
+>    el_ "Right"
+-}
+row :: Mod -> View c () -> View c ()
+row f = el (flexRow . f)
+
+
+{- | Grow to fill the available space in the parent 'Web.View.Element.row' or 'Web.View.Element.col'
+
+> row id $ do
+>  space
+>  el_ "Right"
+-}
+space :: View c ()
+space = el grow none
+
+
+{- | Grow to fill the available space in the parent 'Web.View.Element.row' or 'Web.View.Element.col'
+
+> row id $ do
+>  el grow none
+>  el_ "Right"
+-}
+grow :: Mod
+grow = addClass $ cls "grow" & prop @Int "flex-grow" 1
+
+
+-- | Allow items to become smaller than their contents. This is not the opposite of grow!
+collapse :: Mod
+collapse = addClass $ cls "collapse" & prop @Int "min-width" 0
+
+
+{- | Make a fixed 'layout' by putting 'scroll' on a child-element
 
 > document = row root $ do
->   nav id $ "Left Sidebar"
->   col scroll $ "Main Content"
+>   nav (width 300) "Sidebar"
+>   col (grow . scroll) "Main Content"
 -}
 scroll :: Mod
 scroll = addClass $ cls "scroll" & prop @Text "overflow" "auto"

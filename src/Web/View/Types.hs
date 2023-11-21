@@ -6,73 +6,8 @@ import Data.Map (Map)
 import Data.String (IsString (..))
 import Data.Text (Text, pack, unpack)
 import Data.Text qualified as T
-import Effectful
-import Effectful.Reader.Static
-import Effectful.State.Static.Local as ES
 import GHC.Generics (Generic)
 import Text.Casing (kebab)
-
-
--- * Views
-
-
-{- | Views are HTML fragments that carry all atomic 'CSS' used by any child element.
-
-> view :: View c ()
-> view = col (pad 10 . gap 10) $ do
->   el (color Red) "Hello"
->   el_ "World"
-
-They can also have a context which can be used to create type-safe or context-aware elements that accept specific child views. See 'Web.View.Element.table'
--}
-newtype View context a = View {viewState :: Eff [Reader context, State ViewState] a}
-  deriving newtype (Functor, Applicative, Monad)
-
-
-instance IsString (View context ()) where
-  fromString s = viewModContents (const [Text (pack s)])
-
-
-data ViewState = ViewState
-  { contents :: [Content]
-  , css :: CSS
-  }
-
-
-instance Semigroup ViewState where
-  va <> vb = ViewState (va.contents <> vb.contents) (va.css <> vb.css)
-
-
--- | Extract the 'ViewState' from a 'View'
-runView :: context -> View context () -> ViewState
-runView ctx (View ef) =
-  runPureEff . execState (ViewState [] []) . runReader ctx $ ef
-
-
--- | Add or modify the contents of the current view
-viewModContents :: ([Content] -> [Content]) -> View context ()
-viewModContents f = View $ do
-  ES.modify $ \s -> s{contents = f s.contents}
-
-
--- | Modify the css of the current view
-viewModCss :: (CSS -> CSS) -> View context ()
-viewModCss f = View $ do
-  ES.modify $ \s -> s{css = f s.css}
-
-
--- | Get the current context
-context :: View context context
-context = View ask
-
-
--- | Run a view with a specific `context` in a parent 'View' with a different context. This can be used to create type safe view functions, like 'Web.View.Element.table'
-addContext :: context -> View context () -> View c ()
-addContext ctx vw = do
-  -- runs the sub-view in a different context, saving its state
-  -- we need to MERGE it
-  let st = runView ctx vw
-  View $ ES.modify $ \s -> s <> st
 
 
 data Content
