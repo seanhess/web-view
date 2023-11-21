@@ -5,7 +5,7 @@ cabal-version: 2.2
 -- see: https://github.com/sol/hpack
 
 name:               web-ui
-version:            0.1.6
+version:            0.2.0
 synopsis:           Typed HTML UIs with simplified layout, and ergonomic composition of styles. Inspired by Tailwindcss and Elm UI
 license:            BSD-3-Clause
 license-file:       LICENSE

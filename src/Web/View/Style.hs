@@ -8,34 +8,10 @@ import Data.Text (Text)
 import Web.View.Types
 
 
--- | Hyphneate classnames
-(-.) :: (ToClassName a) => ClassName -> a -> ClassName
-(ClassName n) -. a = ClassName $ n <> "-" <> toClassName a
+-- * Styles
 
 
-infixl 6 -.
-
-
--- | Add class attributes. If they already exist, will combine with spaces
-modClasses :: [Class] -> Mod
-modClasses cx t =
-  t{classes = cx : t.classes}
-
-
--- | Add a single class attribute.
-addClass :: Class -> Mod
-addClass c = modClasses [c]
-
-
-cls :: ClassName -> Class
-cls n = Class (selector n) []
-
-
-prop :: (ToStyleValue val) => Name -> val -> Class -> Class
-prop n v c =
-  c{properties = M.insert n (toStyleValue v) c.properties}
-
-
+-- | Set to a specific width
 width :: PxRem -> Mod
 width n =
   addClass
@@ -44,13 +20,7 @@ width n =
     & prop @Int "flex-shrink" 0
 
 
-minWidth :: PxRem -> Mod
-minWidth n =
-  addClass
-    $ cls ("mw" -. n)
-    & prop "min-width" n
-
-
+-- | Set to a specific height
 height :: PxRem -> Mod
 height n =
   addClass
@@ -59,6 +29,31 @@ height n =
     & prop @Int "flex-shrink" 0
 
 
+-- | Allow width to grow to contents but not shrink any smaller than value
+minWidth :: PxRem -> Mod
+minWidth n =
+  addClass
+    $ cls ("mw" -. n)
+    & prop "min-width" n
+
+
+-- | Allow height to grow to contents but not shrink any smaller than value
+minHeight :: PxRem -> Mod
+minHeight n =
+  addClass
+    $ cls ("mh" -. n)
+    & prop "min-height" n
+
+
+{- | Space surrounding the children of the element
+
+To create even spacing around and between all elements:
+
+> col (pad 10 . gap 10) $ do
+>   el_ "one"
+>   el_ "two"
+>   el_ "three"
+-}
 pad :: Sides PxRem -> Mod
 pad (All n) =
   addClass
@@ -90,10 +85,12 @@ pad (TRBL t r b l) =
     & prop "padding-left" l
 
 
+-- | The space between child elements. See 'pad'
 gap :: PxRem -> Mod
 gap n = addClass $ cls ("gap" -. n) & prop "gap" n
 
 
+-- | Grow to fill the available space in the parent 'Web.View.Element.row' or 'Web.View.Element.col'
 grow :: Mod
 grow = addClass $ cls "grow" & prop @Int "flex-grow" 1
 
@@ -110,6 +107,7 @@ fontSize n = addClass $ cls ("fs" -. n) & prop "font-size" n
 -- fontFamily :: Text -> Mod
 -- fontFamily t = cls1 $ Class ("font" -. n) [("font-family", pxRem n)]
 
+-- | Set container to be a row. Favor 'Web.View.Element.row' when possible
 flexRow :: Mod
 flexRow =
   addClass
@@ -118,6 +116,7 @@ flexRow =
     & prop @Text "flex-direction" "row"
 
 
+-- | Set container to be a column. Favor 'Web.View.Element.row' when possible
 flexCol :: Mod
 flexCol =
   addClass
@@ -126,6 +125,7 @@ flexCol =
     & prop @Text "flex-direction" "column"
 
 
+-- | Adds a basic drop shadow to an element
 shadow :: Mod
 shadow =
   addClass
@@ -133,6 +133,12 @@ shadow =
     & prop @Text "box-shadow" "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)"
 
 
+-- | Round the corners of the element
+rounded :: PxRem -> Mod
+rounded n = addClass $ cls ("rnd" -. n) & prop "border-radius" n
+
+
+-- | Set the background color. See 'Web.View.Types.ToColor'
 bg :: (ToColor c) => c -> Mod
 bg c =
   addClass
@@ -140,6 +146,7 @@ bg c =
     & prop "background-color" (colorValue c)
 
 
+-- | Set the text color. See 'Web.View.Types.ToColor'
 color :: (ToColor c) => c -> Mod
 color c = addClass $ cls ("clr" -. colorName c) & prop "color" (colorValue c)
 
@@ -148,24 +155,19 @@ bold :: Mod
 bold = addClass $ cls "bold" & prop @Text "font-weight" "bold"
 
 
-rounded :: PxRem -> Mod
-rounded n = addClass $ cls ("rnd" -. n) & prop "border-radius" n
-
-
-data Display
-  = None
-  | Block
-  deriving (Show, Eq, ToClassName, ToStyleValue)
-
-
--- should probably do something higher level than this
-display :: Display -> Mod
-display d =
+-- | Hide an element. See 'parent' and 'media'
+hide :: Mod
+hide =
   addClass
-    $ cls ("dsp" -. d)
-    & prop "display" d
+    $ cls "hide"
+    & prop @Text "display" "none"
 
 
+{- | Set a border around the element
+
+> el (border 1) "all sides"
+> el (border (X 1) "only left and right"
+-}
 border :: Sides PxRem -> Mod
 border (All p) =
   addClass
@@ -198,6 +200,7 @@ border (TRBL t r b l) =
     & prop "border-left-width" l
 
 
+-- | Set a border color. See 'Web.View.Types.ToColor'
 borderColor :: (ToColor c) => c -> Mod
 borderColor c =
   addClass
@@ -205,76 +208,21 @@ borderColor c =
     & prop "border-color" (colorValue c)
 
 
+{- | Use a button-like cursor when hovering over the element
+
+Button-like elements:
+
+> btn = pointer . bg Primary . hover (bg PrimaryLight)
+>
+> options = row_ $ do
+>   el btn "Login"
+>   el btn "Sign Up"
+-}
 pointer :: Mod
 pointer = addClass $ cls "pointer" & prop @Text "cursor" "pointer"
 
 
-hover :: Mod -> Mod
-hover f = Hover |: f
-
-
-active :: Mod -> Mod
-active f = Active |: f
-
-
-even :: Mod -> Mod
-even f = Even |: f
-
-
-odd :: Mod -> Mod
-odd f = Odd |: f
-
-
--- Add a pseudo-class like Hover to your style
-(|:) :: Pseudo -> Mod -> Mod
-(|:) ps = modClassMod $ \c ->
-  c
-    { selector = addPsuedo c.selector
-    }
- where
-  addPsuedo :: Selector -> Selector
-  addPsuedo (Selector pr _ m cn) = Selector pr (Just ps) m cn
-
-
-infixr 9 |:
-
-
-media :: Media -> Mod -> Mod
-media m = modClassMod $ \c ->
-  c
-    { selector = addMedia c.selector
-    }
- where
-  addMedia :: Selector -> Selector
-  addMedia (Selector pr ps _ cn) = Selector pr ps (Just m) cn
-
-
-parent :: Text -> Mod -> Mod
-parent p = modClassMod $ \c ->
-  c
-    { selector = addParent c.selector
-    }
- where
-  addParent :: Selector -> Selector
-  addParent (Selector _ ps m c) = Selector (Just p) ps m c
-
-
-modClassMod :: (Class -> Class) -> Mod -> Mod
-modClassMod fc fm el =
-  -- apply the function to all classes added by the mod
-  -- ignore
-  let el' = fm $ Element "none" [] [] []
-   in el
-        { classes = el.classes <> (map fc <$> el'.classes)
-        , attributes = el.attributes <> el'.attributes
-        , children = el.children <> el'.children
-        }
-
-
-rgb :: Int -> Int -> Int -> StyleValue
-rgb rd gr bl = StyleValue $ mconcat [show rd, " ", show gr, " ", show bl]
-
-
+-- | Cut off the contents of the element
 truncate :: Mod
 truncate =
   addClass
@@ -284,14 +232,11 @@ truncate =
     & prop @Text "text-overflow" "ellipsis"
 
 
--- You MUST set the height/width manually when you attempt to transition it
-data TransitionProperty
-  = Width PxRem
-  | Height PxRem
-  deriving (Show)
+{- | Animate changes to the given property
 
-
--- what does it need? To know it's calculated height, right?
+> el (transition 100 (Height 400)) "Tall"
+> el (transition 100 (Height 100)) "Small"
+-}
 transition :: Ms -> TransitionProperty -> Mod
 transition ms = \case
   (Height n) -> trans "height" n
@@ -305,9 +250,11 @@ transition ms = \case
       & prop p px
 
 
-data Align
-  = Center
-  deriving (Show, ToClassName, ToStyleValue)
+-- You MUST set the height/width manually when you attempt to transition it
+data TransitionProperty
+  = Width PxRem
+  | Height PxRem
+  deriving (Show)
 
 
 textAlign :: Align -> Mod
@@ -315,3 +262,125 @@ textAlign a =
   addClass
     $ cls ("ta" -. a)
     & prop "text-align" a
+
+
+data Align
+  = Center
+  deriving (Show, ToClassName, ToStyleValue)
+
+
+-- * Selector Modifiers
+
+
+{- | Apply when hovering over an element
+
+> el (bg Primary . hover (bg PrimaryLight)) "Hover"
+-}
+hover :: Mod -> Mod
+hover = applyPseudo Hover
+
+
+-- | Apply when the mouse is pressed down on an element
+active :: Mod -> Mod
+active = applyPseudo Active
+
+
+-- | Apply to even-numbered children
+even :: Mod -> Mod
+even = applyPseudo Even
+
+
+-- | Apply to odd-numbered children
+odd :: Mod -> Mod
+odd = applyPseudo Odd
+
+
+{- | Apply when the Media matches the current window. This allows for responsive designs
+
+> el (width 100 . media (MinWidth 800) (width 400))
+>   "Big if window > 800"
+-}
+media :: Media -> Mod -> Mod
+media m = mapModClass $ \c ->
+  c
+    { selector = addMedia c.selector
+    }
+ where
+  addMedia :: Selector -> Selector
+  addMedia (Selector pr ps _ cn) = Selector pr ps (Just m) cn
+
+
+{- | Apply when the element is somewhere inside an anscestor.
+
+For example, the HTMX library applies an "htmx-request" class to the body when a request is pending. We can use this to create a loading indicator
+
+> el (pad 10) $ do
+>   el (parent "htmx-request" flexRow . hide) "Loading..."
+>   el (parent "htmx-request" hide . flexRow) "Normal Content"
+-}
+parent :: Text -> Mod -> Mod
+parent p = mapModClass $ \c ->
+  c
+    { selector = addParent c.selector
+    }
+ where
+  addParent :: Selector -> Selector
+  addParent (Selector _ ps m c) = Selector (Just p) ps m c
+
+
+-- Add a pseudo-class like Hover to your style
+applyPseudo :: Pseudo -> Mod -> Mod
+applyPseudo ps = mapModClass $ \c ->
+  c
+    { selector = addToSelector c.selector
+    }
+ where
+  addToSelector :: Selector -> Selector
+  addToSelector (Selector pr _ m cn) = Selector pr (Just ps) m cn
+
+
+mapModClass :: (Class -> Class) -> Mod -> Mod
+mapModClass fc fm el =
+  -- apply the function to all classes added by the mod
+  -- ignore
+  let el' = fm $ Element "none" [] [] []
+   in el
+        { classes = el.classes <> (map fc <$> el'.classes)
+        , attributes = el.attributes <> el'.attributes
+        , children = el.children <> el'.children
+        }
+
+
+-- * Creating New Styles
+
+
+{- | Add a single class
+
+> width :: PxRem -> Mod
+> width n =
+>   addClass
+>     $ cls ("w" -. n)
+>     & prop "width" n
+>     & prop @Int "flex-shrink" 0
+-}
+addClass :: Class -> Mod
+addClass c t = t{classes = [c] : t.classes}
+
+
+-- | Construct a class from a ClassName
+cls :: ClassName -> Class
+cls n = Class (selector n) []
+
+
+-- | Add a property to a class
+prop :: (ToStyleValue val) => Name -> val -> Class -> Class
+prop n v c =
+  c{properties = M.insert n (toStyleValue v) c.properties}
+
+
+-- | Hyphneate classnames
+(-.) :: (ToClassName a) => ClassName -> a -> ClassName
+(ClassName n) -. a = ClassName $ n <> "-" <> toClassName a
+
+
+infixl 6 -.

@@ -37,8 +37,8 @@ button a f cd = do
 
 onRequest :: View id () -> View id () -> View id ()
 onRequest a b = do
-  el (parent "hyp-loading" flexCol . display None) a
-  el (parent "hyp-loading" (display None) . flexCol) b
+  el (parent "hyp-loading" flexCol . hide) a
+  el (parent "hyp-loading" hide . flexCol) b
 
 
 -- | Internal
