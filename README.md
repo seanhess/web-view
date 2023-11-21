@@ -1,73 +1,14 @@
-Development
------------
-
-Load examples and library, and auto-reload
-
-    ghcid --command="cabal repl example" --test main
-
-Hyperbole! What a great name
-HyperBOLE
-
-HtmxBeatsOtherLameExperiences
+Hyperbole
+=========
 
 
 
 
-
-<div class="row pad-20">
-  <div class="bg-graylight pad-20">
-    <div class="col" id="Contents">
-      <div class="col gap-10 tt h-80">
-        <div>Hello</div>
-        <button class="bg-primary clr-white pad-10 hover:bg-primarylight" data-on-click="Expand" data-target="Contents">Expand</button>
-      </div>
-    </div>
-  </div>
-</div>
+https://github.com/seanhess/web-view/blob/57bbfe4046f7fdfffe49c4d01d3254317a113e1d/example/Main.hs#L12-L15
 
 
-<div class="row pad-20">
-  <div class="bg-graylight pad-20">
-    <div class="col" id="Contents">
-      <style type="text/css">.bg-primary { background-color:#2C74BB }
-        .clr-white { color:#FFF }
-        .col { display:flex; flex-direction:column }
-        .gap-10 { gap:0.625rem }
-        .h-220 { flex-shrink:0; height:13.75rem }
-        .pad-10 { padding:0.625rem }
-        .tt { transition-duration:0.5s; transition-property:height }
-        .hover\:bg-primarylight:hover { background-color:#3281cf }</style>
-    <div class="col gap-10 tt h-220">
-      <div>One</div>
-      <div>Two</div>
-      <div>Three</div>
-      <div>Four</div>
-      <div>Five</div>
-    <button class="bg-primary clr-white pad-10 hover:bg-primarylight" data-on-click="Collapse" data-target="Contents">Collapse</button>
-  </div>
-  </div>
-  </div>
-</div>
 
 
-<div class="row pad-20">
-  <div class="bg-graylight pad-20">
-    <div class="col" id="Contents"><style type="text/css">.bg-primary { background-color:#2C74BB }
-.clr-white { color:#FFF }
-.col { display:flex; flex-direction:column }
-.gap-10 { gap:0.625rem }
-.h-80 { flex-shrink:0; height:5.0rem }
-.pad-10 { padding:0.625rem }
-.tt { transition-duration:0.5s; transition-property:height }
-.hover\:bg-primarylight:hover { background-color:#3281cf }</style>
-
-<div class="col gap-10 tt h-80">
-  <div>Hello</div>
-  <button class="bg-primary clr-white pad-10 hover:bg-primarylight" data-on-click="Expand" data-target="Contents">Expand</button>
-</div>
-</div>
-  </div>
-</div>
 
 
 Reference CSS Layout that Worked
