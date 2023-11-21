@@ -103,6 +103,17 @@ stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
 -- * Tables
 
 
+{- | Create a type safe data table by specifying columns
+
+> usersTable :: [Person] -> View c ()
+> usersTable us = do
+>   table (textAlign Center) us $ do
+>     tcol (th hd "Name") $ \u -> td cell $ text u.name
+>     tcol (th hd "Email") $ \u -> td cell $ text u.email
+>  where
+>   hd = cell . bold
+>   cell = pad 4 . border 1
+-}
 table :: Mod -> [dt] -> Eff '[Writer [TableColumn c dt]] () -> View c ()
 table f dts wcs = do
   c <- context
@@ -122,18 +133,9 @@ table f dts wcs = do
   borderCollapse = addClass $ cls "brd-cl" & prop @Text "border-collapse" "collapse"
 
 
-tcol :: forall dt c es. (Writer [TableColumn c dt] :> es) => View (Head c) () -> (dt -> View dt ()) -> Eff es ()
+tcol :: forall dt c. View (Head c) () -> (dt -> View dt ()) -> Eff '[Writer [TableColumn c dt]] ()
 tcol hd view = do
   tell ([TableColumn hd view] :: [TableColumn c dt])
-
-
-newtype Head a = Head a
-
-
-data TableColumn c dt = TableColumn
-  { headCell :: View (Head c) ()
-  , dataCell :: dt -> View dt ()
-  }
 
 
 th :: Mod -> View c () -> View (Head c) ()
@@ -144,3 +146,12 @@ th f cnt = do
 
 td :: Mod -> View () () -> View dt ()
 td f c = addContext () $ tag "td" f c
+
+
+newtype Head a = Head a
+
+
+data TableColumn c dt = TableColumn
+  { headCell :: View (Head c) ()
+  , dataCell :: dt -> View dt ()
+  }
