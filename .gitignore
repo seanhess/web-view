@@ -3,5 +3,6 @@ node_modules
 dist
 .DS_Store
 tags
+docs/old.md
 
 embed/htmx.js

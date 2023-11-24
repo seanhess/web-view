@@ -3,6 +3,9 @@
 module Main where
 
 import Data.String.Interpolate (i)
+import Data.Text as T (Text, filter, toLower)
+import Example.Colors
+import Example.Layout as Layout
 import Network.HTTP.Types (status200, status404)
 import Network.Wai
 import Network.Wai.Handler.Warp as Warp
@@ -18,7 +21,9 @@ main = do
 app :: Application
 app req respond = do
   case pathInfo req of
-    [] -> view test
+    [] -> view examples
+    ["responsive"] -> view Layout.responsive
+    ["holygrail"] -> view Layout.holygrail
     _ -> notFound
  where
   html h =
@@ -37,5 +42,14 @@ app req respond = do
     </html>|]
 
 
-test :: View c ()
-test = el bold "hello"
+examples :: View c ()
+examples = col (pad 20 . gap 15) $ do
+  el (bold . fontSize 24) "Layout"
+  link "Responsive"
+  link "Holy Grail"
+
+
+link :: Text -> View c ()
+link n = tag "a" (att "href" url . color Primary) (text n)
+ where
+  url = toLower . T.filter (/= ' ') $ n

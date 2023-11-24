@@ -18,7 +18,7 @@ import Prelude hiding (unlines, unwords)
 import Web.View.Types
 
 
-{- | Renders the HTML and corresponding CSS
+{- | Renders the HTML and corresponding CSS class definitions
 
 >>> renderText () $ el bold "Hello"
 <style type='text/css'>.bold { font-weight:bold }</style>

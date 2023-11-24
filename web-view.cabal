@@ -72,6 +72,8 @@ library
 executable example
   main-is: Main.hs
   other-modules:
+      Example.Colors
+      Example.Layout
       Paths_web_view
   autogen-modules:
       Paths_web_view

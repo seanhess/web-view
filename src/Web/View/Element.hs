@@ -44,7 +44,7 @@ raw :: Text -> View c ()
 raw t = viewAddContent $ Raw t
 
 
-{- | Do not any any content
+{- | Do not show any content
 
 > if isVisible
 >  then content
