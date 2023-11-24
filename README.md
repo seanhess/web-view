@@ -34,8 +34,17 @@ This approach is inspired by Tailwindcss' [Utility Classes](https://tailwindcss.
 
 Easily create layouts with `row`, `col`, `grow`, and `space`
 
-https://github.com/seanhess/web-view/blob/52fafd9620f2df88197733a436c1af12b3533d88/example/Example/Layout.hs#L36-L48
-
+```haskell
+holygrail :: View c ()
+holygrail = layout id $ do
+  row section "Top Bar"
+  row grow $ do
+    col section "Left Sidebar"
+    col section "Main Content"
+    col section "Right Sidebar"
+  row section "Bottom Bar"
+  where section = 'border' 1
+```
 
 ### Embedded CSS
 
@@ -51,14 +60,14 @@ Views track which styles are used in any child node, and automatically embed all
 We can apply styles when certain states apply. For example, to change the background on hover:
 
 ```haskell
-    button (bg Primary . hover (bg PrimaryLight)) "Hover Me"
+button (bg Primary . hover (bg PrimaryLight)) "Hover Me"
 ```
 
 Media states allow us to create responsive designs
 
 ```haskell
-    el (width 100 . media (MinWidth 800) (width 400))
-      "Big if window > 800"
+el (width 100 . media (MinWidth 800) (width 400))
+  "Big if window > 800"
 ```
 
 
@@ -66,13 +75,15 @@ Learn More
 ----------
 
 View Documentation on [Hackage][hackage]
-* https://hackage.haskell.org/package/aeson-2.2.1.0
+* https://hackage.haskell.org/package/web-view-0.2.0
 
 View on Github
 * https://github.com/seanhess/web-view
 
 Examples
+* [App](https://github.com/seanhess/web-view/blob/main/example/Main.hs)
+* [Simple](https://github.com/seanhess/web-view/blob/main/example/Example/Simple.hs)
 * [Layout](https://github.com/seanhess/web-view/blob/main/example/Example/Layout.hs)
 
 
-[hackage]: https://hackage.haskell.org/package/aeson-2.2.1.0
+[hackage]: https://hackage.haskell.org/package/web-view-0.2.0
