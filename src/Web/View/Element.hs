@@ -87,7 +87,7 @@ button :: Mod -> View c () -> View c ()
 button = tag "button"
 
 
--- * Head and Metadata
+-- * Document Metadata
 
 
 script :: Text -> View c ()

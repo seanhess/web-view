@@ -8,26 +8,27 @@ import Web.View.Types
 import Web.View.View (View, tag)
 
 
-{- | Intuitively create layouts with combindations of 'row', 'col', 'space', and 'grow'.
+{- | We can intuitively create layouts with combindations of 'row', 'col', 'grow', and 'space'
 
 Wrap main content in 'layout' to allow the view to consume vertical screen space
 
-> holygrail :: View c ()
-> holygrail = layout id $ do
->   row section "Top Bar"
->   row grow $ do
->     col section "Left Sidebar"
->     col section "Main Content"
->     col section "Right Sidebar"
->   row section "Bottom Bar"
->   where section = border 1
->
+@
+holygrail :: 'View' c ()
+holygrail = 'layout' id $ do
+  'row' section "Top Bar"
+  'row' 'grow' $ do
+    'col' section "Left Sidebar"
+    'col' section "Main Content"
+    'col' section "Right Sidebar"
+  'row' section "Bottom Bar"
+  where section = 'border' 1
+@
 -}
 layout :: Mod -> View c () -> View c ()
 layout f = el (root . f)
 
 
-{- | As `layout` but as a Mod
+{- | As `layout` but as a 'Mod'
 
 > holygrail = col root $ do
 >   ...
@@ -68,17 +69,7 @@ row :: Mod -> View c () -> View c ()
 row f = el (flexRow . f)
 
 
-{- | Grow to fill the available space in the parent 'Web.View.Element.row' or 'Web.View.Element.col'
-
-> row id $ do
->  space
->  el_ "Right"
--}
-space :: View c ()
-space = el grow none
-
-
-{- | Grow to fill the available space in the parent 'Web.View.Element.row' or 'Web.View.Element.col'
+{- | Grow to fill the available space in the parent 'Web.View.Layout.row' or 'Web.View.Layout.col'
 
 > row id $ do
 >  el grow none
@@ -86,6 +77,21 @@ space = el grow none
 -}
 grow :: Mod
 grow = addClass $ cls "grow" & prop @Int "flex-grow" 1
+
+
+{- | Space that fills the available space in the parent 'Web.View.Layout.row' or 'Web.View.Layout.col'.
+
+
+> row id $ do
+>  space
+>  el_ "Right"
+
+This is equivalent to an empty element with 'grow'
+
+> space = el grow none
+-}
+space :: View c ()
+space = el grow none
 
 
 -- | Allow items to become smaller than their contents. This is not the opposite of grow!

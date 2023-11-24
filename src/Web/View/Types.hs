@@ -36,7 +36,7 @@ type AttValue = Text
 -- * Element Modifiers
 
 
-{- | A function that modifies an element. Allows for ergonomic composition of attributes and styles
+{- | Element functions expect a Mod function as their first argument that adds attributes and classes.
 
 > userEmail :: User -> View c ()
 > userEmail user = input (fontSize 16 . active) (text user.email)

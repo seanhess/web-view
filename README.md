@@ -1,19 +1,18 @@
 Web View
 ============
 
-Type-safe HTML and CSS with simplified layout and easy composition of styles. Inspired by Tailwindcss and Elm-UI
+Type-safe HTML and CSS with intuitive layout and composable styles. Inspired by Tailwindcss and Elm-UI
 
 [![Hackage](https://img.shields.io/hackage/v/web-view.svg)][hackage]
 
-Write Haskell instead of CSS
-----------------------------
+### Write Haskell instead of CSS
 
 Type-safe utility functions to style html
 
 ```haskell
 myPage = col (gap 10) $ do
   el (bold . fontSize 32) "My page"
-  button (color Red) "Click Me"
+  button (border 1) "Click Me"
 ```
 
 Re-use styles as Haskell functions instead of naming CSS classes.
@@ -31,26 +30,23 @@ myPage = col page $ do
 
 This approach is inspired by Tailwindcss' [Utility Classes](https://tailwindcss.com/docs/utility-first)
 
-Simplified Layouts
-------------------
+### Intuitive Layouts
 
-Easily create layouts with `row`, `col`, and `grow`
+Easily create layouts with `row`, `col`, `grow`, and `space`
 
 https://github.com/seanhess/web-view/blob/52fafd9620f2df88197733a436c1af12b3533d88/example/Example/Layout.hs#L36-L48
 
 
-Embedded CSS
-------------
+### Embedded CSS
 
 Views track which styles are used in any child node, and automatically embed all CSS when rendered. 
 
-    >>> renderText () $ el bold "Hello"
+    >>> renderText $ el bold "Hello"
     <style type='text/css'>.bold { font-weight:bold }</style>
     <div class='bold'>Hello</div>
 
 
-Stateful Styles
----------------
+### Stateful Styles
 
 We can apply styles when certain states apply. For example, to change the background on hover:
 
@@ -75,6 +71,8 @@ View Documentation on [Hackage][hackage]
 View on Github
 * https://github.com/seanhess/web-view
 
+Examples
+* [Layout](https://github.com/seanhess/web-view/blob/main/example/Example/Layout.hs)
 
 
 [hackage]: https://hackage.haskell.org/package/aeson-2.2.1.0

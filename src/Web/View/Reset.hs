@@ -7,12 +7,12 @@ import Data.FileEmbed
 import Data.Text
 
 
-{- | The entire contents of Tailwind's preflight. This or 'cssResetLink' is required.
+{- | Default CSS to clear unintuitive default styles. This or 'cssResetLink' is required.
 
 > import Data.String.Interpolate (i)
 >
-> document :: Text -> Text
-> document cnt =
+> toDocument :: Text -> Text
+> toDocument cnt =
 >   [i|<html>
 >     <head>
 >       <style type="text/css">#{cssResetEmbed}</style>
@@ -24,12 +24,12 @@ cssResetEmbed :: ByteString
 cssResetEmbed = $(embedFile "embed/preflight.css")
 
 
-{- | Alternatively, this is available as on a CDN
+{- | Alternatively, the reset is available as on a CDN
 
 > import Data.String.Interpolate (i)
 >
-> document :: Text -> Text
-> document cnt =
+> toDocument :: Text -> Text
+> toDocument cnt =
 >   [i|<html>
 >     <head>
 >       <link rel="stylesheet" href="#{cssResetEmbed}">

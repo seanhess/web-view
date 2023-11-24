@@ -18,14 +18,30 @@ import Prelude hiding (unlines, unwords)
 import Web.View.Types
 
 
-{- | Renders the HTML and corresponding CSS class definitions
+{- | Renders a 'View' as HTML with embedded CSS class definitions
 
->>> renderText () $ el bold "Hello"
+>>> renderText $ el bold "Hello"
 <style type='text/css'>.bold { font-weight:bold }</style>
 <div class='bold'>Hello</div>
 -}
-renderText :: c -> View c () -> Text
-renderText c u = intercalate "\n" content
+renderText :: View () () -> Text
+renderText = renderText' ()
+
+
+renderLazyText :: View () () -> L.Text
+renderLazyText = L.fromStrict . renderText
+
+
+renderLazyByteString :: View () () -> BL.ByteString
+renderLazyByteString = LE.encodeUtf8 . renderLazyText
+
+
+{- | Render with the specified view context
+
+> renderText' () $ el bold "Hello"
+-}
+renderText' :: c -> View c () -> Text
+renderText' c u = intercalate "\n" content
  where
   -- T.intercalate "\n" (content <> style css)
   content :: [Text]
@@ -46,14 +62,6 @@ renderText c u = intercalate "\n" content
   renderContent (Node t) = renderTag indent t
   renderContent (Text t) = [t]
   renderContent (Raw t) = [t]
-
-
-renderLazyText :: c -> View c () -> L.Text
-renderLazyText c = L.fromStrict . renderText c
-
-
-renderLazyByteString :: c -> View c () -> BL.ByteString
-renderLazyByteString c = LE.encodeUtf8 . renderLazyText c
 
 
 renderTag :: (Text -> Text) -> Element -> [Text]

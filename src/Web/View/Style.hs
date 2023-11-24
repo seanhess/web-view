@@ -99,7 +99,7 @@ fontSize n = addClass $ cls ("fs" -. n) & prop "font-size" n
 -- fontFamily :: Text -> Mod
 -- fontFamily t = cls1 $ Class ("font" -. n) [("font-family", pxRem n)]
 
--- | Set container to be a row. Favor 'Web.View.Element.row' when possible
+-- | Set container to be a row. Favor 'Web.View.Layout.row' when possible
 flexRow :: Mod
 flexRow =
   addClass
@@ -108,7 +108,7 @@ flexRow =
     & prop @Text "flex-direction" "row"
 
 
--- | Set container to be a column. Favor 'Web.View.Element.row' when possible
+-- | Set container to be a column. Favor 'Web.View.Layout.col' when possible
 flexCol :: Mod
 flexCol =
   addClass

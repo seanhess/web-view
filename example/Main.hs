@@ -11,10 +11,22 @@ import Network.Wai
 import Network.Wai.Handler.Warp as Warp
 import Web.View
 
+
 main :: IO ()
 main = do
   putStrLn "Starting on http://localhost:3010/"
   Warp.run 3010 app
+
+
+examples :: View c ()
+examples = col (pad 20 . gap 15) $ do
+  el (bold . fontSize 24) "Layout"
+  link "Responsive"
+  link "Holy Grail"
+ where
+  link :: Text -> View c ()
+  link n = tag "a" (att "href" (url n) . color Primary) (text n)
+  url = toLower . T.filter (/= ' ')
 
 
 app :: Application
@@ -32,23 +44,10 @@ app req respond = do
     respond $ responseLBS status404 [("Content-Type", "text/plain; charset=utf-8")] "Not Found"
 
   view v =
-    html $ document $ renderLazyByteString () v
+    html $ document $ renderLazyByteString v
 
   document cnt =
     [i|<html>
       <head><style type="text/css">#{cssResetEmbed}</style></head>
       <body>#{cnt}</body>
     </html>|]
-
-
-examples :: View c ()
-examples = col (pad 20 . gap 15) $ do
-  el (bold . fontSize 24) "Layout"
-  link "Responsive"
-  link "Holy Grail"
-
-
-link :: Text -> View c ()
-link n = tag "a" (att "href" url . color Primary) (text n)
- where
-  url = toLower . T.filter (/= ' ') $ n

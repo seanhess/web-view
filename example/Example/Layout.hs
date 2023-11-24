@@ -4,7 +4,6 @@ import Example.Colors
 import Web.View
 
 
--- need to be able to set bg color of page, sure
 responsive :: View c ()
 responsive = do
   layout (big flexRow) $ do

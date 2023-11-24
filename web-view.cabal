@@ -6,7 +6,7 @@ cabal-version: 2.2
 
 name:           web-view
 version:        0.2.0
-synopsis:       Typed HTML UIs with simplified layout, and ergonomic composition of styles. Inspired by Tailwindcss and Elm UI
+synopsis:       Type-safe HTML and CSS with intuitive layouts and composable styles. Inspired by Tailwindcss and Elm-UI
 category:       Web
 homepage:       https://github.com/seanhess/web-view
 author:         Sean Hess
@@ -56,6 +56,7 @@ executable example
   other-modules:
       Example.Colors
       Example.Layout
+      Example.Simple
       Paths_web_view
   autogen-modules:
       Paths_web_view
