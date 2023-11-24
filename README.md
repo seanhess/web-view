@@ -8,29 +8,33 @@ Type-safe HTML and CSS with simplified layout and easy composition of styles. In
 Write Haskell instead of CSS
 ----------------------------
 
-This library provides type-safe utility functions to style html
+Type-safe utility functions to style html
 
-    myPage = col (gap 10) $ do
-      el (bold . fontSize 32) "My page"
-      button (color Red) "Click Me"
+```haskell
+myPage = col (gap 10) $ do
+  el (bold . fontSize 32) "My page"
+  button (color Red) "Click Me"
+```
 
-Rather than coming up with names for CSS classes to re-use styles, you can use haskell functions
+Re-use styles as Haskell functions instead of naming CSS classes.
 
-    header = bold
-    h1 = header . fontSize 32
-    h2 = header . fontSize 24
-    page = gap 10
+```haskell
+header = bold
+h1 = header . fontSize 32
+h2 = header . fontSize 24
+page = gap 10
 
-    myPage = col page $ do
-      el h1 "My Page"
-      ...
+myPage = col page $ do
+  el h1 "My Page"
+  ...
+```
 
 This approach is inspired by Tailwindcss' [Utility Classes](https://tailwindcss.com/docs/utility-first)
 
 Simplified Layouts
 ------------------
 
-Easily create layouts with `row`, `col`, and `space`. See [Example.Layout](blob/main/example/Example/Layout.hs)
+Easily create layouts with `row`, `col`, and `grow`
 
 https://github.com/seanhess/web-view/blob/52fafd9620f2df88197733a436c1af12b3533d88/example/Example/Layout.hs#L36-L48
 
@@ -45,17 +49,21 @@ Views track which styles are used in any child node, and automatically embed all
     <div class='bold'>Hello</div>
 
 
-State variants
---------------
+Stateful Styles
+---------------
 
 We can apply styles when certain states apply. For example, to change the background on hover:
 
+```haskell
     button (bg Primary . hover (bg PrimaryLight)) "Hover Me"
+```
 
 Media states allow us to create responsive designs
 
+```haskell
     el (width 100 . media (MinWidth 800) (width 400))
       "Big if window > 800"
+```
 
 
 Learn More
@@ -68,13 +76,5 @@ View on Github
 * https://github.com/seanhess/web-view
 
 
-
-
-#### Why function composition instead of lists?
-
-It makes dynamic styles cleaner, without any need to concat anything
-
-    view user = el (selected . bold . fontSize 32) (text user.name)
-      where selected = if isSelected then color Red else id
 
 [hackage]: https://hackage.haskell.org/package/aeson-2.2.1.0
