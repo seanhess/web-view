@@ -1,14 +1,19 @@
 name:               web-view
 version:            0.2.0
-synopsis:           Type-safe HTML and CSS with intuitive layouts and composable styles. Inspired by Tailwindcss and Elm-UI
+synopsis:           Type-safe HTML and CSS with intuitive layouts and composable styles.
 homepage:           https://github.com/seanhess/web-view
+github:             seanhess/web-view
 license:            BSD-3-Clause
 license-file:       LICENSE
 author:             Sean Hess
 maintainer:         seanhess@gmail.com
 category:           Web
+description:
+  Type-safe HTML and CSS with intuitive layouts and composable styles. Inspired by Tailwindcss and Elm-UI
+  .
+  See documentation for the @Web.View@ module below
 
-extra-source-files:
+extra-doc-files:
   - README.md
   - CHANGELOG.md
 
@@ -25,13 +30,13 @@ default-extensions:
   - NoFieldSelectors
 
 dependencies:
-  - base >=4.16.4.0 && <5
+  - base >=4.16 && <5
+  - bytestring >= 0.11 && <0.13
   - containers >= 0.6 && <1
   - casing > 0.1.3.0 && <0.2
-  - bytestring >= 0.10 && <0.13
-  - effectful >= 2.0 && <3
-  - string-interpolate >= 0.3 && <0.4
-  - text >=1.2 && <3
+  - effectful >= 2.3 && <2.4
+  - text >= 1.2 && <3
+  - string-interpolate >= 0.3.2 && <0.4
   - file-embed >= 0.0.10 && <0.1
 
 library:
@@ -42,13 +47,16 @@ executables:
     main:                Main.hs
     source-dirs:         example
     dependencies:
-    - http-types
-    - http-api-data >= 0.6
     - web-view
-    - wai >= 3.0
-    - warp
+    - http-api-data >= 0.6 && < 0.7
+    - http-types >= 0.12.3 && < 0.13
+    - wai >= 3.2.3 && < 3.3
+    - warp >= 3.3.30 && < 3.4
+
 
 tests:
   tests:
     main:                Tests.hs
     source-dirs:         test
+
+
