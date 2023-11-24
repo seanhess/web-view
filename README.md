@@ -76,7 +76,7 @@ Learn More
 ----------
 
 View Documentation on [Hackage][hackage]
-* https://hackage.haskell.org/package/web-view-0.2.0
+* https://hackage.haskell.org/package/web-view
 
 View on Github
 * https://github.com/seanhess/web-view
@@ -84,4 +84,4 @@ View on Github
 View [Examples](https://github.com/seanhess/web-view/blob/main/example/Main.hs)
 
 
-[hackage]: https://hackage.haskell.org/package/web-view-0.2.0
+[hackage]: https://hackage.haskell.org/package/web-view
