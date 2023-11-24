@@ -51,7 +51,7 @@ type Mod = Element -> Element
 
 -- TODO: document atomic CSS here?
 
--- | All the atomic classes used in a 'View'
+-- | All the atomic classes used in a 'Web.View.View'
 type CSS = Map Selector Class
 
 

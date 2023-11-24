@@ -4,8 +4,6 @@ module Main where
 
 import Data.String.Interpolate (i)
 import Data.Text as T (Text, filter, toLower)
-import Example.Colors
-import Example.Layout as Layout
 import Network.HTTP.Types (status200, status404)
 import Network.Wai
 import Network.Wai.Handler.Warp as Warp
@@ -82,8 +80,9 @@ app :: Application
 app req respond = do
   case pathInfo req of
     [] -> view examples
-    ["responsive"] -> view Layout.responsive
-    ["holygrail"] -> view Layout.holygrail
+    ["simple"] -> view simple
+    ["responsive"] -> view responsive
+    ["holygrail"] -> view holygrail
     _ -> notFound
  where
   html h =
@@ -100,3 +99,32 @@ app req respond = do
       <head><style type="text/css">#{cssResetEmbed}</style></head>
       <body>#{cnt}</body>
     </html>|]
+
+
+data AppColor
+  = White
+  | Light
+  | Gray
+  | Dark
+  | Success
+  | Error
+  | Warning
+  | Primary
+  | PrimaryLight
+  | Secondary
+  | SecondaryLight
+  deriving (Show)
+
+
+instance ToColor AppColor where
+  colorValue White = "#FFF"
+  colorValue Light = "#F2F2F3"
+  colorValue Gray = "#888"
+  colorValue Dark = "#2E3842" -- "#232C41"
+  colorValue Primary = "#2C74BB"
+  colorValue PrimaryLight = "#3281cf"
+  colorValue Success = "#D5E6DE"
+  colorValue Error = "#F3D8DA"
+  colorValue Warning = "#FDF3D1"
+  colorValue Secondary = "#5CADDB"
+  colorValue SecondaryLight = "#8CFDAB"
