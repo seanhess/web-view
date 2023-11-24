@@ -25,14 +25,14 @@ default-extensions:
   - NoFieldSelectors
 
 dependencies:
-  - base >=4.16.4.0
-  - containers
-  - casing
-  - bytestring
-  - effectful
-  - string-interpolate
-  - text
-  - file-embed
+  - base >=4.16.4.0 && <5
+  - containers >= 0.6 && <1
+  - casing > 0.1.3.0 && <0.2
+  - bytestring >= 0.10 && <0.13
+  - effectful >= 2.0 && <3
+  - string-interpolate >= 0.3 && <0.4
+  - text >=1.2 && <3
+  - file-embed >= 0.0.10 && <0.1
 
 library:
   source-dirs: src
