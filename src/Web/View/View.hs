@@ -1,3 +1,7 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE OverloadedLists #-}
+
 module Web.View.View where
 
 import Data.Map qualified as M

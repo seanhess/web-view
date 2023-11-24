@@ -11,7 +11,6 @@ import Network.Wai
 import Network.Wai.Handler.Warp as Warp
 import Web.View
 
-
 main :: IO ()
 main = do
   putStrLn "Starting on http://localhost:3010/"

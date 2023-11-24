@@ -19,14 +19,8 @@ ghc-options:
   - -fdefer-typed-holes
 
 default-extensions:
-  - TypeFamilies
-  - DataKinds
-  - DeriveAnyClass
-  - DerivingStrategies
-  - OverloadedRecordDot
   - OverloadedStrings
-  - OverloadedLists
-  - QuasiQuotes
+  - OverloadedRecordDot
   - DuplicateRecordFields
   - NoFieldSelectors
 
@@ -34,23 +28,11 @@ dependencies:
   - base >=4.16.4.0
   - containers
   - casing
-  - data-default
   - bytestring
   - effectful
-  - filepath
-  - http-types
-  - http-api-data >= 0.6
-  - mtl
   - string-interpolate
   - text
-  - wai >= 3.0
-  - warp
   - file-embed
-  - aeson
-  - string-conversions
-  - wai-websockets
-  - unordered-containers
-  - websockets
 
 library:
   source-dirs: src
@@ -60,9 +42,11 @@ executables:
     main:                Main.hs
     source-dirs:         example
     dependencies:
+    - http-types
+    - http-api-data >= 0.6
     - web-view
+    - wai >= 3.0
     - warp
-    - wai
 
 tests:
   tests:

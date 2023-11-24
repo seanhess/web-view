@@ -35,38 +35,20 @@ library
   hs-source-dirs:
       src
   default-extensions:
-      TypeFamilies
-      DataKinds
-      DeriveAnyClass
-      DerivingStrategies
-      OverloadedRecordDot
       OverloadedStrings
-      OverloadedLists
-      QuasiQuotes
+      OverloadedRecordDot
       DuplicateRecordFields
       NoFieldSelectors
   ghc-options: -Wall -fdefer-typed-holes
   build-depends:
-      aeson
-    , base >=4.16.4.0
+      base >=4.16.4.0
     , bytestring
     , casing
     , containers
-    , data-default
     , effectful
     , file-embed
-    , filepath
-    , http-api-data >=0.6
-    , http-types
-    , mtl
-    , string-conversions
     , string-interpolate
     , text
-    , unordered-containers
-    , wai >=3.0
-    , wai-websockets
-    , warp
-    , websockets
   default-language: GHC2021
 
 executable example
@@ -80,39 +62,25 @@ executable example
   hs-source-dirs:
       example
   default-extensions:
-      TypeFamilies
-      DataKinds
-      DeriveAnyClass
-      DerivingStrategies
-      OverloadedRecordDot
       OverloadedStrings
-      OverloadedLists
-      QuasiQuotes
+      OverloadedRecordDot
       DuplicateRecordFields
       NoFieldSelectors
   ghc-options: -Wall -fdefer-typed-holes
   build-depends:
-      aeson
-    , base >=4.16.4.0
+      base >=4.16.4.0
     , bytestring
     , casing
     , containers
-    , data-default
     , effectful
     , file-embed
-    , filepath
     , http-api-data >=0.6
     , http-types
-    , mtl
-    , string-conversions
     , string-interpolate
     , text
-    , unordered-containers
-    , wai
-    , wai-websockets
+    , wai >=3.0
     , warp
     , web-view
-    , websockets
   default-language: GHC2021
 
 test-suite tests
@@ -125,36 +93,18 @@ test-suite tests
   hs-source-dirs:
       test
   default-extensions:
-      TypeFamilies
-      DataKinds
-      DeriveAnyClass
-      DerivingStrategies
-      OverloadedRecordDot
       OverloadedStrings
-      OverloadedLists
-      QuasiQuotes
+      OverloadedRecordDot
       DuplicateRecordFields
       NoFieldSelectors
   ghc-options: -Wall -fdefer-typed-holes
   build-depends:
-      aeson
-    , base >=4.16.4.0
+      base >=4.16.4.0
     , bytestring
     , casing
     , containers
-    , data-default
     , effectful
     , file-embed
-    , filepath
-    , http-api-data >=0.6
-    , http-types
-    , mtl
-    , string-conversions
     , string-interpolate
     , text
-    , unordered-containers
-    , wai >=3.0
-    , wai-websockets
-    , warp
-    , websockets
   default-language: GHC2021

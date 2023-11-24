@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+
 module Web.View.Element where
 
 import Control.Monad (forM_)
