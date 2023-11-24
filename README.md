@@ -51,6 +51,7 @@ holygrail = layout id $ do
 Views track which styles are used in any child node, and automatically embed all CSS when rendered. 
 
     >>> renderText $ el bold "Hello"
+    
     <style type='text/css'>.bold { font-weight:bold }</style>
     <div class='bold'>Hello</div>
 
