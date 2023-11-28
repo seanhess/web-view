@@ -7,7 +7,7 @@ import Data.FileEmbed
 import Data.Text
 
 
-{- | Default CSS to clear unintuitive default styles. This or 'cssResetLink' is required.
+{- | Default CSS to remove unintuitive default styles. This or 'cssResetLink' is required.
 
 > import Data.String.Interpolate (i)
 >

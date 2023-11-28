@@ -7,7 +7,7 @@ Type-safe HTML and CSS with intuitive layout and composable styles. Inspired by 
 
 ### Write Haskell instead of CSS
 
-Type-safe utility functions to style html
+Type-safe utility functions to generate styled HTML.
 
 ```haskell
 myPage = col (gap 10) $ do
@@ -15,7 +15,7 @@ myPage = col (gap 10) $ do
   button (border 1) "Click Me"
 ```
 
-Re-use styles as Haskell functions instead of naming CSS classes.
+Leverage the full power of Haskell functions for reuse, instead of relying on CSS.
 
 ```haskell
 header = bold
@@ -40,7 +40,7 @@ holygrail = layout id $ do
   row section "Top Bar"
   row grow $ do
     col section "Left Sidebar"
-    col section "Main Content"
+    col (section . grow) "Main Content"
     col section "Right Sidebar"
   row section "Bottom Bar"
   where section = 'border' 1

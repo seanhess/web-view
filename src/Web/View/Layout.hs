@@ -18,7 +18,7 @@ holygrail = 'layout' id $ do
   'row' section "Top Bar"
   'row' 'grow' $ do
     'col' section "Left Sidebar"
-    'col' section "Main Content"
+    'col' (section . 'grow') "Main Content"
     'col' section "Right Sidebar"
   'row' section "Bottom Bar"
   where section = 'border' 1

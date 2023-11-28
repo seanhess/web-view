@@ -149,6 +149,19 @@ This represents an HTML fragment with embedded CSS definitions
 >   <div class='bold fs-32'>My page</div>
 >   <button class='brd-1'>Click Me</button>
 > </div>
+
+Leverage the full power of Haskell functions for reuse, instead of relying on CSS.
+
+> header = bold
+> h1 = header . fontSize 32
+> h2 = header . fontSize 24
+> page = gap 10
+>
+> myView = col page $ do
+>   el h1 "My Page"
+> ...
+
+This approach is inspired by Tailwindcss' [Utility Classes](https://tailwindcss.com/docs/utility-first)
 -}
 
 

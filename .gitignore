@@ -4,5 +4,5 @@ dist
 .DS_Store
 tags
 docs/old.md
+build
 
-embed/htmx.js

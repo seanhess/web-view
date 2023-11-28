@@ -1,5 +1,5 @@
 name:               web-view
-version:            0.2.0
+version:            0.2.3
 synopsis:           Type-safe HTML and CSS with intuitive layouts and composable styles.
 homepage:           https://github.com/seanhess/web-view
 github:             seanhess/web-view
@@ -16,6 +16,9 @@ description:
 extra-doc-files:
   - README.md
   - CHANGELOG.md
+
+extra-source-files:
+  - embed/preflight.css
 
 language: GHC2021
 
@@ -48,7 +51,6 @@ executables:
     source-dirs:         example
     dependencies:
     - web-view
-    - http-api-data >= 0.6 && < 0.7
     - http-types >= 0.12.3 && < 0.13
     - wai >= 3.2.3 && < 3.3
     - warp >= 3.3.30 && < 3.4
