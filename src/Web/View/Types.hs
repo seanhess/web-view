@@ -27,7 +27,7 @@ data Element = Element
 
 
 data Attributes = Attributes
-  { classes :: [[Class]]
+  { classes :: [Class]
   , other :: Map Name AttValue
   }
 type Attribute = (Name, AttValue)

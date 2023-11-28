@@ -111,7 +111,7 @@ tag nm f ct = do
   let elm = f $ Element nm (Attributes [] []) st.contents
   viewAddContent $ Node elm
   viewAddClasses $ M.elems st.css
-  viewAddClasses $ mconcat elm.attributes.classes
+  viewAddClasses elm.attributes.classes
 
 
 {- | Set an attribute, replacing existing value
@@ -120,6 +120,6 @@ tag nm f ct = do
 > hlink url content = tag "a" (att "href" url) content
 -}
 att :: Name -> AttValue -> Mod
-att n v el =
-  let atts = M.insert n v el.attributes.other
-   in el{attributes = el.attributes{other = atts}}
+att n v (Element{name, attributes, children}) =
+  let atts = M.insert n v attributes.other
+   in Element{name, children, attributes = attributes{other = atts}}

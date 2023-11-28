@@ -181,7 +181,7 @@ pseudoText p = toLower $ pack $ show p
 flatAttributes :: Element -> FlatAttributes
 flatAttributes t =
   FlatAttributes
-    $ addClass (mconcat t.attributes.classes) t.attributes.other
+    $ addClass t.attributes.classes t.attributes.other
  where
   addClass [] atts = atts
   addClass cx atts = M.insert "class" (classAttValue cx) atts

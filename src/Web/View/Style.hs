@@ -340,7 +340,7 @@ mapModClass fc fm el =
    in el
         { attributes =
             Attributes
-              { classes = el.attributes.classes <> (map fc <$> el'.attributes.classes)
+              { classes = el.attributes.classes <> map fc el'.attributes.classes
               , other = el.attributes.other <> el'.attributes.other
               }
         , children = el.children <> el'.children
@@ -366,7 +366,7 @@ addClass c Element{attributes, name, children} =
     , children
     , attributes =
         Attributes
-          { classes = [c] : attributes.classes
+          { classes = c : attributes.classes
           , other = attributes.other
           }
     }
