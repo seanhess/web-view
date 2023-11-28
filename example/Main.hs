@@ -16,6 +16,14 @@ main = do
   Warp.run 3010 app
 
 
+clash :: View c ()
+clash = col (gap 10 . pad 20) $ do
+  el (bold . fontSize 24) "Clash"
+  el_ "What happens if we set the same style twice?"
+
+  el (bg Primary . bg Warning) "Hello"
+
+
 buttons :: View c ()
 buttons = col (gap 10 . pad 20) $ do
   el (bold . fontSize 32) "My page"
@@ -86,6 +94,7 @@ examples = col (pad 20 . gap 15) $ do
   link "Buttons"
   link "Responsive"
   link "Holy Grail"
+  link "Clash"
  where
   link :: Text -> View c ()
   link n = tag "a" (att "href" (url n) . color Primary) (text n)
@@ -99,6 +108,7 @@ app req respond = do
     ["buttons"] -> view buttons
     ["responsive"] -> view responsive
     ["holygrail"] -> view holygrail
+    ["clash"] -> view clash
     _ -> notFound
  where
   html h =

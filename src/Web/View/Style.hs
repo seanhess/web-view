@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLists #-}
 
@@ -335,10 +336,13 @@ mapModClass :: (Class -> Class) -> Mod -> Mod
 mapModClass fc fm el =
   -- apply the function to all classes added by the mod
   -- ignore
-  let el' = fm $ Element "none" [] [] []
+  let el' = fm $ Element "none" (Attributes [] []) []
    in el
-        { classes = el.classes <> (map fc <$> el'.classes)
-        , attributes = el.attributes <> el'.attributes
+        { attributes =
+            Attributes
+              { classes = el.attributes.classes <> (map fc <$> el'.attributes.classes)
+              , other = el.attributes.other <> el'.attributes.other
+              }
         , children = el.children <> el'.children
         }
 
@@ -356,7 +360,16 @@ mapModClass fc fm el =
 >     & prop @Int "flex-shrink" 0
 -}
 addClass :: Class -> Mod
-addClass c t = t{classes = [c] : t.classes}
+addClass c Element{attributes, name, children} =
+  Element
+    { name
+    , children
+    , attributes =
+        Attributes
+          { classes = [c] : attributes.classes
+          , other = attributes.other
+          }
+    }
 
 
 -- | Construct a class from a ClassName

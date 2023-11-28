@@ -108,10 +108,10 @@ tag nm f ct = do
   -- Applies the modifier and merges children into parent
   ctx <- context
   let st = runView ctx ct
-  let elm = f $ Element nm [] [] st.contents
+  let elm = f $ Element nm (Attributes [] []) st.contents
   viewAddContent $ Node elm
   viewAddClasses $ M.elems st.css
-  viewAddClasses $ mconcat elm.classes
+  viewAddClasses $ mconcat elm.attributes.classes
 
 
 {- | Set an attribute, replacing existing value
@@ -120,4 +120,6 @@ tag nm f ct = do
 > hlink url content = tag "a" (att "href" url) content
 -}
 att :: Name -> AttValue -> Mod
-att n v (Element en ec ea ecs) = Element en ec (M.insert n v ea) ecs
+att n v el =
+  let atts = M.insert n v el.attributes.other
+   in el{attributes = el.attributes{other = atts}}

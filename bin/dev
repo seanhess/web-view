@@ -19,4 +19,5 @@ watchexec -e hs,yaml hpack &
 
 # Autoreload on save. Show errors and warnings
 # run even if warnings
-ghcid --command "cabal repl example" -T Main.main -W
+# ghcid --command "cabal repl example" -T Main.main -W
+watchexec -e hs,yaml cabal test

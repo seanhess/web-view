@@ -56,7 +56,7 @@ renderText' c u = intercalate "\n" content
 
   styleElement :: Content
   styleElement =
-    Node $ Element "style" [] [("type", "text/css")] [Text $ intercalate "\n" css]
+    Node $ Element "style" (Attributes [] [("type", "text/css")]) [Text $ intercalate "\n" css]
 
   renderContent :: Content -> [Text]
   renderContent (Node t) = renderTag indent t
@@ -181,7 +181,7 @@ pseudoText p = toLower $ pack $ show p
 flatAttributes :: Element -> FlatAttributes
 flatAttributes t =
   FlatAttributes
-    $ addClass (mconcat t.classes) t.attributes
+    $ addClass (mconcat t.attributes.classes) t.attributes.other
  where
   addClass [] atts = atts
   addClass cx atts = M.insert "class" (classAttValue cx) atts

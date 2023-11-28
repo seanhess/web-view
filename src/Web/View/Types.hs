@@ -21,13 +21,15 @@ data Content
 -- | A single HTML tag. Note that the class attribute is stored separately from the rest of the attributes to make adding styles easier
 data Element = Element
   { name :: Name
-  , classes :: [[Class]]
   , attributes :: Attributes
   , children :: [Content]
   }
 
 
-type Attributes = Map Name AttValue
+data Attributes = Attributes
+  { classes :: [[Class]]
+  , other :: Map Name AttValue
+  }
 type Attribute = (Name, AttValue)
 type Name = Text
 type AttValue = Text
@@ -193,7 +195,7 @@ instance (Num a) => Num (Sides a) where
 
 
 -- | Element's attributes do not include class, which is separated. FlatAttributes generate the class attribute and include it
-newtype FlatAttributes = FlatAttributes {attributes :: Attributes}
+newtype FlatAttributes = FlatAttributes {attributes :: Map Name AttValue}
   deriving (Generic)
 
 

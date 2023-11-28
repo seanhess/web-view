@@ -90,19 +90,22 @@ executable example
 
 test-suite tests
   type: exitcode-stdio-1.0
-  main-is: Tests.hs
+  main-is: Spec.hs
   other-modules:
+      Test.RenderSpec
       Paths_web_view
   autogen-modules:
       Paths_web_view
   hs-source-dirs:
-      test
+      test/
   default-extensions:
       OverloadedStrings
       OverloadedRecordDot
       DuplicateRecordFields
       NoFieldSelectors
-  ghc-options: -Wall -fdefer-typed-holes
+  ghc-options: -Wall -fdefer-typed-holes -threaded -rtsopts -with-rtsopts=-N
+  build-tool-depends:
+      sydtest-discover:sydtest-discover
   build-depends:
       base >=4.16 && <5
     , bytestring >=0.11 && <0.13
@@ -111,5 +114,7 @@ test-suite tests
     , effectful ==2.3.*
     , file-embed >=0.0.10 && <0.1
     , string-interpolate >=0.3.2 && <0.4
+    , sydtest
     , text >=1.2 && <3
+    , web-view
   default-language: GHC2021
