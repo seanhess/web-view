@@ -17,7 +17,9 @@ trap cleanup EXIT
 # Recompile package.yaml on changes
 watchexec -e hs,yaml hpack &
 
+# Run tests
+watchexec -e hs,yaml cabal test &
+
 # Autoreload on save. Show errors and warnings
 # run even if warnings
-# ghcid --command "cabal repl example" -T Main.main -W
-watchexec -e hs,yaml cabal test
+ghcid --command "cabal repl example" -T Main.main -W

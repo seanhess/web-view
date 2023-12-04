@@ -54,6 +54,7 @@ module Web.View
   , name
   , value
   , label
+  , link
   , button
 
     -- ** Tables

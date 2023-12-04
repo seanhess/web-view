@@ -35,7 +35,7 @@ type Name = Text
 type AttValue = Text
 
 
--- * Element Modifiers
+-- * Attribute Modifiers
 
 
 {- | Element functions expect a Mod function as their first argument that adds attributes and classes.
@@ -45,7 +45,7 @@ type AttValue = Text
 >   where
 >     active = isActive user then bold else id
 -}
-type Mod = Element -> Element
+type Mod = Attributes -> Attributes
 
 
 -- * Atomic CSS

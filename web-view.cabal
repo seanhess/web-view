@@ -5,7 +5,7 @@ cabal-version: 2.2
 -- see: https://github.com/sol/hpack
 
 name:           web-view
-version:        0.2.3
+version:        0.3.1
 synopsis:       Type-safe HTML and CSS with intuitive layouts and composable styles.
 description:    Type-safe HTML and CSS with intuitive layouts and composable styles. Inspired by Tailwindcss and Elm-UI . See documentation for the @Web.View@ module below
 category:       Web
@@ -114,7 +114,7 @@ test-suite tests
     , effectful ==2.3.*
     , file-embed >=0.0.10 && <0.1
     , string-interpolate >=0.3.2 && <0.4
-    , sydtest
+    , sydtest ==0.15.*
     , text >=1.2 && <3
     , web-view
   default-language: GHC2021

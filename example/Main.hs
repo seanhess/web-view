@@ -3,7 +3,6 @@
 module Main where
 
 import Data.String.Interpolate (i)
-import Data.Text as T (Text, filter, toLower)
 import Network.HTTP.Types (status200, status404)
 import Network.Wai
 import Network.Wai.Handler.Warp as Warp
@@ -14,14 +13,6 @@ main :: IO ()
 main = do
   putStrLn "Starting on http://localhost:3010/"
   Warp.run 3010 app
-
-
-clash :: View c ()
-clash = col (gap 10 . pad 20) $ do
-  el (bold . fontSize 24) "Clash"
-  el_ "What happens if we set the same style twice?"
-
-  el (bg Primary . bg Warning) "Hello"
 
 
 buttons :: View c ()
@@ -91,14 +82,11 @@ holygrail = layout id $ do
 examples :: View c ()
 examples = col (pad 20 . gap 15) $ do
   el (bold . fontSize 24) "Layout"
-  link "Buttons"
-  link "Responsive"
-  link "Holy Grail"
-  link "Clash"
+  link "buttons" lnk "Buttons"
+  link "responsive" lnk "Responsive"
+  link "holygrail" lnk "Holy Grail"
  where
-  link :: Text -> View c ()
-  link n = tag "a" (att "href" (url n) . color Primary) (text n)
-  url = toLower . T.filter (/= ' ')
+  lnk = color Primary
 
 
 app :: Application
@@ -108,7 +96,6 @@ app req respond = do
     ["buttons"] -> view buttons
     ["responsive"] -> view responsive
     ["holygrail"] -> view holygrail
-    ["clash"] -> view clash
     _ -> notFound
  where
   html h =

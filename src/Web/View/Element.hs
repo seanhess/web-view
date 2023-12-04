@@ -60,6 +60,11 @@ pre :: Mod -> Text -> View c ()
 pre f t = tag "pre" f (text t)
 
 
+-- | A hyperlink to the given url
+link :: Url -> Mod -> View c () -> View c ()
+link (Url u) f = tag "a" (att "href" u . f)
+
+
 -- * Inputs
 
 

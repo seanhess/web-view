@@ -333,17 +333,13 @@ applyPseudo ps = mapModClass $ \c ->
 
 
 mapModClass :: (Class -> Class) -> Mod -> Mod
-mapModClass fc fm el =
+mapModClass fc fm as =
   -- apply the function to all classes added by the mod
   -- ignore
-  let el' = fm $ Element "none" (Attributes [] []) []
-   in el
-        { attributes =
-            Attributes
-              { classes = el.attributes.classes <> map fc el'.attributes.classes
-              , other = el.attributes.other <> el'.attributes.other
-              }
-        , children = el.children <> el'.children
+  let as' = fm $ Attributes [] []
+   in as'
+        { classes = as.classes <> map fc as'.classes
+        , other = as.other <> as'.other
         }
 
 
@@ -360,15 +356,10 @@ mapModClass fc fm el =
 >     & prop @Int "flex-shrink" 0
 -}
 addClass :: Class -> Mod
-addClass c Element{attributes, name, children} =
-  Element
-    { name
-    , children
-    , attributes =
-        Attributes
-          { classes = c : attributes.classes
-          , other = attributes.other
-          }
+addClass c attributes =
+  Attributes
+    { classes = c : attributes.classes
+    , other = attributes.other
     }
 
 

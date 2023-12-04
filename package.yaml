@@ -1,5 +1,5 @@
 name:               web-view
-version:            0.2.3
+version:            0.3.1
 synopsis:           Type-safe HTML and CSS with intuitive layouts and composable styles.
 homepage:           https://github.com/seanhess/web-view
 github:             seanhess/web-view
@@ -67,6 +67,6 @@ tests:
     - -with-rtsopts=-N
     dependencies:
       - web-view
-      - sydtest
+      - sydtest >= 0.15 && <0.16
 
 
