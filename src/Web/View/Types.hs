@@ -1,4 +1,5 @@
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
 
 module Web.View.Types where
@@ -8,6 +9,7 @@ import Data.String (IsString (..))
 import Data.Text (Text, pack, unpack)
 import Data.Text qualified as T
 import GHC.Generics (Generic)
+import Numeric (showFFloat)
 import Text.Casing (kebab)
 
 
@@ -102,9 +104,13 @@ class ToClassName a where
 
 
 instance ToClassName Int
-instance ToClassName Float
 instance ToClassName Text where
   toClassName = id
+instance ToClassName Float where
+  toClassName f = pack $ map noDot $ showFFloat (Just 3) f ""
+   where
+    noDot '.' = '-'
+    noDot c = c
 
 
 {- | Psuedos allow for specifying styles that only apply in certain conditions. See `Web.View.Style.hover` etc
@@ -142,15 +148,49 @@ instance ToStyleValue Text where
 instance ToStyleValue Int
 
 
--- | Px, converted to Rem. Allows for the user to change the document font size and have the app scale accordingly. But allows the programmer to code in pixels to match a design
-newtype PxRem = PxRem Int
-  deriving newtype (Show, ToClassName, Num)
+instance ToStyleValue Float where
+  -- this does not convert to a percent, just a ratio
+  toStyleValue n = StyleValue $ showFFloat (Just 2) n ""
+
+
+data Length
+  = -- | Px, converted to Rem. Allows for the user to change the document font size and have the app scale accordingly. But allows the programmer to code in pixels to match a design
+    PxRem PxRem
+  | Pct Float
+  deriving (Show)
+
+
+instance ToClassName Length where
+  toClassName (PxRem p) = toClassName p
+  toClassName (Pct p) = toClassName p
+
+
+newtype PxRem = PxRem' Int
+  deriving newtype (Show, ToClassName, Num, Eq, Integral, Real, Ord, Enum)
+
+
+instance Num Length where
+  -- only support numeric literals
+  a + _ = a
+  a * _ = a
+  abs (PxRem a) = PxRem (abs a)
+  abs (Pct a) = Pct (abs a)
+  signum (PxRem a) = PxRem (signum a)
+  signum (Pct a) = Pct (signum a)
+  negate (PxRem a) = PxRem (negate a)
+  negate (Pct a) = Pct (negate a)
+  fromInteger n = PxRem (fromInteger n)
 
 
 instance ToStyleValue PxRem where
-  toStyleValue (PxRem 0) = "0px"
-  toStyleValue (PxRem 1) = "1px"
-  toStyleValue (PxRem n) = StyleValue $ show ((fromIntegral n :: Float) / 16.0) <> "rem"
+  toStyleValue (PxRem' 0) = "0px"
+  toStyleValue (PxRem' 1) = "1px"
+  toStyleValue (PxRem' n) = StyleValue $ show ((fromIntegral n :: Float) / 16.0) <> "rem"
+
+
+instance ToStyleValue Length where
+  toStyleValue (PxRem p) = toStyleValue p
+  toStyleValue (Pct n) = StyleValue $ showFFloat (Just 1) (n * 100) "" <> "%"
 
 
 -- | Milliseconds, used for transitions
@@ -243,3 +283,8 @@ instance ToStyleValue HexColor where
 
 instance IsString HexColor where
   fromString = HexColor . T.dropWhile (== '#') . T.pack
+
+
+data Align
+  = Center
+  deriving (Show, ToClassName, ToStyleValue)

@@ -15,37 +15,37 @@ import Web.View.Types
 
 
 -- | Set to a specific width
-width :: PxRem -> Mod
+width :: Length -> Mod
 width n =
-  addClass
-    $ cls ("w" -. n)
-    & prop "width" n
-    & prop @Int "flex-shrink" 0
+  addClass $
+    cls ("w" -. n)
+      & prop "width" n
+      & prop @Int "flex-shrink" 0
 
 
 -- | Set to a specific height
-height :: PxRem -> Mod
+height :: Length -> Mod
 height n =
-  addClass
-    $ cls ("h" -. n)
-    & prop "height" n
-    & prop @Int "flex-shrink" 0
+  addClass $
+    cls ("h" -. n)
+      & prop "height" n
+      & prop @Int "flex-shrink" 0
 
 
 -- | Allow width to grow to contents but not shrink any smaller than value
-minWidth :: PxRem -> Mod
+minWidth :: Length -> Mod
 minWidth n =
-  addClass
-    $ cls ("mw" -. n)
-    & prop "min-width" n
+  addClass $
+    cls ("mw" -. n)
+      & prop "min-width" n
 
 
 -- | Allow height to grow to contents but not shrink any smaller than value
-minHeight :: PxRem -> Mod
+minHeight :: Length -> Mod
 minHeight n =
-  addClass
-    $ cls ("mh" -. n)
-    & prop "min-height" n
+  addClass $
+    cls ("mh" -. n)
+      & prop "min-height" n
 
 
 {- | Space surrounding the children of the element
@@ -57,43 +57,43 @@ To create even spacing around and between all elements:
 >   el_ "two"
 >   el_ "three"
 -}
-pad :: Sides PxRem -> Mod
+pad :: Sides Length -> Mod
 pad (All n) =
-  addClass
-    $ cls ("pad" -. n)
-    & prop "padding" n
+  addClass $
+    cls ("pad" -. n)
+      & prop "padding" n
 pad (Y n) =
-  addClass
-    $ cls ("pady" -. n)
-    & prop "padding-top" n
-    & prop "padding-bottom" n
+  addClass $
+    cls ("pady" -. n)
+      & prop "padding-top" n
+      & prop "padding-bottom" n
 pad (X n) =
-  addClass
-    $ cls ("padx" -. n)
-    & prop "padding-left" n
-    & prop "padding-right" n
+  addClass $
+    cls ("padx" -. n)
+      & prop "padding-left" n
+      & prop "padding-right" n
 pad (XY x y) =
-  addClass
-    $ cls ("pad" -. x -. y)
-    & prop "padding-left" x
-    & prop "padding-right" x
-    & prop "padding-top" y
-    & prop "padding-bottom" y
+  addClass $
+    cls ("pad" -. x -. y)
+      & prop "padding-left" x
+      & prop "padding-right" x
+      & prop "padding-top" y
+      & prop "padding-bottom" y
 pad (TRBL t r b l) =
-  addClass
-    $ cls ("pad" -. t -. r -. b -. l)
-    & prop "padding-top" t
-    & prop "padding-right" r
-    & prop "padding-bottom" b
-    & prop "padding-left" l
+  addClass $
+    cls ("pad" -. t -. r -. b -. l)
+      & prop "padding-top" t
+      & prop "padding-right" r
+      & prop "padding-bottom" b
+      & prop "padding-left" l
 
 
 -- | The space between child elements. See 'pad'
-gap :: PxRem -> Mod
+gap :: Length -> Mod
 gap n = addClass $ cls ("gap" -. n) & prop "gap" n
 
 
-fontSize :: PxRem -> Mod
+fontSize :: Length -> Mod
 fontSize n = addClass $ cls ("fs" -. n) & prop "font-size" n
 
 
@@ -103,40 +103,40 @@ fontSize n = addClass $ cls ("fs" -. n) & prop "font-size" n
 -- | Set container to be a row. Favor 'Web.View.Layout.row' when possible
 flexRow :: Mod
 flexRow =
-  addClass
-    $ cls "row"
-    & prop @Text "display" "flex"
-    & prop @Text "flex-direction" "row"
+  addClass $
+    cls "row"
+      & prop @Text "display" "flex"
+      & prop @Text "flex-direction" "row"
 
 
 -- | Set container to be a column. Favor 'Web.View.Layout.col' when possible
 flexCol :: Mod
 flexCol =
-  addClass
-    $ cls "col"
-    & prop @Text "display" "flex"
-    & prop @Text "flex-direction" "column"
+  addClass $
+    cls "col"
+      & prop @Text "display" "flex"
+      & prop @Text "flex-direction" "column"
 
 
 -- | Adds a basic drop shadow to an element
 shadow :: Mod
 shadow =
-  addClass
-    $ cls "shadow"
-    & prop @Text "box-shadow" "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)"
+  addClass $
+    cls "shadow"
+      & prop @Text "box-shadow" "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)"
 
 
 -- | Round the corners of the element
-rounded :: PxRem -> Mod
+rounded :: Length -> Mod
 rounded n = addClass $ cls ("rnd" -. n) & prop "border-radius" n
 
 
 -- | Set the background color. See 'Web.View.Types.ToColor'
 bg :: (ToColor c) => c -> Mod
 bg c =
-  addClass
-    $ cls ("bg" -. colorName c)
-    & prop "background-color" (colorValue c)
+  addClass $
+    cls ("bg" -. colorName c)
+      & prop "background-color" (colorValue c)
 
 
 -- | Set the text color. See 'Web.View.Types.ToColor'
@@ -151,9 +151,16 @@ bold = addClass $ cls "bold" & prop @Text "font-weight" "bold"
 -- | Hide an element. See 'parent' and 'media'
 hide :: Mod
 hide =
-  addClass
-    $ cls "hide"
-    & prop @Text "display" "none"
+  addClass $
+    cls "hide"
+      & prop @Text "display" "none"
+
+
+opacity :: Float -> Mod
+opacity n =
+  addClass $
+    cls ("opacity" -. n)
+      & prop "opacity" n
 
 
 {- | Set a border around the element
@@ -163,42 +170,42 @@ hide =
 -}
 border :: Sides PxRem -> Mod
 border (All p) =
-  addClass
-    $ cls ("brd" -. p)
-    & prop "border" p
-    & prop @Text "border-style" "solid"
+  addClass $
+    cls ("brd" -. p)
+      & prop "border-width" p
+      & prop @Text "border-style" "solid"
 border (Y p) =
-  addClass
-    $ cls ("brdy" -. p)
-    & prop "border-top-width" p
-    & prop "border-bottom-width" p
+  addClass $
+    cls ("brdy" -. p)
+      & prop "border-top-width" p
+      & prop "border-bottom-width" p
 border (X p) =
-  addClass
-    $ cls ("brdx" -. p)
-    & prop "border-left-width" p
-    & prop "border-right-width" p
+  addClass $
+    cls ("brdx" -. p)
+      & prop "border-left-width" p
+      & prop "border-right-width" p
 border (XY x y) =
-  addClass
-    $ cls ("brd" -. x -. y)
-    & prop "border-right-width" x
-    & prop "border-left-width" x
-    & prop "border-top-width" y
-    & prop "border-bottom-width" y
+  addClass $
+    cls ("brd" -. x -. y)
+      & prop "border-right-width" x
+      & prop "border-left-width" x
+      & prop "border-top-width" y
+      & prop "border-bottom-width" y
 border (TRBL t r b l) =
-  addClass
-    $ cls ("brd" -. t -. r -. b -. l)
-    & prop "border-top-width" t
-    & prop "border-right-width" r
-    & prop "border-bottom-width" b
-    & prop "border-left-width" l
+  addClass $
+    cls ("brd" -. t -. r -. b -. l)
+      & prop "border-top-width" t
+      & prop "border-right-width" r
+      & prop "border-bottom-width" b
+      & prop "border-left-width" l
 
 
 -- | Set a border color. See 'Web.View.Types.ToColor'
 borderColor :: (ToColor c) => c -> Mod
 borderColor c =
-  addClass
-    $ cls ("brdc" -. colorName c)
-    & prop "border-color" (colorValue c)
+  addClass $
+    cls ("brdc" -. colorName c)
+      & prop "border-color" (colorValue c)
 
 
 {- | Use a button-like cursor when hovering over the element
@@ -218,11 +225,11 @@ pointer = addClass $ cls "pointer" & prop @Text "cursor" "pointer"
 -- | Cut off the contents of the element
 truncate :: Mod
 truncate =
-  addClass
-    $ cls "truncate"
-    & prop @Text "white-space" "nowrap"
-    & prop @Text "overflow" "hidden"
-    & prop @Text "text-overflow" "ellipsis"
+  addClass $
+    cls "truncate"
+      & prop @Text "white-space" "nowrap"
+      & prop @Text "overflow" "hidden"
+      & prop @Text "text-overflow" "ellipsis"
 
 
 {- | Animate changes to the given property
@@ -236,11 +243,11 @@ transition ms = \case
   (Width n) -> trans "width" n
  where
   trans p px =
-    addClass
-      $ cls ("t" -. px -. p -. ms)
-      & prop "transition-duration" ms
-      & prop "transition-property" p
-      & prop p px
+    addClass $
+      cls ("t" -. px -. p -. ms)
+        & prop "transition-duration" ms
+        & prop "transition-property" p
+        & prop p px
 
 
 -- You MUST set the height/width manually when you attempt to transition it
@@ -252,14 +259,9 @@ data TransitionProperty
 
 textAlign :: Align -> Mod
 textAlign a =
-  addClass
-    $ cls ("ta" -. a)
-    & prop "text-align" a
-
-
-data Align
-  = Center
-  deriving (Show, ToClassName, ToStyleValue)
+  addClass $
+    cls ("ta" -. a)
+      & prop "text-align" a
 
 
 -- * Selector Modifiers

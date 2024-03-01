@@ -62,6 +62,8 @@ module Web.View
   , tcol
   , th
   , td
+  , TableHead
+  , TableColumn
 
     -- ** Document Metadata
   , script
@@ -78,6 +80,8 @@ module Web.View
   , pad
   , gap
   , hide
+  , opacity
+  , truncate
   , shadow
   , rounded
   , fontSize
@@ -110,11 +114,13 @@ module Web.View
   , Sides (..)
   , Media (..)
   , PxRem
+  , Length (..)
   , Url (..)
   , TransitionProperty (..)
   , Ms
   , ToColor (..)
   , HexColor (..)
+  , Align (..)
   ) where
 
 import Web.View.Element
@@ -124,7 +130,7 @@ import Web.View.Reset
 import Web.View.Style
 import Web.View.Types
 import Web.View.View
-import Prelude hiding (even, head, odd)
+import Prelude hiding (even, head, odd, truncate)
 
 
 {- $use
