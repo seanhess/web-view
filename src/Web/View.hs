@@ -115,12 +115,14 @@ module Web.View
   , Media (..)
   , PxRem
   , Length (..)
-  , Url (..)
   , TransitionProperty (..)
   , Ms
   , ToColor (..)
   , HexColor (..)
   , Align (..)
+
+    -- * Url
+  , module Web.View.Types.Url
   ) where
 
 import Web.View.Element
@@ -129,6 +131,7 @@ import Web.View.Render
 import Web.View.Reset
 import Web.View.Style
 import Web.View.Types
+import Web.View.Types.Url
 import Web.View.View
 import Prelude hiding (even, head, odd, truncate)
 

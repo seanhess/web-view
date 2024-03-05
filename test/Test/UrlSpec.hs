@@ -1,7 +1,7 @@
 module Test.UrlSpec (spec) where
 
 import Test.Syd
-import Web.View.Types
+import Web.View.Types.Url
 
 
 spec :: Spec

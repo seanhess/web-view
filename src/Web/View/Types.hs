@@ -4,18 +4,11 @@
 
 module Web.View.Types where
 
-import Control.Applicative ((<|>))
 import Data.Map (Map)
-import Data.Maybe (fromMaybe)
 import Data.String (IsString (..))
 import Data.Text (Text, pack, unpack)
 import Data.Text qualified as T
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import Debug.Trace
-import Effectful
-import Effectful.State.Static.Local
 import GHC.Generics (Generic)
-import Network.HTTP.Types (Query, parseQuery, renderQuery)
 import Numeric (showFFloat)
 import Text.Casing (kebab)
 
@@ -244,73 +237,6 @@ instance (Num a) => Num (Sides a) where
 -- | Element's attributes do not include class, which is separated. FlatAttributes generate the class attribute and include it
 newtype FlatAttributes = FlatAttributes {attributes :: Map Name AttValue}
   deriving (Generic)
-
-
-data Url = Url
-  { scheme :: Text
-  , domain :: Text
-  , path :: [Text]
-  , query :: Query
-  }
-  deriving (Show, Eq)
-instance IsString Url where
-  fromString = url . pack
-
-
-url :: Text -> Url
-url t = runPureEff $ evalState (T.toLower t) $ do
-  s <- scheme
-  d <- domain s
-  ps <- paths
-  q <- query
-  pure $ Url{scheme = s, domain = d, path = ps, query = q}
- where
-  parse :: (State Text :> es) => (Char -> Bool) -> Eff es Text
-  parse b = do
-    inp <- get
-    let match = T.takeWhile b inp
-        rest = T.dropWhile b inp
-    put rest
-    pure match
-
-  string :: (State Text :> es) => Text -> Eff es (Maybe Text)
-  string pre = do
-    inp <- get
-    case T.stripPrefix pre inp of
-      Nothing -> pure Nothing
-      Just rest -> do
-        traceM $ show ("Prefix" :: String, rest, pre, inp)
-        put rest
-        pure (Just pre)
-
-  -- it's either scheme AND domain, or relative path
-  scheme = do
-    http <- string "http://"
-    https <- string "https://"
-    pure $ fromMaybe "" $ http <|> https
-
-  domain "" = pure ""
-  domain _ = parse (not . isDomainSep)
-
-  path = parse (not . isQuerySep)
-  paths = do
-    p <- path
-    pure $ filter (not . T.null) $ T.splitOn "/" p
-
-  query :: (State Text :> es) => Eff es Query
-  query = do
-    q <- parse (/= '\n')
-    pure $ parseQuery $ encodeUtf8 q
-
-  isDomainSep '/' = True
-  isDomainSep _ = False
-
-  isQuerySep '?' = True
-  isQuerySep _ = False
-
-
-renderUrl :: Url -> Text
-renderUrl u = u.scheme <> u.domain <> "/" <> T.intercalate "/" u.path <> decodeUtf8 (renderQuery True u.query)
 
 
 -- ** Colors

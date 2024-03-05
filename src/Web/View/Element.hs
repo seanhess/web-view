@@ -9,6 +9,7 @@ import Effectful
 import Effectful.Writer.Static.Local
 import Web.View.Style
 import Web.View.Types
+import Web.View.Types.Url
 import Web.View.View
 
 
