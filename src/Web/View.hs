@@ -123,8 +123,10 @@ module Web.View
 
     -- * Url
   , module Web.View.Types.Url
+  , Query
   ) where
 
+import Network.HTTP.Types (Query)
 import Web.View.Element
 import Web.View.Layout
 import Web.View.Render
