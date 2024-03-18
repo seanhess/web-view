@@ -32,3 +32,8 @@ spec = do
 
       it "full" $ do
         renderUrl (url "https://example.com/hello/world?hello&name=bob") `shouldBe` "https://example.com/hello/world?hello&name=bob"
+
+      it "empty" $ do
+        renderUrl (Url "" "" [] []) `shouldBe` "/"
+        renderUrl (url "https://example.com/") `shouldBe` "https://example.com/"
+        renderUrl (url "https://example.com") `shouldBe` "https://example.com/"

@@ -32,6 +32,10 @@ data Attributes = Attributes
   { classes :: [Class]
   , other :: Map Name AttValue
   }
+instance Semigroup Attributes where
+  a1 <> a2 = Attributes (a1.classes <> a2.classes) (a1.other <> a2.other)
+instance Monoid Attributes where
+  mempty = Attributes [] mempty
 type Attribute = (Name, AttValue)
 type Name = Text
 type AttValue = Text
