@@ -81,7 +81,7 @@ View Documentation on [Hackage][hackage]
 View on Github
 * https://github.com/seanhess/web-view
 
-View [Examples](https://github.com/seanhess/web-view/blob/main/example/Main.hs)
+View [Examples](https://github.com/seanhess/web-view/blob/main/example/app/Main.hs)
 
 
 [hackage]: https://hackage.haskell.org/package/web-view
