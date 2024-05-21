@@ -1,9 +1,9 @@
 Web View
 ============
 
-Type-safe HTML and CSS with intuitive layout and composable styles. Inspired by Tailwindcss and Elm-UI
-
 [![Hackage](https://img.shields.io/hackage/v/web-view.svg)][hackage]
+
+Type-safe HTML and CSS with intuitive layout and composable styles. Inspired by Tailwindcss and Elm-UI
 
 ### Write Haskell instead of CSS
 
