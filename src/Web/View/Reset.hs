@@ -11,7 +11,7 @@ import Data.Text
 
 > import Data.String.Interpolate (i)
 >
-> toDocument :: Text -> Text
+> toDocument :: ByteString -> ByteString
 > toDocument cnt =
 >   [i|<html>
 >     <head>
@@ -24,15 +24,15 @@ cssResetEmbed :: ByteString
 cssResetEmbed = $(embedFile "embed/preflight.css")
 
 
-{- | Alternatively, the reset is available as on a CDN
+{- | Alternatively, the reset is available on a CDN
 
 > import Data.String.Interpolate (i)
 >
-> toDocument :: Text -> Text
+> toDocument :: ByteString -> ByteString
 > toDocument cnt =
 >   [i|<html>
 >     <head>
->       <link rel="stylesheet" href="#{cssResetEmbed}">
+>       <link rel="stylesheet" href="#{cssResetLink}">
 >     </head>
 >     <body>#{cnt}</body>
 >   </html>|]
