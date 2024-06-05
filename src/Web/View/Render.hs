@@ -1,22 +1,23 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# OPTIONS_GHC -Wno-deferred-out-of-scope-variables #-}
 
 module Web.View.Render where
 
 import Data.ByteString.Lazy qualified as BL
+import Data.Foldable (forM_, toList)
 import Data.Function ((&))
+import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import Data.Map qualified as M
+import Data.Maybe (mapMaybe)
 import Data.String.Interpolate (i)
-import Data.Text (Text, intercalate, pack, toLower, unlines, unwords)
+import Data.Text (Text, intercalate, pack, replace, toLower, unlines, unwords)
 import Data.Text.Lazy qualified as L
 import Data.Text.Lazy.Encoding qualified as LE
+import Web.View.Types
 import Web.View.View (View, ViewState (..), runView, viewInsertContents)
 import Prelude hiding (unlines, unwords)
-
--- import Debug.Trace
-import Web.View.Types
-
 
 {- | Renders a 'View' as HTML with embedded CSS class definitions
 
@@ -45,23 +46,25 @@ renderText' c u = intercalate "\n" content
  where
   -- T.intercalate "\n" (content <> style css)
   content :: [Text]
-  content = map (unlines . renderContent) . (.contents) $ runView c addCss
+  content = map (unlines . renderContent indent) . (.contents) $ runView c addCss
 
   addCss = do
-    viewInsertContents [styleElement]
+    forM_ styleElement $ viewInsertContents . pure
     u
 
-  css :: [Text]
-  css = renderCSS $ (.css) $ runView c u
+  css :: Maybe (NonEmpty Text)
+  css = nonEmpty $ renderCSS $ (.css) $ runView c u
 
-  styleElement :: Content
-  styleElement =
-    Node $ Element "style" (Attributes [] [("type", "text/css")]) [Text $ intercalate "\n" css]
+  styleElement :: Maybe Content
+  styleElement = case css of
+    Just css' -> Just $ Node $ Element "style" (Attributes [] [("type", "text/css")]) [Text $ intercalate "\n" $ toList css']
+    Nothing -> Nothing
 
-  renderContent :: Content -> [Text]
-  renderContent (Node t) = renderTag indent t
-  renderContent (Text t) = [t]
-  renderContent (Raw t) = [t]
+
+renderContent :: (Text -> Text) -> Content -> [Text]
+renderContent ind (Node t) = renderTag ind t
+renderContent _ (Text t) = [escapeHTMLBody t]
+renderContent _ (Raw t) = [t]
 
 
 renderTag :: (Text -> Text) -> Element -> [Text]
@@ -74,7 +77,7 @@ renderTag ind tag =
     -- single text node
     [Text t] ->
       -- SINGLE text node, just display it indented
-      [open <> htmlAtts (flatAttributes tag) <> ">" <> t <> close]
+      [open <> htmlAtts (flatAttributes tag) <> ">" <> escapeHTMLBody t <> close]
     _ ->
       mconcat
         [ [open <> htmlAtts (flatAttributes tag) <> ">"]
@@ -85,15 +88,10 @@ renderTag ind tag =
   open = "<" <> tag.name
   close = "</" <> tag.name <> ">"
 
-  htmlContent :: Content -> [Text]
-  htmlContent (Node t) = renderTag ind t
-  htmlContent (Text t) = [t]
-  htmlContent (Raw t) = [t]
-
   htmlChildren :: [Content] -> [Text]
   htmlChildren cts =
-    mconcat
-      $ fmap htmlContent cts
+    mconcat $
+      fmap (renderContent ind) cts
 
   htmlAtts :: FlatAttributes -> Text
   htmlAtts (FlatAttributes []) = ""
@@ -102,17 +100,26 @@ renderTag ind tag =
       <> unwords (map htmlAtt $ M.toList as)
    where
     htmlAtt (k, v) =
-      k <> "=" <> "'" <> v <> "'"
+      k <> "=" <> "'" <> escapeHTMLAttributes v <> "'"
+
+
+escapeHTMLBody :: Text -> Text
+escapeHTMLBody = replace "<" "&lt;" . replace ">" "&gt;" . replace "&" "&amp;"
+
+
+escapeHTMLAttributes :: Text -> Text
+escapeHTMLAttributes = replace "'" "&apos;" . replace "\"" "&quot;" . escapeHTMLBody
 
 
 renderCSS :: CSS -> [Text]
-renderCSS = map renderClass . M.elems
+renderCSS = mapMaybe renderClass . M.elems
  where
-  renderClass :: Class -> Text
+  renderClass :: Class -> Maybe Text
+  renderClass c | M.null c.properties = Nothing
   renderClass c =
     let sel = selectorText c.selector
         props = intercalate "; " (map renderProp $ M.toList c.properties)
-     in [i|#{sel} { #{props} }|] & addMedia c.selector.media
+     in Just $ [i|#{sel} { #{props} }|] & addMedia c.selector.media
 
   addMedia Nothing css = css
   addMedia (Just m) css =
@@ -180,8 +187,8 @@ pseudoText p = toLower $ pack $ show p
 -- | The 'Web.View.Types.Attributes' for an element, inclusive of class.
 flatAttributes :: Element -> FlatAttributes
 flatAttributes t =
-  FlatAttributes
-    $ addClass t.attributes.classes t.attributes.other
+  FlatAttributes $
+    addClass t.attributes.classes t.attributes.other
  where
   addClass [] atts = atts
   addClass cx atts = M.insert "class" (classAttValue cx) atts
