@@ -12,11 +12,12 @@ import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import Data.Map qualified as M
 import Data.Maybe (mapMaybe)
 import Data.String.Interpolate (i)
-import Data.Text (Text, intercalate, pack, replace, toLower, unlines, unwords)
+import Data.Text (Text, intercalate, pack, toLower, unlines, unwords)
 import Data.Text.Lazy qualified as L
 import Data.Text.Lazy.Encoding qualified as LE
 import Web.View.Types
 import Web.View.View (View, ViewState (..), runView, viewInsertContents)
+import HTMLEntities.Text qualified as HE
 import Prelude hiding (unlines, unwords)
 
 {- | Renders a 'View' as HTML with embedded CSS class definitions
@@ -63,7 +64,7 @@ renderText' c u = intercalate "\n" content
 
 renderContent :: (Text -> Text) -> Content -> [Text]
 renderContent ind (Node t) = renderTag ind t
-renderContent _ (Text t) = [escapeHTMLBody t]
+renderContent _ (Text t) = [HE.text t]
 renderContent _ (Raw t) = [t]
 
 
@@ -77,7 +78,7 @@ renderTag ind tag =
     -- single text node
     [Text t] ->
       -- SINGLE text node, just display it indented
-      [open <> htmlAtts (flatAttributes tag) <> ">" <> escapeHTMLBody t <> close]
+      [open <> htmlAtts (flatAttributes tag) <> ">" <> HE.text t <> close]
     _ ->
       mconcat
         [ [open <> htmlAtts (flatAttributes tag) <> ">"]
@@ -100,15 +101,7 @@ renderTag ind tag =
       <> unwords (map htmlAtt $ M.toList as)
    where
     htmlAtt (k, v) =
-      k <> "=" <> "'" <> escapeHTMLAttributes v <> "'"
-
-
-escapeHTMLBody :: Text -> Text
-escapeHTMLBody = replace "<" "&lt;" . replace ">" "&gt;" . replace "&" "&amp;"
-
-
-escapeHTMLAttributes :: Text -> Text
-escapeHTMLAttributes = replace "'" "&apos;" . replace "\"" "&quot;" . escapeHTMLBody
+      k <> "=" <> "'" <> HE.text v <> "'"
 
 
 renderCSS :: CSS -> [Text]
