@@ -1,1 +1,1 @@
-<div class='empty'>hi</div>
+<div class='empty'>i have no css</div>

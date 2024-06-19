@@ -21,6 +21,11 @@ spec = do
     it "should escape properly" $ do
       let res = renderText $ el bold $ raw "<svg>&\"'</svg>"
       pureGoldenTextFile "test/resources/raw.txt" res
-    it "should skip css when no css attributes" $ do
-      let res = renderText $ el (addClass $ cls "empty") "hi"
+    it "should skip css class when no css attributes" $ do
+      let res = renderText $ do
+            el (addClass $ cls "empty") "i have no css"
+            el bold "i have some css"
+      pureGoldenTextFile "test/resources/nocssattrs.txt" res
+    it "should skip css element when no css rules" $ do
+      let res = renderText $ el (addClass $ cls "empty") "i have no css"
       pureGoldenTextFile "test/resources/nocss.txt" res

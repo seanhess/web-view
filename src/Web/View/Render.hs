@@ -57,10 +57,7 @@ renderText' c u = intercalate "\n" content
   css = nonEmpty $ renderCSS $ (.css) $ runView c u
 
   styleElement :: Maybe Content
-  styleElement = case css of
-    Just css' -> Just $ Node $ Element "style" (Attributes [] [("type", "text/css")]) [Text $ intercalate "\n" $ toList css']
-    Nothing -> Nothing
-
+  styleElement = Node . Element "style" (Attributes [] [("type", "text/css")]) . pure . Text . intercalate "\n" . toList <$> css
 
 renderContent :: (Text -> Text) -> Content -> [Text]
 renderContent ind (Node t) = renderTag ind t
