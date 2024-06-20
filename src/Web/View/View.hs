@@ -98,18 +98,27 @@ viewInsertContents cs = viewModContents insert
 -- * Creating new Elements
 
 
-{- | Create a new element constructor
+{- | Create a new element constructor with the given tag name
 
 > aside :: Mod -> View c () -> View c ()
 > aside = tag "aside"
 -}
 tag :: Text -> Mod -> View c () -> View c ()
-tag nm f ct = do
+tag n = tag' (element n)
+
+
+{- | Create a new element constructor with a custom element
+ -
+> span :: Mod -> View c () -> View c ()
+> span = tag' (Element True) "span"
+-}
+tag' :: (Attributes -> [Content] -> Element) -> Mod -> View c () -> View c ()
+tag' mkElem f ct = do
   -- Applies the modifier and merges children into parent
   ctx <- context
   let st = runView ctx ct
-  let ats = f $ Attributes [] []
-  let elm = Element nm ats st.contents
+  let ats = f mempty
+  let elm = mkElem ats st.contents
   viewAddContent $ Node elm
   viewAddClasses $ M.elems st.css
   viewAddClasses elm.attributes.classes

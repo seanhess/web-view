@@ -7,16 +7,17 @@ module Web.View.Render where
 
 import Data.ByteString.Lazy qualified as BL
 import Data.Function ((&))
+import Data.List (foldl')
 import Data.Map qualified as M
 import Data.Maybe (mapMaybe)
 import Data.String.Interpolate (i)
-import Data.Text (Text, intercalate, pack, toLower, unwords)
+import Data.Text (Text, intercalate, pack, toLower)
+import Data.Text qualified as T
 import Data.Text.Lazy qualified as L
 import Data.Text.Lazy.Encoding qualified as LE
 import HTMLEntities.Text qualified as HE
 import Web.View.Types
-import Web.View.View (View, ViewState (..), runView, viewInsertContents)
-import Prelude hiding (unlines, unwords)
+import Web.View.View (View, ViewState (..), runView)
 
 
 {- | Renders a 'View' as HTML with embedded CSS class definitions
@@ -37,26 +38,48 @@ renderLazyByteString :: View () () -> BL.ByteString
 renderLazyByteString = LE.encodeUtf8 . renderLazyText
 
 
+data Line
+  = Line {end :: LineEnd, indent :: Int, text :: Text}
+  deriving (Show)
+
+
+data LineEnd
+  = Newline
+  | Inline
+  deriving (Eq, Show)
+
+
+-- | Render lines to text
+renderLines :: [Line] -> Text
+renderLines = snd . foldl' nextLine (False, "")
+ where
+  nextLine :: (Bool, Text) -> Line -> (Bool, Text)
+  nextLine (newline, t) l = (nextNewline l, t <> currentLine newline l)
+
+  currentLine :: Bool -> Line -> Text
+  currentLine newline l
+    | newline = "\n" <> spaces l.indent <> l.text
+    | otherwise = l.text
+
+  nextNewline l = l.end == Newline
+
+  spaces n = T.replicate n " "
+
+
 {- | Render with the specified view context
 
 > renderText' () $ el bold "Hello"
 -}
 renderText' :: c -> View c () -> Text
-renderText' c u = intercalate "\n" content
+renderText' c vw =
+  let vst = runView c vw
+      css = renderCSS vst.css
+   in addCss css $ renderLines $ mconcat $ fmap (renderContent 2) vst.contents
  where
-  -- T.intercalate "\n" (content <> style css)
-  content :: [Text]
-  content =
-    let vst = runView c $ addCss viewCss
-     in map (intercalate "\n" . renderContent indent) vst.contents
-
-  addCss [] = u
-  addCss css = do
-    viewInsertContents [styleElement css, Text ""]
-    u
-
-  viewCss :: [Text]
-  viewCss = renderCSS $ (.css) $ runView c u
+  addCss :: [Text] -> Text -> Text
+  addCss [] cnt = cnt
+  addCss css cnt = do
+    renderLines (renderContent 2 $ styleElement css) <> "\n\n" <> cnt
 
   styleElement :: [Text] -> Content
   styleElement css =
@@ -64,34 +87,39 @@ renderText' c u = intercalate "\n" content
       pure $ Text $ "\n" <> intercalate "\n" css <> "\n"
 
 
-renderContent :: (Text -> Text) -> Content -> [Text]
+renderContent :: Int -> Content -> [Line]
 renderContent ind (Node t) = renderTag ind t
-renderContent _ (Text t) = [HE.text t]
-renderContent _ (Raw t) = [t]
+renderContent _ (Text t) = [Line Inline 0 $ HE.text t]
+renderContent _ (Raw t) = [Line Newline 0 t]
 
 
-renderTag :: (Text -> Text) -> Element -> [Text]
+renderTag :: Int -> Element -> [Line]
 renderTag ind tag =
   case tag.children of
     [] ->
       -- auto closing creates a bug in chrome. An auto-closed div
       -- absorbs the next children
-      [open <> htmlAtts (flatAttributes tag) <> ">" <> close]
+      [line $ open <> htmlAtts (flatAttributes tag) <> ">" <> close]
     -- single text node
     [Text t] ->
       -- SINGLE text node, just display it indented
-      [open <> htmlAtts (flatAttributes tag) <> ">" <> HE.text t <> close]
+      [line $ open <> htmlAtts (flatAttributes tag) <> ">" <> HE.text t <> close]
     _ ->
       mconcat
-        [ [open <> htmlAtts (flatAttributes tag) <> ">"]
-        , ind <$> htmlChildren tag.children
-        , [close]
+        [ [line $ open <> htmlAtts (flatAttributes tag) <> ">"]
+        , fmap (addIndent ind) $ htmlChildren tag.children
+        , [line close]
         ]
  where
   open = "<" <> tag.name
   close = "</" <> tag.name <> ">"
 
-  htmlChildren :: [Content] -> [Text]
+  line t =
+    if tag.inline
+      then Line Inline 0 t
+      else Line Newline 0 t
+
+  htmlChildren :: [Content] -> [Line]
   htmlChildren cts =
     mconcat $
       fmap (renderContent ind) cts
@@ -100,10 +128,14 @@ renderTag ind tag =
   htmlAtts (FlatAttributes []) = ""
   htmlAtts (FlatAttributes as) =
     " "
-      <> unwords (map htmlAtt $ M.toList as)
+      <> T.unwords (map htmlAtt $ M.toList as)
    where
     htmlAtt (k, v) =
       k <> "=" <> "'" <> HE.text v <> "'"
+
+
+addIndent :: Int -> Line -> Line
+addIndent n (Line e ind t) = Line e (ind + n) t
 
 
 renderCSS :: CSS -> [Text]
@@ -190,9 +222,4 @@ flatAttributes t =
 
   classAttValue :: [Class] -> Text
   classAttValue cx =
-    unwords $ fmap (\c -> classNameElementText c.selector.media c.selector.parent c.selector.pseudo c.selector.className) cx
-
--- showView :: c -> View c () -> Text
--- showView c v =
---   let st = runView c v
---    in unlines $ mconcat $ map renderContent st.contents
+    T.unwords $ fmap (\c -> classNameElementText c.selector.media c.selector.parent c.selector.pseudo c.selector.className) cx

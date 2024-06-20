@@ -18,20 +18,29 @@ data Content
   | Text Text
   | -- | Raw embedded HTML or SVG. See 'Web.View.Element.raw'
     Raw Text
+  deriving (Show)
 
 
 -- | A single HTML tag. Note that the class attribute is stored separately from the rest of the attributes to make adding styles easier
 data Element = Element
-  { name :: Name
+  { inline :: Bool
+  , name :: Name
   , attributes :: Attributes
   , children :: [Content]
   }
+  deriving (Show)
+
+
+-- | Construct an Element
+element :: Name -> Attributes -> [Content] -> Element
+element = Element False
 
 
 data Attributes = Attributes
   { classes :: [Class]
   , other :: Map Name AttValue
   }
+  deriving (Show)
 instance Semigroup Attributes where
   a1 <> a2 = Attributes (a1.classes <> a2.classes) (a1.other <> a2.other)
 instance Monoid Attributes where
@@ -68,6 +77,7 @@ data Class = Class
   { selector :: Selector
   , properties :: Styles
   }
+  deriving (Show)
 
 
 -- | The styles to apply for a given atomic 'Class'
@@ -81,7 +91,7 @@ data Selector = Selector
   , media :: Maybe Media
   , className :: ClassName
   }
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 
 instance IsString Selector where
@@ -97,7 +107,7 @@ selector = Selector Nothing Nothing Nothing
 newtype ClassName = ClassName
   { text :: Text
   }
-  deriving newtype (Eq, Ord, IsString)
+  deriving newtype (Eq, Ord, IsString, Show)
 
 
 -- | Convert a type into a className segment to generate unique compound style names based on the value
@@ -211,7 +221,7 @@ instance ToStyleValue Ms where
 data Media
   = MinWidth Int
   | MaxWidth Int
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 
 {- | Options for styles that support specifying various sides. This has a "fake" Num instance to support literals
