@@ -6,19 +6,18 @@
 module Web.View.Render where
 
 import Data.ByteString.Lazy qualified as BL
-import Data.Foldable (forM_, toList)
 import Data.Function ((&))
-import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import Data.Map qualified as M
 import Data.Maybe (mapMaybe)
 import Data.String.Interpolate (i)
-import Data.Text (Text, intercalate, pack, toLower, unlines, unwords)
+import Data.Text (Text, intercalate, pack, toLower, unwords)
 import Data.Text.Lazy qualified as L
 import Data.Text.Lazy.Encoding qualified as LE
+import HTMLEntities.Text qualified as HE
 import Web.View.Types
 import Web.View.View (View, ViewState (..), runView, viewInsertContents)
-import HTMLEntities.Text qualified as HE
 import Prelude hiding (unlines, unwords)
+
 
 {- | Renders a 'View' as HTML with embedded CSS class definitions
 
@@ -47,17 +46,23 @@ renderText' c u = intercalate "\n" content
  where
   -- T.intercalate "\n" (content <> style css)
   content :: [Text]
-  content = map (unlines . renderContent indent) . (.contents) $ runView c addCss
+  content =
+    let vst = runView c $ addCss viewCss
+     in map (intercalate "\n" . renderContent indent) vst.contents
 
-  addCss = do
-    forM_ styleElement $ viewInsertContents . pure
+  addCss [] = u
+  addCss css = do
+    viewInsertContents [styleElement css, Text ""]
     u
 
-  css :: Maybe (NonEmpty Text)
-  css = nonEmpty $ renderCSS $ (.css) $ runView c u
+  viewCss :: [Text]
+  viewCss = renderCSS $ (.css) $ runView c u
 
-  styleElement :: Maybe Content
-  styleElement = Node . Element "style" (Attributes [] [("type", "text/css")]) . pure . Text . intercalate "\n" . toList <$> css
+  styleElement :: [Text] -> Content
+  styleElement css =
+    Node $ element "style" (Attributes [] [("type", "text/css")]) $ do
+      pure $ Text $ "\n" <> intercalate "\n" css <> "\n"
+
 
 renderContent :: (Text -> Text) -> Content -> [Text]
 renderContent ind (Node t) = renderTag ind t
