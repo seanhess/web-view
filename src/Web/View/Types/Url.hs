@@ -6,7 +6,6 @@ import Data.String (IsString (..))
 import Data.Text (Text, pack)
 import Data.Text qualified as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import Debug.Trace
 import Effectful
 import Effectful.State.Static.Local
 import Network.HTTP.Types (Query, parseQuery, renderQuery)
@@ -61,7 +60,6 @@ url t = runPureEff $ evalState (T.toLower t) $ do
     case T.stripPrefix pre inp of
       Nothing -> pure Nothing
       Just rest -> do
-        traceM $ show ("Prefix" :: String, rest, pre, inp)
         put rest
         pure (Just pre)
 
