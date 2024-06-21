@@ -364,11 +364,16 @@ addClass c attributes =
     , other = attributes.other
     }
 
-
 -- | Construct a class from a ClassName
 cls :: ClassName -> Class
 cls n = Class (selector n) []
 
+{- | Construct a mod from a ClassName with no CSS properties. Convenience for situations where external CSS classes need to be referenced.
+
+> el (extClass "btn" . extClass "btn-primary") "Click me!"
+-}
+extClass :: ClassName -> Mod
+extClass = addClass . cls
 
 -- | Add a property to a class
 prop :: (ToStyleValue val) => Name -> val -> Class -> Class
