@@ -85,3 +85,11 @@ View [Examples](https://github.com/seanhess/web-view/blob/main/example/app/Main.
 
 
 [hackage]: https://hackage.haskell.org/package/web-view
+
+
+Contributors
+------------
+
+* [Sean Hess](seanhess)
+* [Kamil Figiela](https://github.com/kfigiela)
+
