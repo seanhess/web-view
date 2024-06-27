@@ -39,7 +39,7 @@ instance IsString Url where
 
 
 url :: Text -> Url
-url t = runPureEff $ evalState (T.toLower t) $ do
+url t = runPureEff $ evalState t $ do
   s <- scheme
   d <- domain s
   ps <- paths
