@@ -1,6 +1,7 @@
 module Web.View.Types.Url where
 
 import Control.Applicative ((<|>))
+import Data.Bifunctor (first)
 import Data.Maybe (fromMaybe)
 import Data.String (IsString (..))
 import Data.Text (Text, pack)
@@ -33,9 +34,18 @@ data Url = Url
   , path :: [Segment]
   , query :: Query
   }
-  deriving (Show, Eq)
+  deriving (Eq)
 instance IsString Url where
   fromString = url . pack
+instance Show Url where
+  show = show . renderUrl
+instance Read Url where
+  readsPrec _ s =
+    first url <$> reads @Text s
+instance Semigroup Url where
+  Url s d p q <> Url _ _ p2 q2 = Url s d (p <> p2) (q <> q2)
+instance Monoid Url where
+  mempty = Url "" "" [] []
 
 
 url :: Text -> Url

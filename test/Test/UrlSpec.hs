@@ -1,7 +1,12 @@
 module Test.UrlSpec (spec) where
 
 import Test.Syd
+import Text.Read (readMaybe)
 import Web.View.Types.Url
+
+
+data Something = Something Url
+  deriving (Show, Read, Eq)
 
 
 spec :: Spec
@@ -37,3 +42,17 @@ spec = do
         renderUrl (Url "" "" [] []) `shouldBe` "/"
         renderUrl (url "https://example.com/") `shouldBe` "https://example.com/"
         renderUrl (url "https://example.com") `shouldBe` "https://example.com/"
+
+    describe "show/read" $ do
+      let u = Url "" "" ["proposals"] []
+      it "show" $
+        show u `shouldBe` "\"/proposals\""
+
+      it "read" $
+        readMaybe "\"/proposals\"" `shouldBe` Just u
+
+      it "show nested" $ do
+        show (Something u) `shouldBe` "Something \"/proposals\""
+
+      it "read nested" $ do
+        readMaybe @Something (show (Something u)) `shouldBe` Just (Something u)
