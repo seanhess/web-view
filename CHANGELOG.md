@@ -1,5 +1,13 @@
 # Revision history for web-view
 
+## 0.5.0
+
+* Rendering improvements
+* extClass to add external css class
+* inline elements
+* Url: no longer lowercases automatically. Show/Read instance
+* 
+
 ## 0.4.0
 
 * Added new Mods. Length type. Improved Url type
