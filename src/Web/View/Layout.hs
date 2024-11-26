@@ -112,3 +112,21 @@ scroll = addClass $ cls "scroll" & prop @Text "overflow" "auto"
 -- | A Nav element
 nav :: Mod -> View c () -> View c ()
 nav f = tag "nav" (f . flexCol)
+
+
+-- | A stack container puts its contents on top of each other. Each child has the full width?
+stack :: Mod -> View c () -> View c ()
+stack f =
+  tag "div" (f . container . absChildren)
+ where
+  container =
+    addClass $
+      cls "stack"
+        & prop @Text "position" "relative"
+        & prop @Text "display" "grid"
+  absChildren =
+    addClass $
+      Class absSelector mempty
+        & prop @Text "position" "relative"
+        & prop @Text "grid-area" "1 / 1"
+  absSelector = (selector "abs-childs"){child = Just AllChildren}

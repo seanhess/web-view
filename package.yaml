@@ -48,14 +48,16 @@ library:
   source-dirs: src
 
 tests:
-  tests:
+  test:
     main:        Spec.hs
     source-dirs: test/
-    build-tools: sydtest-discover
+    build-tools: skeletest:skeletest-preprocessor
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -F -pgmF=skeletest-preprocessor
     dependencies:
       - web-view
-      - sydtest >= 0.15 && <0.16
+      - Diff >= 0.5 && <1.0
+      - skeletest

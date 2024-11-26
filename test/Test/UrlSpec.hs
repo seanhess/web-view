@@ -1,6 +1,6 @@
 module Test.UrlSpec (spec) where
 
-import Test.Syd
+import Skeletest
 import Text.Read (readMaybe)
 import Web.View.Types.Url
 

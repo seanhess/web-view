@@ -84,23 +84,46 @@ data Class = Class
 type Styles = Map Name StyleValue
 
 
+-- | A parent selector limits the selector to only apply when a descendent of the parent in question
+type Ancestor = Text
+
+
+-- | A child selector limits
+data ChildCombinator
+  = AllChildren
+  | ChildWithName Text
+  deriving (Show, Eq, Ord)
+
+
+instance IsString ChildCombinator where
+  fromString s = ChildWithName (fromString s)
+
+
 -- | The selector to use for the given atomic 'Class'
 data Selector = Selector
-  { parent :: Maybe Text
+  { media :: Maybe Media
+  , ancestor :: Maybe Ancestor
+  , child :: Maybe ChildCombinator
   , pseudo :: Maybe Pseudo
-  , media :: Maybe Media
   , className :: ClassName
   }
   deriving (Eq, Ord, Show)
 
 
 instance IsString Selector where
-  fromString s = Selector Nothing Nothing Nothing (fromString s)
+  fromString s = selector (fromString s)
 
 
 -- | Create a 'Selector' given only a 'ClassName'
 selector :: ClassName -> Selector
-selector = Selector Nothing Nothing Nothing
+selector c =
+  Selector
+    { pseudo = Nothing
+    , ancestor = Nothing
+    , child = Nothing
+    , media = Nothing
+    , className = c
+    }
 
 
 -- | A class name
@@ -278,13 +301,14 @@ class ToColor a where
   colorName = T.toLower . pack . show
 
 
+-- | Hexidecimal Color. Can be specified with or without the leading '#'. Recommended to use an AppColor type instead of manually using hex colors. See 'Web.View.Types.ToColor'
+newtype HexColor = HexColor Text
+  deriving (Show)
+
+
 instance ToColor HexColor where
   colorValue c = c
   colorName (HexColor a) = T.dropWhile (== '#') a
-
-
--- | Hexidecimal Color. Can be specified with or without the leading '#'. Recommended to use an AppColor type instead of manually using hex colors. See 'Web.View.Types.ToColor'
-newtype HexColor = HexColor Text
 
 
 instance ToStyleValue HexColor where
@@ -293,6 +317,10 @@ instance ToStyleValue HexColor where
 
 instance IsString HexColor where
   fromString = HexColor . T.dropWhile (== '#') . T.pack
+
+
+instance ToClassName HexColor where
+  toClassName = colorName
 
 
 data Align

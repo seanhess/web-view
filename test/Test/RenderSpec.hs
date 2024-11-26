@@ -1,11 +1,12 @@
 module Test.RenderSpec (spec) where
 
 import Data.Text (Text)
-import Test.Syd
+import Data.Text.IO qualified as T
+import Skeletest
 import Web.View
-import Web.View.Render (Line (..), LineEnd (..), renderLines)
+import Web.View.Render (Line (..), LineEnd (..), classNameForAttribute, renderLines, selectorText)
 import Web.View.Style
-import Web.View.Types (Element (..))
+import Web.View.Types
 import Web.View.View (tag')
 import Prelude hiding (span)
 
@@ -73,9 +74,40 @@ spec = do
               el_ $ do
                 el_ "HI"
 
+    describe "selectors" $ do
+      it "normal selector" $ do
+        let sel = selector "myclass"
+        selectorText sel `shouldBe` ".myclass"
 
-goldenFile :: FilePath -> IO Text -> GoldenTest Text
-goldenFile fp txt = do
-  goldenTextFile fp $ do
-    t <- txt
-    pure $ t <> "\n"
+      it "pseudo selector" $ do
+        let sel = (selector "myclass"){pseudo = Just Hover}
+        classNameForAttribute Nothing Nothing Nothing sel.pseudo sel.className `shouldBe` "hover:myclass"
+        selectorText sel `shouldBe` ".hover\\:myclass:hover"
+
+      it "it should include ancestor in selector" $ do
+        classNameForAttribute Nothing (Just "parent") Nothing Nothing "myclass" `shouldBe` "parent-myclass"
+        let sel = (selector "myclass"){ancestor = Just "parent"}
+        selectorText sel `shouldBe` ".parent .parent-myclass"
+
+      it "psuedo + parent" $ do
+        let sel = (selector "myclass"){ancestor = Just "parent", pseudo = Just Hover}
+        selectorText sel `shouldBe` ".parent .hover\\:parent-myclass:hover"
+
+      it "child" $ do
+        let sel = (selector "myclass"){child = Just "mychild"}
+        classNameForAttribute Nothing Nothing sel.child Nothing sel.className `shouldBe` "myclass-mychild"
+        selectorText sel `shouldBe` ".myclass-mychild > .mychild"
+
+        let sel2 = (selector "myclass"){child = Just AllChildren}
+        classNameForAttribute Nothing Nothing sel2.child Nothing sel2.className `shouldBe` "myclass-all"
+        selectorText sel2 `shouldBe` ".myclass-all > *"
+
+
+-- describe "child combinator" $ do
+--   it "should include child combinator in definition"  $ do
+
+goldenFile :: FilePath -> IO Text -> IO ()
+goldenFile fp createText = do
+  inp <- T.readFile fp
+  txt <- createText
+  (txt <> "\n") `shouldBe` inp

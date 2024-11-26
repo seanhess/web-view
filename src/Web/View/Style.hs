@@ -1,7 +1,7 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
 
 module Web.View.Style where
 
@@ -10,6 +10,8 @@ import Data.Map qualified as M
 import Data.Text (Text)
 import Web.View.Types
 
+
+{- HLINT "HLint: shadows the existing binding" -}
 
 -- * Styles
 
@@ -241,19 +243,23 @@ transition :: Ms -> TransitionProperty -> Mod
 transition ms = \case
   (Height n) -> trans "height" n
   (Width n) -> trans "width" n
+  (BgColor c) -> trans "background-color" c
+  (Color c) -> trans "color" c
  where
-  trans p px =
+  trans p val =
     addClass $
-      cls ("t" -. px -. p -. ms)
+      cls ("t" -. val -. p -. ms)
         & prop "transition-duration" ms
         & prop "transition-property" p
-        & prop p px
+        & prop p val
 
 
 -- You MUST set the height/width manually when you attempt to transition it
 data TransitionProperty
   = Width PxRem
   | Height PxRem
+  | BgColor HexColor
+  | Color HexColor
   deriving (Show)
 
 
@@ -302,7 +308,7 @@ media m = mapModClass $ \c ->
     }
  where
   addMedia :: Selector -> Selector
-  addMedia (Selector pr ps _ cn) = Selector pr ps (Just m) cn
+  addMedia Selector{..} = Selector{media = Just m, ..}
 
 
 {- | Apply when the element is somewhere inside an anscestor.
@@ -316,11 +322,11 @@ For example, the HTMX library applies an "htmx-request" class to the body when a
 parent :: Text -> Mod -> Mod
 parent p = mapModClass $ \c ->
   c
-    { selector = addParent c.selector
+    { selector = addAncestor c.selector
     }
  where
-  addParent :: Selector -> Selector
-  addParent (Selector _ ps m c) = Selector (Just p) ps m c
+  addAncestor :: Selector -> Selector
+  addAncestor Selector{..} = Selector{ancestor = Just p, ..}
 
 
 -- Add a pseudo-class like Hover to your style
@@ -331,7 +337,7 @@ applyPseudo ps = mapModClass $ \c ->
     }
  where
   addToSelector :: Selector -> Selector
-  addToSelector (Selector pr _ m cn) = Selector pr (Just ps) m cn
+  addToSelector Selector{..} = Selector{pseudo = Just ps, ..}
 
 
 mapModClass :: (Class -> Class) -> Mod -> Mod
@@ -364,9 +370,11 @@ addClass c attributes =
     , other = attributes.other
     }
 
+
 -- | Construct a class from a ClassName
 cls :: ClassName -> Class
 cls n = Class (selector n) []
+
 
 {- | Construct a mod from a ClassName with no CSS properties. Convenience for situations where external CSS classes need to be referenced.
 
@@ -374,6 +382,7 @@ cls n = Class (selector n) []
 -}
 extClass :: ClassName -> Mod
 extClass = addClass . cls
+
 
 -- | Add a property to a class
 prop :: (ToStyleValue val) => Name -> val -> Class -> Class

@@ -1,0 +1,4 @@
+#!/bin/bash
+
+cabal sdist
+cabal haddock --enable-doc --haddock-for-hackage

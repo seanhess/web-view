@@ -84,7 +84,7 @@ renderText' c vw =
   styleElement :: [Text] -> Content
   styleElement css =
     Node $ element "style" (Attributes [] [("type", "text/css")]) $ do
-      pure $ Text $ "\n" <> intercalate "\n" css <> "\n"
+      pure $ Raw $ "\n" <> intercalate "\n" css <> "\n"
 
 
 renderContent :: Int -> Content -> [Line]
@@ -171,14 +171,21 @@ indent t = "  " <> t
 -- | The css selector for this style
 selectorText :: Selector -> Text
 selectorText s =
-  parent s.parent <> "." <> addPseudo s.pseudo (classNameElementText s.media s.parent Nothing s.className)
+  let classAttributeName = classNameForAttribute s.media s.ancestor s.child Nothing s.className
+   in ancestor s.ancestor <> "." <> addPseudo s.pseudo classAttributeName <> child s.child
  where
-  parent Nothing = ""
-  parent (Just p) = "." <> p <> " "
+  ancestor Nothing = ""
+  ancestor (Just p) = "." <> p <> " "
 
   addPseudo Nothing c = c
   addPseudo (Just p) c =
     pseudoText p <> "\\:" <> c <> ":" <> pseudoSuffix p
+
+  child Nothing = ""
+  child (Just (ChildWithName c)) =
+    " > ." <> c
+  child (Just AllChildren) =
+    " > *"
 
   pseudoSuffix :: Pseudo -> Text
   pseudoSuffix Even = "nth-child(even)"
@@ -186,13 +193,17 @@ selectorText s =
   pseudoSuffix p = pseudoText p
 
 
--- | The class name as it appears in the element
-classNameElementText :: Maybe Media -> Maybe Text -> Maybe Pseudo -> ClassName -> Text
-classNameElementText mm mp mps c =
-  addMedia mm . addPseudo mps . addParent mp $ c.text
+-- | Unique name for the class, as seen in the element's class attribute
+classNameForAttribute :: Maybe Media -> Maybe Ancestor -> Maybe ChildCombinator -> Maybe Pseudo -> ClassName -> Text
+classNameForAttribute mm mp mc mps c =
+  addMedia mm . addPseudo mps . addAncestor mp . addChild mc $ c.text
  where
-  addParent Nothing cn = cn
-  addParent (Just p) cn = p <> "-" <> cn
+  addAncestor Nothing cn = cn
+  addAncestor (Just p) cn = p <> "-" <> cn
+
+  addChild Nothing cn = cn
+  addChild (Just (ChildWithName child)) cn = cn <> "-" <> child
+  addChild (Just AllChildren) cn = cn <> "-all"
 
   addPseudo :: Maybe Pseudo -> Text -> Text
   addPseudo Nothing cn = cn
@@ -222,4 +233,8 @@ flatAttributes t =
 
   classAttValue :: [Class] -> Text
   classAttValue cx =
-    T.unwords $ fmap (\c -> classNameElementText c.selector.media c.selector.parent c.selector.pseudo c.selector.className) cx
+    T.unwords $ fmap name cx
+   where
+    name c =
+      let sel = c.selector
+       in classNameForAttribute sel.media sel.ancestor sel.child sel.pseudo sel.className

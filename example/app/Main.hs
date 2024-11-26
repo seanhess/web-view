@@ -7,6 +7,7 @@ import Network.HTTP.Types (status200, status404)
 import Network.Wai
 import Network.Wai.Handler.Warp as Warp
 import Web.View
+import Web.View.Layout
 
 
 main :: IO ()
@@ -79,12 +80,28 @@ holygrail = layout id $ do
   row (bg Primary) "Bottom Bar"
 
 
+stacks :: View c ()
+stacks = layout id $ do
+  row (bg Primary . bold . pad 10 . color White) "Stacks"
+  col (pad 10 . gap 10) $ do
+    el_ "Stacks put contents on top of each other"
+    stack (border 1) $ do
+      row (bg Light) $ el (pad 10) "In the background"
+      row (pad 10) $ do
+        space
+        el (bg SecondaryLight . grow . pad 5) "Above"
+      row (pad (XY 15 5)) $ do
+        space
+        el (bg Primary . pad 10 . color White) "Max Above!"
+
+
 examples :: View c ()
 examples = col (pad 20 . gap 15) $ do
   el (bold . fontSize 24) "Layout"
   link "buttons" lnk "Buttons"
   link "responsive" lnk "Responsive"
   link "holygrail" lnk "Holy Grail"
+  link "stacks" lnk "Stacks"
  where
   lnk = color Primary
 
@@ -96,6 +113,7 @@ app req respond = do
     ["buttons"] -> view buttons
     ["responsive"] -> view responsive
     ["holygrail"] -> view holygrail
+    ["stacks"] -> view stacks
     _ -> notFound
  where
   html h =
