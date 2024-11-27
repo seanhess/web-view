@@ -60,7 +60,7 @@ type AttValue = Text
 >   where
 >     active = isActive user then bold else id
 -}
-type Mod = Attributes -> Attributes
+type Mod a = Attributes -> Attributes
 
 
 -- * Atomic CSS

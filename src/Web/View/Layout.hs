@@ -24,7 +24,7 @@ holygrail = 'layout' id $ do
   where section = 'border' 1
 @
 -}
-layout :: Mod -> View c () -> View c ()
+layout :: Mod c -> View c () -> View c ()
 layout f = el (root . f)
 
 
@@ -33,7 +33,7 @@ layout f = el (root . f)
 > holygrail = col root $ do
 >   ...
 -}
-root :: Mod
+root :: Mod c
 root =
   flexCol
     . addClass
@@ -54,7 +54,7 @@ root =
 >    space
 >    el_ "Bottom"
 -}
-col :: Mod -> View c () -> View c ()
+col :: Mod c -> View c () -> View c ()
 col f = el (flexCol . f)
 
 
@@ -65,7 +65,7 @@ col f = el (flexCol . f)
 >    space
 >    el_ "Right"
 -}
-row :: Mod -> View c () -> View c ()
+row :: Mod c -> View c () -> View c ()
 row f = el (flexRow . f)
 
 
@@ -75,7 +75,7 @@ row f = el (flexRow . f)
 >  el grow none
 >  el_ "Right"
 -}
-grow :: Mod
+grow :: Mod c
 grow = addClass $ cls "grow" & prop @Int "flex-grow" 1
 
 
@@ -95,7 +95,7 @@ space = el grow none
 
 
 -- | Allow items to become smaller than their contents. This is not the opposite of grow!
-collapse :: Mod
+collapse :: Mod c
 collapse = addClass $ cls "collapse" & prop @Int "min-width" 0
 
 
@@ -105,17 +105,17 @@ collapse = addClass $ cls "collapse" & prop @Int "min-width" 0
 >   nav (width 300) "Sidebar"
 >   col (grow . scroll) "Main Content"
 -}
-scroll :: Mod
+scroll :: Mod c
 scroll = addClass $ cls "scroll" & prop @Text "overflow" "auto"
 
 
 -- | A Nav element
-nav :: Mod -> View c () -> View c ()
+nav :: Mod c -> View c () -> View c ()
 nav f = tag "nav" (f . flexCol)
 
 
 -- | A stack container puts its contents on top of each other. Each child has the full width?
-stack :: Mod -> View c () -> View c ()
+stack :: Mod c -> View c () -> View c ()
 stack f =
   tag "div" (f . container . absChildren)
  where

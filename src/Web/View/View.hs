@@ -100,19 +100,19 @@ viewInsertContents cs = viewModContents insert
 
 {- | Create a new element constructor with the given tag name
 
-> aside :: Mod -> View c () -> View c ()
+> aside :: Mod c -> View c () -> View c ()
 > aside = tag "aside"
 -}
-tag :: Text -> Mod -> View c () -> View c ()
+tag :: Text -> Mod c -> View c () -> View c ()
 tag n = tag' (element n)
 
 
 {- | Create a new element constructor with a custom element
  -
-> span :: Mod -> View c () -> View c ()
+> span :: Mod c -> View c () -> View c ()
 > span = tag' (Element True) "span"
 -}
-tag' :: (Attributes -> [Content] -> Element) -> Mod -> View c () -> View c ()
+tag' :: (Attributes -> [Content] -> Element) -> Mod c -> View c () -> View c ()
 tag' mkElem f ct = do
   -- Applies the modifier and merges children into parent
   ctx <- context
@@ -129,7 +129,7 @@ tag' mkElem f ct = do
 > hlink :: Text -> View c () -> View c ()
 > hlink url content = tag "a" (att "href" url) content
 -}
-att :: Name -> AttValue -> Mod
+att :: Name -> AttValue -> Mod c
 att n v attributes =
   let atts = M.insert n v attributes.other
    in attributes{other = atts}

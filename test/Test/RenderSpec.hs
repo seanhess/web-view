@@ -61,7 +61,7 @@ spec = do
         renderLines [Line Inline 0 "one ", Line Inline 0 "two ", Line Inline 0 "<span>/</span>", Line Inline 0 " three"] `shouldBe` "one two <span>/</span> three"
 
       it "should render text and inline elements inline" $ do
-        let span = tag' (Element True "span") :: Mod -> View c () -> View c ()
+        let span = tag' (Element True "span") :: Mod c -> View c () -> View c ()
         let res =
               renderText $ do
                 text "one "
