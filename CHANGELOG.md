@@ -1,5 +1,14 @@
 # Revision history for web-view
 
+## 0.6.0
+
+UNRELEASED
+
+* stack
+* Refactored: selectors and rendering
+* ChildCombinator
+* styles are rendered Raw
+
 ## 0.5.0
 
 * Rendering improvements
