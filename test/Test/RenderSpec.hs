@@ -1,13 +1,14 @@
 module Test.RenderSpec (spec) where
 
 import Data.Text (Text)
+import Data.Text qualified as T
 import Data.Text.IO qualified as T
 import Skeletest
 import Web.View
-import Web.View.Render (Line (..), LineEnd (..), classNameForAttribute, renderLines, selectorText)
+import Web.View.Render (Line (..), LineEnd (..), classNameForAttribute, renderCSS, renderLines, selectorText)
 import Web.View.Style
 import Web.View.Types
-import Web.View.View (tag')
+import Web.View.View (ViewState (..), runView, tag')
 import Prelude hiding (span)
 
 
@@ -22,28 +23,31 @@ spec = do
         renderText (el_ "hello" >> el_ "world") `shouldBe` "<div>hello</div>\n<div>world</div>"
 
       it "should match basic output with styles" $ do
-        goldenFile "test/resources/basic.txt" $ do
-          pure $ renderText $ col (pad 10) $ el bold "hello" >> el_ "world"
+        golden <- goldenFile "test/resources/basic.txt"
+        let out = renderText $ col (pad 10) $ el bold "hello" >> el_ "world"
+        out `shouldBe` golden
 
     describe "escape" $ do
       it "should escape properly" $ do
-        goldenFile "test/resources/escaping.txt" $ do
-          pure $ renderText $ do
-            el (att "title" "I have some apos' and quotes \" and I'm a <<great>> attribute!!!") "I am <malicious> &apos;user"
-            el (att "title" "I have some apos' and quotes \" and I'm a <<great>> attribute!!!") $ do
-              el_ "I am <malicious> &apos;user"
-              el_ "I am another <malicious> &apos;user"
+        golden <- goldenFile "test/resources/escaping.txt"
+        let out = renderText $ do
+              el (att "title" "I have some apos' and quotes \" and I'm a <<great>> attribute!!!") "I am <malicious> &apos;user"
+              el (att "title" "I have some apos' and quotes \" and I'm a <<great>> attribute!!!") $ do
+                el_ "I am <malicious> &apos;user"
+                el_ "I am another <malicious> &apos;user"
+        out `shouldBe` golden
 
       it "should escape properly" $ do
-        goldenFile "test/resources/raw.txt" $ do
-          pure $ renderText $ el bold $ raw "<svg>&\"'</svg>"
+        golden <- goldenFile "test/resources/raw.txt"
+        let out = renderText $ el bold $ raw "<svg>&\"'</svg>"
+        out `shouldBe` golden
 
     describe "empty rules" $ do
       it "should skip css class when no css attributes" $ do
-        goldenFile "test/resources/nocssattrs.txt" $ do
-          pure $ renderText $ do
-            el (addClass $ cls "empty") "i have no css"
-            el bold "i have some css"
+        let view = do
+              el (addClass $ cls "empty") "i have no css"
+              el bold "i have some css"
+        renderLines (renderCSS (runCSS view)) `shouldBe` ".bold { font-weight:bold }"
 
       it "should skip css element when no css rules" $ do
         let res = renderText $ el (addClass $ cls "empty") "i have no css"
@@ -68,11 +72,12 @@ spec = do
 
     describe "indentation" $ do
       it "should nested indent" $ do
-        goldenFile "test/resources/nested.txt" $ do
-          pure $ renderText $ do
-            el_ $ do
+        golden <- goldenFile "test/resources/nested.txt"
+        let out = renderText $ do
               el_ $ do
-                el_ "HI"
+                el_ $ do
+                  el_ "HI"
+        out `shouldBe` golden
 
     describe "selectors" $ do
       it "normal selector" $ do
@@ -106,8 +111,11 @@ spec = do
 -- describe "child combinator" $ do
 --   it "should include child combinator in definition"  $ do
 
-goldenFile :: FilePath -> IO Text -> IO ()
-goldenFile fp createText = do
+goldenFile :: FilePath -> IO Text
+goldenFile fp = do
   inp <- T.readFile fp
-  txt <- createText
-  (txt <> "\n") `shouldBe` inp
+  pure $ T.dropWhileEnd (== '\n') inp
+
+
+runCSS :: View () () -> CSS
+runCSS view = (runView () view).css

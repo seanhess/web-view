@@ -40,7 +40,7 @@ renderLazyByteString = LE.encodeUtf8 . renderLazyText
 
 data Line
   = Line {end :: LineEnd, indent :: Int, text :: Text}
-  deriving (Show)
+  deriving (Show, Eq)
 
 
 data LineEnd
@@ -74,17 +74,18 @@ renderText' :: c -> View c () -> Text
 renderText' c vw =
   let vst = runView c vw
       css = renderCSS vst.css
-   in addCss css $ renderLines $ mconcat $ fmap (renderContent 2) vst.contents
+   in renderLines $ addCss css $ mconcat $ fmap (renderContent 2) vst.contents
  where
-  addCss :: [Text] -> Text -> Text
+  addCss :: [Line] -> [Line] -> [Line]
   addCss [] cnt = cnt
   addCss css cnt = do
-    renderLines (renderContent 2 $ styleElement css) <> "\n\n" <> cnt
+    styleLines css <> (Line Newline 0 "" : cnt)
 
-  styleElement :: [Text] -> Content
-  styleElement css =
-    Node $ element "style" (Attributes [] [("type", "text/css")]) $ do
-      pure $ Raw $ "\n" <> intercalate "\n" css <> "\n"
+  styleLines :: [Line] -> [Line]
+  styleLines css =
+    [Line Newline 0 "<style type='text/css'>"]
+      <> css
+      <> [Line Newline 0 "</style>"]
 
 
 renderContent :: Int -> Content -> [Line]
@@ -138,15 +139,15 @@ addIndent :: Int -> Line -> Line
 addIndent n (Line e ind t) = Line e (ind + n) t
 
 
-renderCSS :: CSS -> [Text]
+renderCSS :: CSS -> [Line]
 renderCSS = mapMaybe renderClass . M.elems
  where
-  renderClass :: Class -> Maybe Text
+  renderClass :: Class -> Maybe Line
   renderClass c | M.null c.properties = Nothing
   renderClass c =
     let sel = selectorText c.selector
         props = intercalate "; " (map renderProp $ M.toList c.properties)
-     in Just $ [i|#{sel} { #{props} }|] & addMedia c.selector.media
+     in Just $ Line Newline 0 $ [i|#{sel} { #{props} }|] & addMedia c.selector.media
 
   addMedia Nothing css = css
   addMedia (Just m) css =
@@ -171,11 +172,11 @@ indent t = "  " <> t
 -- | The css selector for this style
 selectorText :: Selector -> Text
 selectorText s =
-  let classAttributeName = classNameForAttribute s.media s.ancestor s.child Nothing s.className
+  let classAttributeName = HE.text $ classNameForAttribute s.media s.ancestor s.child Nothing s.className
    in ancestor s.ancestor <> "." <> addPseudo s.pseudo classAttributeName <> child s.child
  where
   ancestor Nothing = ""
-  ancestor (Just p) = "." <> p <> " "
+  ancestor (Just p) = "." <> HE.text p <> " "
 
   addPseudo Nothing c = c
   addPseudo (Just p) c =
@@ -183,7 +184,7 @@ selectorText s =
 
   child Nothing = ""
   child (Just (ChildWithName c)) =
-    " > ." <> c
+    " > ." <> HE.text c
   child (Just AllChildren) =
     " > *"
 
