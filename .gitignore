@@ -5,4 +5,5 @@ dist
 tags
 docs/old.md
 build
-
+.direnv
+result

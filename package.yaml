@@ -19,6 +19,12 @@ extra-doc-files:
 
 extra-source-files:
   - embed/preflight.css
+  - test/resources/basic.txt
+  - test/resources/escaping.txt
+  - test/resources/nested.txt
+  - test/resources/nocssattrs.txt
+  - test/resources/nocss.txt
+  - test/resources/raw.txt
 
 language: GHC2021
 
