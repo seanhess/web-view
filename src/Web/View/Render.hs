@@ -79,12 +79,12 @@ renderText' c vw =
   addCss :: [Text] -> Text -> Text
   addCss [] cnt = cnt
   addCss css cnt = do
-    renderLines (renderContent 2 $ styleElement css) <> "\n\n" <> cnt
+    renderLines (renderContent 0 $ styleElement css) <> "\n\n" <> cnt
 
   styleElement :: [Text] -> Content
   styleElement css =
     Node $ element "style" (Attributes [] [("type", "text/css")]) $ do
-      pure $ Raw $ "\n" <> intercalate "\n" css <> "\n"
+      pure $ Raw $ intercalate "\n" css
 
 
 renderContent :: Int -> Content -> [Line]
