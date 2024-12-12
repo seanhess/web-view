@@ -71,6 +71,48 @@ el (width 100 . media (MinWidth 800) (width 400))
   "Big if window > 800"
 ```
 
+Local Development
+-----------------
+
+### Nix
+
+With nix installed, you can use `nix develop` to get a shell with all dependencies installed. 
+
+You can also try out the example project with:
+
+```
+cd example
+nix develop ../#example
+cabal run
+```
+
+You can import this flake's overlay to add `web-view` to all package sets.
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    web-view.url = "github:seanhess/web-view"; # or "path:/path/to/cloned/web-view";
+  };
+
+  outputs = { self, nixpkgs, web-view }: {
+    # Apply the overlay to your packages
+    packages.x86_64-linux = import nixpkgs {
+      system = "x86_64-linux";
+      overlays = [ web-view.overlays.default ];
+    };
+    haskellPackagesOverride = pkgs.haskellPackages.override (old: {
+      overrides = pkgs.lib.composeExtensions (old.overrides or (_: _: {})) (hfinal: hprev: {
+        ...
+      });
+    });
+    haskellPackagesExtend = pkgs.haskellPackages.extend (hfinal: hprev: {
+      ...
+    });
+  };
+}
+```
+
 
 Learn More
 ----------
