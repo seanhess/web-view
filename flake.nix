@@ -7,7 +7,13 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = inputs@{ self, flake-utils, nix-filter, ... }:
+  outputs =
+    inputs@{
+      self,
+      flake-utils,
+      nix-filter,
+      ...
+    }:
     let
       web-view-src = nix-filter.lib {
         root = ./.;
@@ -22,39 +28,19 @@
         ];
       };
 
-      # build cabal2nix with a different package set as suggested by https://github.com/NixOS/nixpkgs/issues/83098#issuecomment-602132784
-      # Only with overlay, cabal2nix causes infinite recursion if one of it's dependencies is overridden
-      fixCabal2nix = final: prev:
-        let
-          fixForDarwin = prev.haskell.packages.ghc902.override {
-            overrides = hfinal: hprev:
-              prev.lib.optionalAttrs (final.system == "x86_64-darwin"
-                || final.system == "aarch64-darwin") {
-                  crypton = prev.haskell.lib.dontCheck hprev.crypton;
-                };
-          };
-        in {
-          cabal2nix-unwrapped =
-            prev.haskell.lib.justStaticExecutables fixForDarwin.cabal2nix;
-        };
-      haskellOverlay = final: prev: {
-        haskellPackages = prev.haskellPackages.override {
-          overrides = hfinal: hprev: {
+      overlay = final: prev: {
+        haskell = prev.haskell // {
+          packageOverrides = hfinal: hprev: {
             web-view = hfinal.callCabal2nix "web-view" web-view-src { };
-            attoparsec-aeson =
-              hfinal.callHackage "attoparsec-aeson" "2.2.0.0" { };
-            skeletest = hfinal.callHackage "skeletest" "0.1.0" { };
-            Diff = hfinal.callHackage "Diff" "0.5" { };
-            aeson = hfinal.callHackage "aeson" "2.2.2.0" { };
           };
         };
       };
-      overlay = final: prev:
-        let
-          fApplied = fixCabal2nix final prev;
-          prev' = prev // fApplied;
-        in fApplied // haskellOverlay final prev';
-    in flake-utils.lib.eachDefaultSystem (system:
+    in
+    {
+      overlays.default = overlay;
+    }
+    // flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import inputs.nixpkgs {
           inherit system;
@@ -70,9 +56,18 @@
           ];
         };
 
+        web-view-haskellPackages = pkgs.haskellPackages.extend (
+          hfinal: hprev: {
+            attoparsec-aeson = hfinal.callHackage "attoparsec-aeson" "2.2.0.0" { };
+            skeletest = hfinal.callHackage "skeletest" "0.1.0" { };
+            Diff = hfinal.callHackage "Diff" "0.5" { };
+            aeson = hfinal.callHackage "aeson" "2.2.2.0" { };
+          }
+        );
+
         shellCommon = {
           # don't use the modified package set to build dev tools
-          buildInputs = with inputs.nixpkgs.legacyPackages.${system}; [
+          buildInputs = with pkgs; [
             haskellPackages.cabal-install
             haskell-language-server
             haskellPackages.fast-tags
@@ -82,23 +77,31 @@
           doBenchmark = true;
         };
 
-      in {
-        overlays.default = overlay;
+        selfPkgs = self.packages.${system};
+
+      in
+      {
         packages = {
-          default = pkgs.haskellPackages.web-view;
-          web-view = pkgs.haskellPackages.web-view;
+          default = selfPkgs.web-view-haskellPackages.web-view;
+          web-view = selfPkgs.default;
+          web-view-haskellPackages = web-view-haskellPackages;
         };
+        inherit pkgs;
 
         devShells = {
           default = self.devShells.${system}.web-view;
-          web-view = pkgs.haskellPackages.shellFor
-            (shellCommon // { packages = p: [ p.web-view ]; });
-          example = pkgs.haskellPackages.shellFor (shellCommon // {
-            packages = _:
-              [
-                (pkgs.haskellPackages.callCabal2nix "example" example-src { })
+          web-view = selfPkgs.web-view-haskellPackages.shellFor (
+            shellCommon // { packages = p: [ p.web-view ]; }
+          );
+          example = selfPkgs.web-view-haskellPackages.shellFor (
+            shellCommon
+            // {
+              packages = _: [
+                (selfPkgs.web-view-haskellPackages.callCabal2nix "example" example-src { })
               ];
-          });
+            }
+          );
         };
-      });
+      }
+    );
 }

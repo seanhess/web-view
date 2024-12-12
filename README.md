@@ -86,7 +86,7 @@ nix develop ../#example
 cabal run
 ```
 
-You can import this flake's overlay to override your `haskellPackages` with the set we use to build `web-view` in this flake.
+You can import this flake's overlay to add `web-view` to all package sets.
 
 ```nix
 {
@@ -101,6 +101,14 @@ You can import this flake's overlay to override your `haskellPackages` with the 
       system = "x86_64-linux";
       overlays = [ web-view.overlays.default ];
     };
+    haskellPackagesOverride = pkgs.haskellPackages.override (old: {
+      overrides = pkgs.lib.composeExtensions (old.overrides or (_: _: {})) (hfinal: hprev: {
+        ...
+      });
+    });
+    haskellPackagesExtend = pkgs.haskellPackages.extend (hfinal: hprev: {
+      ...
+    });
   };
 }
 ```
