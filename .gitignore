@@ -6,4 +6,7 @@ tags
 docs/old.md
 build
 .direnv
+# Nix output dir
 result
+# Auto-generated pre-commit config
+.pre-commit-config.yaml
