@@ -2,13 +2,11 @@
 
 ## 0.6.0
 
-UNRELEASED
-
-* stack
+* stack - layout children on top of each other
+* ChildCombinator: apply styles to direct children
+* `Mod` is now `Mod context`, allowing for type-safe `Mod`s
+* fixed: escaping in auto-generated `<style>`
 * Refactored: selectors and rendering
-* ChildCombinator
-* styles are rendered Raw
-* `Mod` is now `Mod context`, allowing for type-safe `Mod`s. This context is the same as the `View`
 
 ## 0.5.0
 

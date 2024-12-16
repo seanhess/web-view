@@ -213,8 +213,7 @@ instance ToStyleValue Float where
 
 
 data Length
-  = -- | Px, converted to Rem. Allows for the user to change the document font size and have the app scale accordingly. But allows the programmer to code in pixels to match a design
-    PxRem PxRem
+  = PxRem PxRem
   | Pct Float
   deriving (Show)
 
@@ -224,6 +223,7 @@ instance ToClassName Length where
   toClassName (Pct p) = toClassName p
 
 
+-- | Px, converted to Rem. Allows for the user to change the document font size and have the app scale accordingly. But allows the programmer to code in pixels to match a design
 newtype PxRem = PxRem' Int
   deriving newtype (Show, ToClassName, Num, Eq, Integral, Real, Ord, Enum)
 

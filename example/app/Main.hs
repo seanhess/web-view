@@ -99,6 +99,10 @@ tests = col (gap 10) $ do
   el (bg Warning . bg Error) "Error"
   el (bg Error . bg Warning) "Warning"
 
+  el (pad 10) $ do
+    el (parent "htmx-request" flexRow . hide) "Loading..."
+    el (parent "htmx-request" hide . flexRow) "Normal Content"
+
 
 examples :: View c ()
 examples = col (pad 20 . gap 15) $ do
