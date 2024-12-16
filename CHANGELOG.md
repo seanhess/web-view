@@ -8,6 +8,7 @@ UNRELEASED
 * Refactored: selectors and rendering
 * ChildCombinator
 * styles are rendered Raw
+* `Mod` is now `Mod context`, allowing for type-safe `Mod`s. This context is the same as the `View`
 
 ## 0.5.0
 

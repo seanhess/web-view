@@ -351,6 +351,15 @@ mapModClass fc fm as =
         }
 
 
+{- | Setting the same property twice will result in only one of the classes being applied. It is not intuitive, as CSS rules dictate that the order of the class definitions determine precedence. You can mark a `Mod` as important to force it to apply
+important :: Mod c -> Mod c
+important =
+  mapModClass $ \c ->
+    c
+      { important = True
+      }
+-}
+
 -- * Creating New Styles
 
 
@@ -390,9 +399,9 @@ prop n v c =
   c{properties = M.insert n (toStyleValue v) c.properties}
 
 
--- | Hyphneate classnames
+-- | Hyphenate classnames
 (-.) :: (ToClassName a) => ClassName -> a -> ClassName
-(ClassName n) -. a = ClassName $ n <> "-" <> toClassName a
+(ClassName n) -. a = (ClassName $ n <> "-") <> toClassName a
 
 
 infixl 6 -.

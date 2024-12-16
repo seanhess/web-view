@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -10,6 +11,7 @@ import Data.Function ((&))
 import Data.List (foldl', sortOn)
 import Data.Map qualified as M
 import Data.Maybe (mapMaybe)
+import Data.String (fromString)
 import Data.String.Interpolate (i)
 import Data.Text (Text, intercalate, pack, toLower)
 import Data.Text qualified as T
@@ -172,15 +174,17 @@ indent t = "  " <> t
 -- | The css selector for this style
 selectorText :: Selector -> Text
 selectorText s =
-  let classAttributeName = HE.text $ classNameForAttribute s.media s.ancestor s.child Nothing s.className
+  let classAttributeName = HE.text (attributeClassName s).text
    in ancestor s.ancestor <> "." <> addPseudo s.pseudo classAttributeName <> child s.child
  where
   ancestor Nothing = ""
   ancestor (Just p) = "." <> HE.text p <> " "
 
+  -- ":" is treated as a pseudo selector. We want to use prefixed pseudos in the name as part of the name
+  -- so we must escape the colon
   addPseudo Nothing c = c
   addPseudo (Just p) c =
-    pseudoText p <> "\\:" <> c <> ":" <> pseudoSuffix p
+    T.replace ":" "\\:" c <> ":" <> pseudoSuffix p
 
   child Nothing = ""
   child (Just (ChildWithName c)) =
@@ -195,29 +199,47 @@ selectorText s =
 
 
 -- | Unique name for the class, as seen in the element's class attribute
-classNameForAttribute :: Maybe Media -> Maybe Ancestor -> Maybe ChildCombinator -> Maybe Pseudo -> ClassName -> Text
-classNameForAttribute mm mp mc mps c =
-  addMedia mm . addPseudo mps . addAncestor mp . addChild mc $ c.text
+attributeClassName :: Selector -> ClassName
+attributeClassName sel =
+  addMedia sel.media . addPseudo sel.pseudo . addAncestor sel.ancestor . addChild sel.child $ sel.className
  where
+  addAncestor :: Maybe Ancestor -> ClassName -> ClassName
   addAncestor Nothing cn = cn
-  addAncestor (Just p) cn = p <> "-" <> cn
+  addAncestor (Just a) cn = className a <> "-" <> cn
 
+  addChild :: Maybe ChildCombinator -> ClassName -> ClassName
   addChild Nothing cn = cn
-  addChild (Just (ChildWithName child)) cn = cn <> "-" <> child
+  addChild (Just (ChildWithName child)) cn = cn <> "-" <> className child
   addChild (Just AllChildren) cn = cn <> "-all"
 
-  addPseudo :: Maybe Pseudo -> Text -> Text
+  addPseudo :: Maybe Pseudo -> ClassName -> ClassName
   addPseudo Nothing cn = cn
   addPseudo (Just p) cn =
-    pseudoText p <> ":" <> cn
+    className (pseudoText p) <> ":" <> cn
 
-  addMedia :: Maybe Media -> Text -> Text
+  addMedia :: Maybe Media -> ClassName -> ClassName
   addMedia Nothing cn = cn
   addMedia (Just (MinWidth n)) cn =
-    [i|mmnw#{n}-#{cn}|]
+    "mmnw" <> fromString (show n) <> "-" <> cn
   addMedia (Just (MaxWidth n)) cn =
-    [i|mmxw#{n}-#{cn}|]
+    "mmxw" <> fromString (show n) <> "-" <> cn
 
+
+-- classNameAddAncestor :: Ancestor -> ClassName -> ClassName
+-- classNameAddAncestor a cn =
+--   ClassName a <> "-" <> cn
+--
+--
+-- classNameAddChild :: ChildCombinator -> ClassName -> ClassName
+-- classNameAddChild cc cn =
+--   case cc of
+--     ChildWithName child -> cn <> "-" <> ClassName child
+--     AllChildren -> cn <> "-all"
+--
+-- classNameAddPseudo :: Pseudo -> ClassName -> ClassName
+-- classNameAddPseudo p cn =
+--     className (pseudoText p) <> ":" <> cn
+--
 
 pseudoText :: Pseudo -> Text
 pseudoText p = toLower $ pack $ show p
@@ -234,8 +256,4 @@ flatAttributes t =
 
   classAttValue :: [Class] -> Text
   classAttValue cx =
-    T.unwords $ fmap name cx
-   where
-    name c =
-      let sel = c.selector
-       in classNameForAttribute sel.media sel.ancestor sel.child sel.pseudo sel.className
+    T.unwords $ fmap ((.text) . attributeClassName . (.selector)) cx

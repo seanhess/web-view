@@ -143,24 +143,33 @@ selector c =
 newtype ClassName = ClassName
   { text :: Text
   }
-  deriving newtype (Eq, Ord, IsString, Show)
+  deriving newtype (Eq, Ord, Show, Monoid, Semigroup)
+
+
+instance IsString ClassName where
+  fromString s = ClassName $ pack s
+
+
+-- | Create a class name, escaping special characters
+className :: Text -> ClassName
+className = ClassName . T.toLower . T.map noDot
+ where
+  noDot '.' = '-'
+  noDot c = c
 
 
 -- | Convert a type into a className segment to generate unique compound style names based on the value
 class ToClassName a where
-  toClassName :: a -> Text
-  default toClassName :: (Show a) => a -> Text
-  toClassName = T.toLower . T.pack . show
+  toClassName :: a -> ClassName
+  default toClassName :: (Show a) => a -> ClassName
+  toClassName = className . T.pack . show
 
 
 instance ToClassName Int
 instance ToClassName Text where
-  toClassName = id
+  toClassName = className
 instance ToClassName Float where
-  toClassName f = pack $ map noDot $ showFFloat (Just 3) f ""
-   where
-    noDot '.' = '-'
-    noDot c = c
+  toClassName f = className $ pack $ showFFloat (Just 3) f ""
 
 
 {- | Psuedos allow for specifying styles that only apply in certain conditions. See `Web.View.Style.hover` etc
@@ -333,7 +342,7 @@ instance IsString HexColor where
 
 
 instance ToClassName HexColor where
-  toClassName = colorName
+  toClassName = className . colorName
 
 
 data Align
