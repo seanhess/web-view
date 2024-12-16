@@ -30,7 +30,7 @@ newtype View context a = View {viewState :: Eff [Reader context, State ViewState
 
 
 instance IsString (View context ()) where
-  fromString s = viewModContents (const [Text (pack s)])
+  fromString s = viewAddContent $ Text (pack s)
 
 
 data ViewState = ViewState
@@ -60,7 +60,9 @@ addContext ctx vw = do
   -- runs the sub-view in a different context, saving its state
   -- we need to MERGE it
   let st = runView ctx vw
-  View $ ES.modify $ \s -> s <> st
+  View $ do
+    s <- get
+    put $ s <> st
 
 
 viewModContents :: ([Content] -> [Content]) -> View context ()
@@ -78,7 +80,7 @@ viewAddClasses clss = do
   viewModCss $ \cm -> foldr addClsDef cm clss
  where
   addClsDef :: Class -> CSS -> CSS
-  addClsDef c = M.insert c.selector c
+  addClsDef c = (c :)
 
 
 viewAddContent :: Content -> View c ()
@@ -112,7 +114,7 @@ tag n = tag' (element n)
 > span :: Mod c -> View c () -> View c ()
 > span = tag' (Element True) "span"
 -}
-tag' :: (Attributes -> [Content] -> Element) -> Mod c -> View c () -> View c ()
+tag' :: (Attributes c -> [Content] -> Element) -> Mod c -> View c () -> View c ()
 tag' mkElem f ct = do
   -- Applies the modifier and merges children into parent
   ctx <- context
@@ -120,7 +122,7 @@ tag' mkElem f ct = do
   let ats = f mempty
   let elm = mkElem ats st.contents
   viewAddContent $ Node elm
-  viewAddClasses $ M.elems st.css
+  viewAddClasses st.css
   viewAddClasses elm.attributes.classes
 
 

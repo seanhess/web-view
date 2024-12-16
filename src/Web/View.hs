@@ -36,6 +36,7 @@ module Web.View
   , root
   , col
   , row
+  , stack
   , grow
   , space
   , collapse
@@ -142,7 +143,7 @@ import Prelude hiding (even, head, odd, truncate)
 
 Create styled `View's using composable Haskell functions
 
-> myView :: View c ()
+> myView :: View ctx ()
 > myView = col (gap 10) $ do
 >  el (bold . fontSize 32) "My page"
 >  button (border 1) "Click Me"

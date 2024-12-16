@@ -7,7 +7,7 @@ module Web.View.Render where
 
 import Data.ByteString.Lazy qualified as BL
 import Data.Function ((&))
-import Data.List (foldl')
+import Data.List (foldl', sortOn)
 import Data.Map qualified as M
 import Data.Maybe (mapMaybe)
 import Data.String.Interpolate (i)
@@ -140,7 +140,7 @@ addIndent n (Line e ind t) = Line e (ind + n) t
 
 
 renderCSS :: CSS -> [Line]
-renderCSS = mapMaybe renderClass . M.elems
+renderCSS = mapMaybe renderClass . sortOn (.selector)
  where
   renderClass :: Class -> Maybe Line
   renderClass c | M.null c.properties = Nothing

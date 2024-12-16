@@ -134,7 +134,7 @@ rounded n = addClass $ cls ("rnd" -. n) & prop "border-radius" n
 
 
 -- | Set the background color. See 'Web.View.Types.ToColor'
-bg :: (ToColor c) => c -> Mod c
+bg :: (ToColor clr) => clr -> Mod ctx
 bg c =
   addClass $
     cls ("bg" -. colorName c)
@@ -142,7 +142,7 @@ bg c =
 
 
 -- | Set the text color. See 'Web.View.Types.ToColor'
-color :: (ToColor c) => c -> Mod c
+color :: (ToColor clr) => clr -> Mod ctx
 color c = addClass $ cls ("clr" -. colorName c) & prop "color" (colorValue c)
 
 
@@ -203,7 +203,7 @@ border (TRBL t r b l) =
 
 
 -- | Set a border color. See 'Web.View.Types.ToColor'
-borderColor :: (ToColor c) => c -> Mod c
+borderColor :: (ToColor clr) => clr -> Mod ctx
 borderColor c =
   addClass $
     cls ("brdc" -. colorName c)

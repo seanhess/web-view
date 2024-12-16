@@ -8,7 +8,7 @@ import Web.View.Types
 import Web.View.View (View, tag)
 
 
-{- | We can intuitively create layouts with combindations of 'row', 'col', 'grow', and 'space'
+{- | We can intuitively create layouts with combinations of 'row', 'col', 'stack', 'grow', and 'space'
 
 Wrap main content in 'layout' to allow the view to consume vertical screen space
 
@@ -34,17 +34,17 @@ layout f = el (root . f)
 >   ...
 -}
 root :: Mod c
-root =
-  flexCol
-    . addClass
-      ( cls "layout"
-          -- [ ("white-space", "pre")
-          & prop @Text "width" "100vw"
-          & prop @Text "height" "100vh"
-          -- not sure if this property is necessary, copied from older code
-          & prop @Text "min-height" "100vh"
-          & prop @Text "z-index" "0"
-      )
+root = flexCol . fillViewport
+ where
+  fillViewport =
+    addClass $
+      cls "layout"
+        -- [ ("white-space", "pre")
+        & prop @Text "width" "100vw"
+        & prop @Text "height" "100vh"
+        -- not sure if this property is necessary, copied from older code
+        & prop @Text "min-height" "100vh"
+        & prop @Text "z-index" "0"
 
 
 {- | Lay out children in a column.
@@ -94,7 +94,7 @@ space :: View c ()
 space = el grow none
 
 
--- | Allow items to become smaller than their contents. This is not the opposite of grow!
+-- | Allow items to become smaller than their contents. This is not the opposite of `grow`!
 collapse :: Mod c
 collapse = addClass $ cls "collapse" & prop @Int "min-width" 0
 
@@ -114,7 +114,12 @@ nav :: Mod c -> View c () -> View c ()
 nav f = tag "nav" (f . flexCol)
 
 
--- | A stack container puts its contents on top of each other. Each child has the full width?
+{- | Stack children on top of each other. Each child has the full width
+
+> stack id $ do
+>   row id "Background"
+>   row (bg Black . opacity 0.5) "Overlay"
+-}
 stack :: Mod c -> View c () -> View c ()
 stack f =
   tag "div" (f . container . absChildren)

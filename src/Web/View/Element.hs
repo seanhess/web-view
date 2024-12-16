@@ -152,7 +152,7 @@ th f cnt = do
   addContext c $ tag "th" f cnt
 
 
-td :: Mod c -> View () () -> View dt ()
+td :: Mod () -> View () () -> View dt ()
 td f c = addContext () $ tag "td" f c
 
 
