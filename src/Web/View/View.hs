@@ -23,7 +23,7 @@ import Web.View.Types
 >   el bold "Hello"
 >   el_ "World"
 
-They can also have a context which can be used to create type-safe or context-aware elements. See 'Web.View.Element.table' for an example
+They can also have a context which can be used to create type-safe or context-aware elements. See 'context' or 'Web.View.Element.table' for an example
 -}
 newtype View context a = View {viewState :: Eff [Reader context, State ViewState] a}
   deriving newtype (Functor, Applicative, Monad)
@@ -49,12 +49,28 @@ runView ctx (View ef) =
   runPureEff . execState (ViewState [] []) . runReader ctx $ ef
 
 
--- | Get the current context
+{- | Views have a `Reader` built-in for convienient access to static data, or simply to add type-safety to view functions. See 'Web.View.Element.table' and https://hackage.haskell.org/package/hyperbole/docs/Web-Hyperbole.html
+
+> numberView :: View Int ()
+> numberView = do
+>   num <- context
+>   el_ $ do
+>     "Number: "
+>     text (pack $ show num)
+-}
 context :: View context context
 context = View ask
 
 
--- | Run a view with a specific `context` in a parent 'View' with a different context. This can be used to create type safe view functions, like 'Web.View.Element.table'
+{- | Run a view with a specific `context` in a parent 'View' with a different context.
+
+>
+> parentView :: View c ()
+> parentView = do
+>   addContext 1 $ numberView
+>   addContext 2 $ numberView
+>   addContext 3 $ numberView
+-}
 addContext :: context -> View context () -> View c ()
 addContext ctx vw = do
   -- runs the sub-view in a different context, saving its state
