@@ -86,31 +86,48 @@ nix develop ../#example
 cabal run
 ```
 
-You can import this flake's overlay to add `web-view` to all package sets.
+You can import this flake's overlay to add `web-view` to all package sets. However,
+you may need override packages to satisfy `web-view`'s dependencies.
 
 ```nix
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     web-view.url = "github:seanhess/web-view"; # or "path:/path/to/cloned/web-view";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, web-view }: {
-    # Apply the overlay to your packages
-    packages.x86_64-linux = import nixpkgs {
-      system = "x86_64-linux";
-      overlays = [ web-view.overlays.default ];
-    };
-    haskellPackagesOverride = pkgs.haskellPackages.override (old: {
+  outputs = { self, nixpkgs, web-view, flake-utils, ... }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ web-view.overlays.default ];
+        };
+        haskellPackagesOverride = pkgs.haskellPackages.override (old: {
+          overrides = pkgs.lib.composeExtensions (old.overrides or (_: _: { })) (hfinal: hprev: {
+            # your overrides here
+          });
+        });
+      in
+      {
+        devShells.default = haskellPackagesOverride.shellFor {
+          packages = p: [ p.web-view ];
+        };
+      }
+    );
+}
+```
+
+Or you can import the haskellPackages set used to build `web-view` and override them with your packages.
+
+```nix
+    haskellPackagesOverride = web-view.packages.${system}.haskellPackages.override (old: {
       overrides = pkgs.lib.composeExtensions (old.overrides or (_: _: {})) (hfinal: hprev: {
         ...
       });
     });
-    haskellPackagesExtend = pkgs.haskellPackages.extend (hfinal: hprev: {
-      ...
-    });
-  };
-}
 ```
 
 

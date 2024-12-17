@@ -51,7 +51,7 @@
       let
         pkgs = import inputs.nixpkgs {
           inherit system;
-          overlays = [ overlay ];
+          overlays = [ self.overlays.default ];
         };
 
         example-src = nix-filter.lib {
@@ -63,16 +63,18 @@
           ];
         };
 
-        myHaskellPackages = pkgs.haskellPackages.extend (
-          hfinal: hprev: {
-            attoparsec-aeson = hfinal.callHackage "attoparsec-aeson" "2.2.0.0" { };
-            skeletest = hprev.skeletest.overrideAttrs (old: {
-              meta = old.meta // { broken = false; };
-            });
-            Diff = hfinal.callHackage "Diff" "0.5" { };
-            aeson = hfinal.callHackage "aeson" "2.2.2.0" { };
-          }
-        );
+        myHaskellPackages = pkgs.haskellPackages.override (old: {
+          overrides = pkgs.lib.composeExtensions (old.overrides or (_: _: { })) (
+            hfinal: hprev: {
+              attoparsec-aeson = hfinal.callHackage "attoparsec-aeson" "2.2.0.0" { };
+              skeletest = hprev.skeletest.overrideAttrs (old: {
+                meta = old.meta // { broken = false; };
+              });
+              Diff = hfinal.callHackage "Diff" "0.5" { };
+              aeson = hfinal.callHackage "aeson" "2.2.2.0" { };
+            }
+          );
+        });
 
         shellCommon = {
           inherit (self.checks.${system}.pre-commit-check) shellHook;
@@ -89,37 +91,45 @@
           doBenchmark = true;
           CABAL_CONFIG = "/dev/null";
         };
+
+        selfPkg = self.packages.${system};
+
       in
       {
         checks = {
-          hyperbole-check = self.packages.${system}.web-view;
           pre-commit-check = git-hooks.lib.${system}.run {
             src = web-view-src;
             hooks = {
-              # hlint.enable = true;
+              hlint.enable = true;
               # hpack.enable = true;
-              # fourmolu.enable = true;
+              fourmolu.enable = true;
               nixpkgs-fmt.enable = true;
+              flake-checker = {
+                enable = true;
+                args = [ "--no-telemetry" ];
+              };
+              statix.enable = true;
+              check-merge-conflicts.enable = true;
             };
           };
         };
 
         packages = {
-          default = self.packages.${system}.web-view;
-          web-view = myHaskellPackages.web-view;
+          default = selfPkg.haskellPackages;
+          haskellPackages = myHaskellPackages;
         };
         inherit pkgs;
 
         devShells = {
           default = self.devShells.${system}.web-view;
-          web-view = myHaskellPackages.shellFor (
+          web-view = selfPkg.haskellPackages.shellFor (
             shellCommon // { packages = p: [ p.web-view ]; }
           );
-          example = myHaskellPackages.shellFor (
+          example = selfPkg.haskellPackages.shellFor (
             shellCommon
             // {
               packages = _: [
-                (myHaskellPackages.callCabal2nix "example" example-src { })
+                (selfPkg.haskellPackages.callCabal2nix "example" example-src { })
               ];
             }
           );
