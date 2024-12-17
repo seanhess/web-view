@@ -71,22 +71,30 @@ el (width 100 . media (MinWidth 800) (width 400))
   "Big if window > 800"
 ```
 
+### Try Example Project with Nix
+
+If you want to get a feel for web-view without cloning the project run `nix run github:seanhess/web-view` to run the example webserver locally
+
 Local Development
 -----------------
 
 ### Nix
 
-With nix installed, you can use `nix develop` to get a shell with all dependencies installed. 
+Prepend targets with ghc982 or ghc966 to use GHC 9.8.2 or GHC 9.6.6
 
-You can also try out the example project with:
+- `nix run` starts the example project with GHC 9.8.2
+- `nix develop` to get a shell with all dependencies installed for GHC 9.8.2. 
+- `nix develop .#ghc966-web-view` for GHC 9.6.6
+
+You can also get a development shell for the example project with:
 
 ```
 cd example
-nix develop ../#example
+nix develop ../#ghc982-example
 cabal run
 ```
 
-You can import this flake's overlay to add `web-view` to all package sets and override ghc966 with the packages to satisfy `web-view`'s dependencies.
+You can import this flake's overlay to add `web-view` to all package sets and override ghc966 and ghc982 with the packages to satisfy `web-view`'s dependencies.
 
 ```nix
 {

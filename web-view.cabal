@@ -1,6 +1,6 @@
 cabal-version: 2.2
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.36.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -16,6 +16,9 @@ maintainer:     seanhess@gmail.com
 license:        BSD-3-Clause
 license-file:   LICENSE
 build-type:     Simple
+tested-with:
+    GHC == 9.8.2
+  , GHC == 9.6.6
 extra-source-files:
     embed/preflight.css
     test/resources/basic.txt
@@ -86,6 +89,8 @@ test-suite test
       DuplicateRecordFields
       NoFieldSelectors
   ghc-options: -Wall -fdefer-typed-holes -threaded -rtsopts -with-rtsopts=-N -F -pgmF=skeletest-preprocessor
+  build-tool-depends:
+      skeletest:skeletest-preprocessor
   build-depends:
       Diff >=0.5 && <1.0
     , base >=4.16 && <5

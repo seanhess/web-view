@@ -32,6 +32,10 @@ ghc-options:
   - -Wall
   - -fdefer-typed-holes
 
+tested-with:
+  - GHC == 9.8.2
+  - GHC == 9.6.6
+
 default-extensions:
   - OverloadedStrings
   - OverloadedRecordDot

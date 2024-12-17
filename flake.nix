@@ -43,6 +43,18 @@
             web-view = hfinal.callCabal2nix "web-view" web-view-src { };
           });
           packages = prev.haskell.packages // {
+            ghc982 = prev.haskell.packages.ghc982.override (old: {
+              overrides = prev.lib.composeExtensions (old.overrides or (_: _: { })) (
+                hfinal: hprev: {
+                  # attoparsec-aeson = hfinal.callHackage "attoparsec-aeson" "2.2.0.0" { };
+                  skeletest = hprev.skeletest.overrideAttrs (old: {
+                    meta = old.meta // { broken = false; };
+                  });
+                  Diff = hfinal.callHackage "Diff" "0.5" { };
+                  # aeson = hfinal.callHackage "aeson" "2.2.2.0" { };
+                }
+              );
+            });
             ghc966 = prev.haskell.packages.ghc966.override (old: {
               overrides = prev.lib.composeExtensions (old.overrides or (_: _: { })) (
                 hfinal: hprev: {
@@ -67,8 +79,23 @@
       let
         pkgs = import inputs.nixpkgs {
           inherit system;
-          # overlays = [ self.overlays.default ];
         };
+
+        pkgsOverlayed = import inputs.nixpkgs {
+          inherit system;
+          overlays = [ self.overlays.default ];
+        };
+
+        # Define GHC versions list
+        ghcVersions = [ "966" "982" ];
+
+        # Create an attrset of GHC packages
+        ghcPkgs = builtins.listToAttrs (map
+          (version: {
+            name = "ghc${version}";
+            value = pkgsOverlayed.haskell.packages."ghc${version}";
+          })
+          ghcVersions);
 
         example-src = nix-filter.lib {
           root = ./example;
@@ -76,29 +103,13 @@
             (nix-filter.lib.inDirectory "app")
             ./example/example.cabal
             ./example/cabal.project
+            ./example/LICENSE
           ];
         };
 
-        myHaskellPackages = (import inputs.nixpkgs {
-          inherit system;
-          overlays = [ self.overlays.default ];
-        }).haskell.packages.ghc966.override (old: {
-          overrides = pkgs.lib.composeExtensions (old.overrides or (_: _: { })) (
-            hfinal: hprev: {
-              # attoparsec-aeson = hfinal.callHackage "attoparsec-aeson" "2.2.0.0" { };
-              # skeletest = hprev.skeletest.overrideAttrs (old: {
-              #   meta = old.meta // { broken = false; };
-              # });
-              # Diff = hfinal.callHackage "Diff" "0.5" { };
-              # aeson = hfinal.callHackage "aeson" "2.2.2.0" { };
-            }
-          );
-        });
-
-        shellCommon = {
+        shellCommon = version: {
           inherit (self.checks.${system}.pre-commit-check) shellHook;
-          # don't use the modified package set to build dev tools
-          buildInputs = with pkgs.haskellPackages; [
+          buildInputs = with pkgs.haskell.packages."ghc${version}"; [
             cabal-install
             haskell-language-server
             fast-tags
@@ -111,15 +122,21 @@
           CABAL_CONFIG = "/dev/null";
         };
 
+        # Create examples for each GHC version
+        examples = builtins.listToAttrs (map
+          (version: {
+            name = "ghc${version}-example";
+            value = ghcPkgs."ghc${version}".callCabal2nix "example" example-src { };
+          })
+          ghcVersions);
+
       in
       {
         checks = {
           pre-commit-check = git-hooks.lib.${system}.run {
             src = web-view-src;
             hooks = {
-              # hlint.enable = true;
-              # hpack.enable = true;
-              # fourmolu.enable = true;
+              hpack.enable = true;
               nixpkgs-fmt.enable = true;
               flake-checker = {
                 enable = true;
@@ -128,27 +145,70 @@
               check-merge-conflicts.enable = true;
             };
           };
-        };
+        } // builtins.listToAttrs (
+          # Generate checks
+          builtins.concatMap
+            (version: [
+              {
+                name = "ghc${version}-check";
+                value = self.packages.${system}."ghc${version}-web-view";
+              }
+              {
+                name = "ghc${version}-check-example";
+                value = examples."ghc${version}-example";
+              }
+            ])
+            ghcVersions
+        );
+
+        apps = {
+          default = self.apps.${system}.ghc966-example;
+        } // builtins.listToAttrs (
+          # Generate apps
+          map
+            (version: {
+              name = "ghc${version}-example";
+              value = {
+                type = "app";
+                program = "${pkgs.haskell.lib.justStaticExecutables examples."ghc${version}-example"}/bin/example";
+              };
+            })
+            ghcVersions
+        );
 
         packages = {
-          default = self.packages.${system}.web-view;
-          web-view = myHaskellPackages.web-view;
-        };
+          default = self.packages.${system}.ghc982-web-view;
+        } // builtins.listToAttrs (
+          # Generate packages
+          map
+            (version: {
+              name = "ghc${version}-web-view";
+              value = ghcPkgs."ghc${version}".web-view;
+            })
+            ghcVersions
+        );
 
         devShells = {
-          default = self.devShells.${system}.web-view;
-          web-view = myHaskellPackages.shellFor (
-            shellCommon // { packages = p: [ p.web-view ]; }
-          );
-          example = myHaskellPackages.shellFor (
-            shellCommon
-            // {
-              packages = _: [
-                (myHaskellPackages.callCabal2nix "example" example-src { })
-              ];
-            }
-          );
-        };
+          default = self.devShells.${system}.ghc982-web-view;
+        } // builtins.listToAttrs (
+          # Generate devShells
+          builtins.concatMap
+            (version: [
+              {
+                name = "ghc${version}-web-view";
+                value = ghcPkgs."ghc${version}".shellFor (
+                  shellCommon version // { packages = p: [ p.web-view ]; }
+                );
+              }
+              {
+                name = "ghc${version}-example";
+                value = ghcPkgs."ghc${version}".shellFor (
+                  shellCommon version // { packages = _: [ examples."ghc${version}-example" ]; }
+                );
+              }
+            ])
+            ghcVersions
+        );
       }
     );
 }
