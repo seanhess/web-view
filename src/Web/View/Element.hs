@@ -17,7 +17,7 @@ import Web.View.View
 
 > el (bold . pad 10) "Hello"
 -}
-el :: Mod -> View c () -> View c ()
+el :: Mod c -> View c () -> View c ()
 el = tag "div"
 
 
@@ -57,39 +57,39 @@ none :: View c ()
 none = pure ()
 
 
-pre :: Mod -> Text -> View c ()
+pre :: Mod c -> Text -> View c ()
 pre f t = tag "pre" f (text t)
 
 
 -- | A hyperlink to the given url
-link :: Url -> Mod -> View c () -> View c ()
+link :: Url -> Mod c -> View c () -> View c ()
 link u f = tag "a" (att "href" (renderUrl u) . f)
 
 
 -- * Inputs
 
 
-form :: Mod -> View c () -> View c ()
+form :: Mod c -> View c () -> View c ()
 form f = tag "form" (f . flexCol)
 
 
-input :: Mod -> View c ()
+input :: Mod c -> View c ()
 input m = tag "input" (m . att "type" "text") none
 
 
-name :: Text -> Mod
+name :: Text -> Mod c
 name = att "name"
 
 
-value :: Text -> Mod
+value :: Text -> Mod c
 value = att "value"
 
 
-label :: Mod -> View c () -> View c ()
+label :: Mod c -> View c () -> View c ()
 label = tag "label"
 
 
-button :: Mod -> View c () -> View c ()
+button :: Mod c -> View c () -> View c ()
 button = tag "button"
 
 
@@ -122,7 +122,7 @@ stylesheet href = tag "link" (att "rel" "stylesheet" . att "href" href) none
 >   hd = cell . bold
 >   cell = pad 4 . border 1
 -}
-table :: Mod -> [dt] -> Eff '[Writer [TableColumn c dt]] () -> View c ()
+table :: Mod c -> [dt] -> Eff '[Writer [TableColumn c dt]] () -> View c ()
 table f dts wcs = do
   c <- context
   let cols = runPureEff . execWriter $ wcs
@@ -137,7 +137,7 @@ table f dts wcs = do
           forM_ cols $ \tc -> do
             addContext dt $ tc.dataCell dt
  where
-  borderCollapse :: Mod
+  borderCollapse :: Mod c
   borderCollapse = addClass $ cls "brd-cl" & prop @Text "border-collapse" "collapse"
 
 
@@ -146,13 +146,13 @@ tcol hd view = do
   tell ([TableColumn hd view] :: [TableColumn c dt])
 
 
-th :: Mod -> View c () -> View (TableHead c) ()
+th :: Mod c -> View c () -> View (TableHead c) ()
 th f cnt = do
   TableHead c <- context
   addContext c $ tag "th" f cnt
 
 
-td :: Mod -> View () () -> View dt ()
+td :: Mod () -> View () () -> View dt ()
 td f c = addContext () $ tag "td" f c
 
 

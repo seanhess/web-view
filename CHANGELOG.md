@@ -1,5 +1,13 @@
 # Revision history for web-view
 
+## 0.6.0
+
+* stack - layout children on top of each other
+* ChildCombinator: apply styles to direct children
+* `Mod` is now `Mod context`, allowing for type-safe `Mod`s
+* fixed: escaping in auto-generated `<style>`
+* Refactored: selectors and rendering
+
 ## 0.5.0
 
 * Rendering improvements

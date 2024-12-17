@@ -23,14 +23,14 @@ import Web.View.Types
 >   el bold "Hello"
 >   el_ "World"
 
-They can also have a context which can be used to create type-safe or context-aware elements. See 'Web.View.Element.table' for an example
+They can also have a context which can be used to create type-safe or context-aware elements. See 'context' or 'Web.View.Element.table' for an example
 -}
 newtype View context a = View {viewState :: Eff [Reader context, State ViewState] a}
   deriving newtype (Functor, Applicative, Monad)
 
 
 instance IsString (View context ()) where
-  fromString s = viewModContents (const [Text (pack s)])
+  fromString s = viewAddContent $ Text (pack s)
 
 
 data ViewState = ViewState
@@ -49,18 +49,36 @@ runView ctx (View ef) =
   runPureEff . execState (ViewState [] []) . runReader ctx $ ef
 
 
--- | Get the current context
+{- | Views have a `Reader` built-in for convienient access to static data, and to add type-safety to view functions. See 'Web.View.Element.table' and https://hackage.haskell.org/package/hyperbole/docs/Web-Hyperbole.html
+
+> numberView :: View Int ()
+> numberView = do
+>   num <- context
+>   el_ $ do
+>     "Number: "
+>     text (pack $ show num)
+-}
 context :: View context context
 context = View ask
 
 
--- | Run a view with a specific `context` in a parent 'View' with a different context. This can be used to create type safe view functions, like 'Web.View.Element.table'
+{- | Run a view with a specific `context` in a parent 'View' with a different context.
+
+>
+> parentView :: View c ()
+> parentView = do
+>   addContext 1 numberView
+>   addContext 2 numberView
+>   addContext 3 numberView
+-}
 addContext :: context -> View context () -> View c ()
 addContext ctx vw = do
   -- runs the sub-view in a different context, saving its state
   -- we need to MERGE it
   let st = runView ctx vw
-  View $ ES.modify $ \s -> s <> st
+  View $ do
+    s <- get
+    put $ s <> st
 
 
 viewModContents :: ([Content] -> [Content]) -> View context ()
@@ -78,7 +96,7 @@ viewAddClasses clss = do
   viewModCss $ \cm -> foldr addClsDef cm clss
  where
   addClsDef :: Class -> CSS -> CSS
-  addClsDef c = M.insert c.selector c
+  addClsDef c = (c :)
 
 
 viewAddContent :: Content -> View c ()
@@ -100,19 +118,19 @@ viewInsertContents cs = viewModContents insert
 
 {- | Create a new element constructor with the given tag name
 
-> aside :: Mod -> View c () -> View c ()
+> aside :: Mod c -> View c () -> View c ()
 > aside = tag "aside"
 -}
-tag :: Text -> Mod -> View c () -> View c ()
+tag :: Text -> Mod c -> View c () -> View c ()
 tag n = tag' (element n)
 
 
 {- | Create a new element constructor with a custom element
  -
-> span :: Mod -> View c () -> View c ()
+> span :: Mod c -> View c () -> View c ()
 > span = tag' (Element True) "span"
 -}
-tag' :: (Attributes -> [Content] -> Element) -> Mod -> View c () -> View c ()
+tag' :: (Attributes c -> [Content] -> Element) -> Mod c -> View c () -> View c ()
 tag' mkElem f ct = do
   -- Applies the modifier and merges children into parent
   ctx <- context
@@ -120,7 +138,7 @@ tag' mkElem f ct = do
   let ats = f mempty
   let elm = mkElem ats st.contents
   viewAddContent $ Node elm
-  viewAddClasses $ M.elems st.css
+  viewAddClasses st.css
   viewAddClasses elm.attributes.classes
 
 
@@ -129,7 +147,7 @@ tag' mkElem f ct = do
 > hlink :: Text -> View c () -> View c ()
 > hlink url content = tag "a" (att "href" url) content
 -}
-att :: Name -> AttValue -> Mod
+att :: Name -> AttValue -> Mod c
 att n v attributes =
   let atts = M.insert n v attributes.other
    in attributes{other = atts}

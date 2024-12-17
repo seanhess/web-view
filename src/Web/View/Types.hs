@@ -4,6 +4,7 @@
 
 module Web.View.Types where
 
+import Data.Kind (Type)
 import Data.Map (Map)
 import Data.String (IsString (..))
 import Data.Text (Text, pack, unpack)
@@ -18,32 +19,39 @@ data Content
   | Text Text
   | -- | Raw embedded HTML or SVG. See 'Web.View.Element.raw'
     Raw Text
-  deriving (Show)
+  deriving (Show, Eq)
 
 
 -- | A single HTML tag. Note that the class attribute is stored separately from the rest of the attributes to make adding styles easier
 data Element = Element
   { inline :: Bool
   , name :: Name
-  , attributes :: Attributes
+  , attributes :: Attributes ()
   , children :: [Content]
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 
 -- | Construct an Element
-element :: Name -> Attributes -> [Content] -> Element
-element = Element False
+element :: Name -> Attributes c -> [Content] -> Element
+element n atts =
+  Element False n (stripContext atts)
+ where
+  stripContext :: Attributes c -> Attributes ()
+  stripContext (Attributes cls other) = Attributes cls other
 
 
-data Attributes = Attributes
+-- | The Attributes for an 'Element'. Classes are merged and managed separately from the other attributes.
+data Attributes c = Attributes
   { classes :: [Class]
   , other :: Map Name AttValue
   }
-  deriving (Show)
-instance Semigroup Attributes where
+  deriving (Show, Eq)
+
+
+instance Semigroup (Attributes c) where
   a1 <> a2 = Attributes (a1.classes <> a2.classes) (a1.other <> a2.other)
-instance Monoid Attributes where
+instance Monoid (Attributes c) where
   mempty = Attributes [] mempty
 type Attribute = (Name, AttValue)
 type Name = Text
@@ -53,14 +61,19 @@ type AttValue = Text
 -- * Attribute Modifiers
 
 
-{- | Element functions expect a Mod function as their first argument that adds attributes and classes.
+{- | Element functions expect a modifier function as their first argument. These can add attributes and classes. Combine multiple `Mod`s with (`.`)
 
 > userEmail :: User -> View c ()
 > userEmail user = input (fontSize 16 . active) (text user.email)
 >   where
 >     active = isActive user then bold else id
+
+If you don't want to specify any attributes, you can use `id`
+
+> plainView :: View c ()
+> plainView = el id "No styles"
 -}
-type Mod = Attributes -> Attributes
+type Mod (context :: Type) = Attributes context -> Attributes context
 
 
 -- * Atomic CSS
@@ -69,7 +82,7 @@ type Mod = Attributes -> Attributes
 -- TODO: document atomic CSS here?
 
 -- | All the atomic classes used in a 'Web.View.View'
-type CSS = Map Selector Class
+type CSS = [Class]
 
 
 -- | Atomic classes include a selector and the corresponding styles
@@ -77,7 +90,7 @@ data Class = Class
   { selector :: Selector
   , properties :: Styles
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 
 -- | The styles to apply for a given atomic 'Class'
@@ -130,24 +143,33 @@ selector c =
 newtype ClassName = ClassName
   { text :: Text
   }
-  deriving newtype (Eq, Ord, IsString, Show)
+  deriving newtype (Eq, Ord, Show, Monoid, Semigroup)
+
+
+instance IsString ClassName where
+  fromString s = ClassName $ pack s
+
+
+-- | Create a class name, escaping special characters
+className :: Text -> ClassName
+className = ClassName . T.toLower . T.map noDot
+ where
+  noDot '.' = '-'
+  noDot c = c
 
 
 -- | Convert a type into a className segment to generate unique compound style names based on the value
 class ToClassName a where
-  toClassName :: a -> Text
-  default toClassName :: (Show a) => a -> Text
-  toClassName = T.toLower . T.pack . show
+  toClassName :: a -> ClassName
+  default toClassName :: (Show a) => a -> ClassName
+  toClassName = className . T.pack . show
 
 
 instance ToClassName Int
 instance ToClassName Text where
-  toClassName = id
+  toClassName = className
 instance ToClassName Float where
-  toClassName f = pack $ map noDot $ showFFloat (Just 3) f ""
-   where
-    noDot '.' = '-'
-    noDot c = c
+  toClassName f = className $ pack $ showFFloat (Just 3) f ""
 
 
 {- | Psuedos allow for specifying styles that only apply in certain conditions. See `Web.View.Style.hover` etc
@@ -164,7 +186,7 @@ data Pseudo
 
 -- | The value of a css style property
 newtype StyleValue = StyleValue String
-  deriving newtype (IsString, Show)
+  deriving newtype (IsString, Show, Eq)
 
 
 -- | Use a type as a css style property value
@@ -191,8 +213,7 @@ instance ToStyleValue Float where
 
 
 data Length
-  = -- | Px, converted to Rem. Allows for the user to change the document font size and have the app scale accordingly. But allows the programmer to code in pixels to match a design
-    PxRem PxRem
+  = PxRem PxRem
   | Pct Float
   deriving (Show)
 
@@ -202,6 +223,7 @@ instance ToClassName Length where
   toClassName (Pct p) = toClassName p
 
 
+-- | Px, converted to Rem. Allows for the user to change the document font size and have the app scale accordingly. But allows the programmer to code in pixels to match a design
 newtype PxRem = PxRem' Int
   deriving newtype (Show, ToClassName, Num, Eq, Integral, Real, Ord, Enum)
 
@@ -320,7 +342,7 @@ instance IsString HexColor where
 
 
 instance ToClassName HexColor where
-  toClassName = colorName
+  toClassName = className . colorName
 
 
 data Align

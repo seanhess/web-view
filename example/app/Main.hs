@@ -7,7 +7,6 @@ import Network.HTTP.Types (status200, status404)
 import Network.Wai
 import Network.Wai.Handler.Warp as Warp
 import Web.View
-import Web.View.Layout
 
 
 main :: IO ()
@@ -95,6 +94,16 @@ stacks = layout id $ do
         el (bg Primary . pad 10 . color White) "Max Above!"
 
 
+tests :: View c ()
+tests = col (gap 10) $ do
+  el (bg Warning . bg Error) "Error"
+  el (bg Error . bg Warning) "Warning"
+
+  el (pad 10) $ do
+    el (parent "htmx-request" flexRow . hide) "Loading..."
+    el (parent "htmx-request" hide . flexRow) "Normal Content"
+
+
 examples :: View c ()
 examples = col (pad 20 . gap 15) $ do
   el (bold . fontSize 24) "Layout"
@@ -114,6 +123,7 @@ app req respond = do
     ["responsive"] -> view responsive
     ["holygrail"] -> view holygrail
     ["stacks"] -> view stacks
+    ["tests"] -> view tests
     _ -> notFound
  where
   html h =

@@ -17,7 +17,7 @@ import Web.View.Types
 
 
 -- | Set to a specific width
-width :: Length -> Mod
+width :: Length -> Mod c
 width n =
   addClass $
     cls ("w" -. n)
@@ -26,7 +26,7 @@ width n =
 
 
 -- | Set to a specific height
-height :: Length -> Mod
+height :: Length -> Mod c
 height n =
   addClass $
     cls ("h" -. n)
@@ -35,7 +35,7 @@ height n =
 
 
 -- | Allow width to grow to contents but not shrink any smaller than value
-minWidth :: Length -> Mod
+minWidth :: Length -> Mod c
 minWidth n =
   addClass $
     cls ("mw" -. n)
@@ -43,7 +43,7 @@ minWidth n =
 
 
 -- | Allow height to grow to contents but not shrink any smaller than value
-minHeight :: Length -> Mod
+minHeight :: Length -> Mod c
 minHeight n =
   addClass $
     cls ("mh" -. n)
@@ -59,7 +59,7 @@ To create even spacing around and between all elements:
 >   el_ "two"
 >   el_ "three"
 -}
-pad :: Sides Length -> Mod
+pad :: Sides Length -> Mod c
 pad (All n) =
   addClass $
     cls ("pad" -. n)
@@ -91,19 +91,19 @@ pad (TRBL t r b l) =
 
 
 -- | The space between child elements. See 'pad'
-gap :: Length -> Mod
+gap :: Length -> Mod c
 gap n = addClass $ cls ("gap" -. n) & prop "gap" n
 
 
-fontSize :: Length -> Mod
+fontSize :: Length -> Mod c
 fontSize n = addClass $ cls ("fs" -. n) & prop "font-size" n
 
 
--- fontFamily :: Text -> Mod
+-- fontFamily :: Text -> Mod c
 -- fontFamily t = cls1 $ Class ("font" -. n) [("font-family", pxRem n)]
 
 -- | Set container to be a row. Favor 'Web.View.Layout.row' when possible
-flexRow :: Mod
+flexRow :: Mod c
 flexRow =
   addClass $
     cls "row"
@@ -112,7 +112,7 @@ flexRow =
 
 
 -- | Set container to be a column. Favor 'Web.View.Layout.col' when possible
-flexCol :: Mod
+flexCol :: Mod c
 flexCol =
   addClass $
     cls "col"
@@ -121,7 +121,7 @@ flexCol =
 
 
 -- | Adds a basic drop shadow to an element
-shadow :: Mod
+shadow :: Mod c
 shadow =
   addClass $
     cls "shadow"
@@ -129,12 +129,12 @@ shadow =
 
 
 -- | Round the corners of the element
-rounded :: Length -> Mod
+rounded :: Length -> Mod c
 rounded n = addClass $ cls ("rnd" -. n) & prop "border-radius" n
 
 
 -- | Set the background color. See 'Web.View.Types.ToColor'
-bg :: (ToColor c) => c -> Mod
+bg :: (ToColor clr) => clr -> Mod ctx
 bg c =
   addClass $
     cls ("bg" -. colorName c)
@@ -142,23 +142,23 @@ bg c =
 
 
 -- | Set the text color. See 'Web.View.Types.ToColor'
-color :: (ToColor c) => c -> Mod
+color :: (ToColor clr) => clr -> Mod ctx
 color c = addClass $ cls ("clr" -. colorName c) & prop "color" (colorValue c)
 
 
-bold :: Mod
+bold :: Mod c
 bold = addClass $ cls "bold" & prop @Text "font-weight" "bold"
 
 
 -- | Hide an element. See 'parent' and 'media'
-hide :: Mod
+hide :: Mod c
 hide =
   addClass $
     cls "hide"
       & prop @Text "display" "none"
 
 
-opacity :: Float -> Mod
+opacity :: Float -> Mod c
 opacity n =
   addClass $
     cls ("opacity" -. n)
@@ -170,7 +170,7 @@ opacity n =
 > el (border 1) "all sides"
 > el (border (X 1)) "only left and right"
 -}
-border :: Sides PxRem -> Mod
+border :: Sides PxRem -> Mod c
 border (All p) =
   addClass $
     cls ("brd" -. p)
@@ -203,7 +203,7 @@ border (TRBL t r b l) =
 
 
 -- | Set a border color. See 'Web.View.Types.ToColor'
-borderColor :: (ToColor c) => c -> Mod
+borderColor :: (ToColor clr) => clr -> Mod ctx
 borderColor c =
   addClass $
     cls ("brdc" -. colorName c)
@@ -220,12 +220,12 @@ Button-like elements:
 >   el btn "Login"
 >   el btn "Sign Up"
 -}
-pointer :: Mod
+pointer :: Mod c
 pointer = addClass $ cls "pointer" & prop @Text "cursor" "pointer"
 
 
 -- | Cut off the contents of the element
-truncate :: Mod
+truncate :: Mod c
 truncate =
   addClass $
     cls "truncate"
@@ -239,7 +239,7 @@ truncate =
 > el (transition 100 (Height 400)) "Tall"
 > el (transition 100 (Height 100)) "Small"
 -}
-transition :: Ms -> TransitionProperty -> Mod
+transition :: Ms -> TransitionProperty -> Mod c
 transition ms = \case
   (Height n) -> trans "height" n
   (Width n) -> trans "width" n
@@ -263,7 +263,7 @@ data TransitionProperty
   deriving (Show)
 
 
-textAlign :: Align -> Mod
+textAlign :: Align -> Mod c
 textAlign a =
   addClass $
     cls ("ta" -. a)
@@ -277,22 +277,22 @@ textAlign a =
 
 > el (bg Primary . hover (bg PrimaryLight)) "Hover"
 -}
-hover :: Mod -> Mod
+hover :: Mod c -> Mod c
 hover = applyPseudo Hover
 
 
 -- | Apply when the mouse is pressed down on an element
-active :: Mod -> Mod
+active :: Mod c -> Mod c
 active = applyPseudo Active
 
 
 -- | Apply to even-numbered children
-even :: Mod -> Mod
+even :: Mod c -> Mod c
 even = applyPseudo Even
 
 
 -- | Apply to odd-numbered children
-odd :: Mod -> Mod
+odd :: Mod c -> Mod c
 odd = applyPseudo Odd
 
 
@@ -301,7 +301,7 @@ odd = applyPseudo Odd
 > el (width 100 . media (MinWidth 800) (width 400))
 >   "Big if window > 800"
 -}
-media :: Media -> Mod -> Mod
+media :: Media -> Mod c -> Mod c
 media m = mapModClass $ \c ->
   c
     { selector = addMedia c.selector
@@ -319,7 +319,7 @@ For example, the HTMX library applies an "htmx-request" class to the body when a
 >   el (parent "htmx-request" flexRow . hide) "Loading..."
 >   el (parent "htmx-request" hide . flexRow) "Normal Content"
 -}
-parent :: Text -> Mod -> Mod
+parent :: Text -> Mod c -> Mod c
 parent p = mapModClass $ \c ->
   c
     { selector = addAncestor c.selector
@@ -330,7 +330,7 @@ parent p = mapModClass $ \c ->
 
 
 -- Add a pseudo-class like Hover to your style
-applyPseudo :: Pseudo -> Mod -> Mod
+applyPseudo :: Pseudo -> Mod c -> Mod c
 applyPseudo ps = mapModClass $ \c ->
   c
     { selector = addToSelector c.selector
@@ -340,7 +340,7 @@ applyPseudo ps = mapModClass $ \c ->
   addToSelector Selector{..} = Selector{pseudo = Just ps, ..}
 
 
-mapModClass :: (Class -> Class) -> Mod -> Mod
+mapModClass :: (Class -> Class) -> Mod c -> Mod c
 mapModClass fc fm as =
   -- apply the function to all classes added by the mod
   -- ignore
@@ -350,6 +350,15 @@ mapModClass fc fm as =
         , other = as.other <> as'.other
         }
 
+
+{- | Setting the same property twice will result in only one of the classes being applied. It is not intuitive, as CSS rules dictate that the order of the class definitions determine precedence. You can mark a `Mod` as important to force it to apply
+important :: Mod c -> Mod c
+important =
+  mapModClass $ \c ->
+    c
+      { important = True
+      }
+-}
 
 -- * Creating New Styles
 
@@ -363,7 +372,7 @@ mapModClass fc fm as =
 >     & prop "width" n
 >     & prop @Int "flex-shrink" 0
 -}
-addClass :: Class -> Mod
+addClass :: Class -> Mod c
 addClass c attributes =
   Attributes
     { classes = c : attributes.classes
@@ -380,7 +389,7 @@ cls n = Class (selector n) []
 
 > el (extClass "btn" . extClass "btn-primary") "Click me!"
 -}
-extClass :: ClassName -> Mod
+extClass :: ClassName -> Mod c
 extClass = addClass . cls
 
 
@@ -390,9 +399,9 @@ prop n v c =
   c{properties = M.insert n (toStyleValue v) c.properties}
 
 
--- | Hyphneate classnames
+-- | Hyphenate classnames
 (-.) :: (ToClassName a) => ClassName -> a -> ClassName
-(ClassName n) -. a = ClassName $ n <> "-" <> toClassName a
+(ClassName n) -. a = (ClassName $ n <> "-") <> toClassName a
 
 
 infixl 6 -.
