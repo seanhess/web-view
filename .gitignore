@@ -10,3 +10,4 @@ build
 result
 # Auto-generated pre-commit config
 .pre-commit-config.yaml
+cabal.project.local

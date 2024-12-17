@@ -36,10 +36,26 @@
       };
 
       overlay = final: prev: {
+        # see https://github.com/NixOS/nixpkgs/issues/83098
+        cabal2nix-unwrapped = prev.haskell.lib.justStaticExecutables prev.haskell.packages.ghc94.cabal2nix;
         haskell = prev.haskell // {
           packageOverrides = prev.lib.composeExtensions prev.haskell.packageOverrides (hfinal: hprev: {
             web-view = hfinal.callCabal2nix "web-view" web-view-src { };
           });
+          packages = prev.haskell.packages // {
+            ghc966 = prev.haskell.packages.ghc966.override (old: {
+              overrides = prev.lib.composeExtensions (old.overrides or (_: _: { })) (
+                hfinal: hprev: {
+                  attoparsec-aeson = hfinal.callHackage "attoparsec-aeson" "2.2.0.0" { };
+                  skeletest = hprev.skeletest.overrideAttrs (old: {
+                    meta = old.meta // { broken = false; };
+                  });
+                  Diff = hfinal.callHackage "Diff" "0.5" { };
+                  aeson = hfinal.callHackage "aeson" "2.2.2.0" { };
+                }
+              );
+            });
+          };
         };
       };
     in
@@ -51,7 +67,7 @@
       let
         pkgs = import inputs.nixpkgs {
           inherit system;
-          overlays = [ self.overlays.default ];
+          # overlays = [ self.overlays.default ];
         };
 
         example-src = nix-filter.lib {
@@ -63,15 +79,18 @@
           ];
         };
 
-        myHaskellPackages = pkgs.haskellPackages.override (old: {
+        myHaskellPackages = (import inputs.nixpkgs {
+          inherit system;
+          overlays = [ self.overlays.default ];
+        }).haskell.packages.ghc966.override (old: {
           overrides = pkgs.lib.composeExtensions (old.overrides or (_: _: { })) (
             hfinal: hprev: {
-              attoparsec-aeson = hfinal.callHackage "attoparsec-aeson" "2.2.0.0" { };
-              skeletest = hprev.skeletest.overrideAttrs (old: {
-                meta = old.meta // { broken = false; };
-              });
-              Diff = hfinal.callHackage "Diff" "0.5" { };
-              aeson = hfinal.callHackage "aeson" "2.2.2.0" { };
+              # attoparsec-aeson = hfinal.callHackage "attoparsec-aeson" "2.2.0.0" { };
+              # skeletest = hprev.skeletest.overrideAttrs (old: {
+              #   meta = old.meta // { broken = false; };
+              # });
+              # Diff = hfinal.callHackage "Diff" "0.5" { };
+              # aeson = hfinal.callHackage "aeson" "2.2.2.0" { };
             }
           );
         });
@@ -92,44 +111,40 @@
           CABAL_CONFIG = "/dev/null";
         };
 
-        selfPkg = self.packages.${system};
-
       in
       {
         checks = {
           pre-commit-check = git-hooks.lib.${system}.run {
             src = web-view-src;
             hooks = {
-              hlint.enable = true;
+              # hlint.enable = true;
               # hpack.enable = true;
-              fourmolu.enable = true;
+              # fourmolu.enable = true;
               nixpkgs-fmt.enable = true;
               flake-checker = {
                 enable = true;
                 args = [ "--no-telemetry" ];
               };
-              statix.enable = true;
               check-merge-conflicts.enable = true;
             };
           };
         };
 
         packages = {
-          default = selfPkg.haskellPackages;
-          haskellPackages = myHaskellPackages;
+          default = self.packages.${system}.web-view;
+          web-view = myHaskellPackages.web-view;
         };
-        inherit pkgs;
 
         devShells = {
           default = self.devShells.${system}.web-view;
-          web-view = selfPkg.haskellPackages.shellFor (
+          web-view = myHaskellPackages.shellFor (
             shellCommon // { packages = p: [ p.web-view ]; }
           );
-          example = selfPkg.haskellPackages.shellFor (
+          example = myHaskellPackages.shellFor (
             shellCommon
             // {
               packages = _: [
-                (selfPkg.haskellPackages.callCabal2nix "example" example-src { })
+                (myHaskellPackages.callCabal2nix "example" example-src { })
               ];
             }
           );

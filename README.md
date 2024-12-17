@@ -86,8 +86,7 @@ nix develop ../#example
 cabal run
 ```
 
-You can import this flake's overlay to add `web-view` to all package sets. However,
-you may need override packages to satisfy `web-view`'s dependencies.
+You can import this flake's overlay to add `web-view` to all package sets and override ghc966 with the packages to satisfy `web-view`'s dependencies.
 
 ```nix
 {
@@ -105,7 +104,7 @@ you may need override packages to satisfy `web-view`'s dependencies.
           inherit system;
           overlays = [ web-view.overlays.default ];
         };
-        haskellPackagesOverride = pkgs.haskellPackages.override (old: {
+        haskellPackagesOverride = pkgs.haskell.packages.ghc966.override (old: {
           overrides = pkgs.lib.composeExtensions (old.overrides or (_: _: { })) (hfinal: hprev: {
             # your overrides here
           });
@@ -118,16 +117,6 @@ you may need override packages to satisfy `web-view`'s dependencies.
       }
     );
 }
-```
-
-Or you can import the haskellPackages set used to build `web-view` and override them with your packages.
-
-```nix
-    haskellPackagesOverride = web-view.packages.${system}.haskellPackages.override (old: {
-      overrides = pkgs.lib.composeExtensions (old.overrides or (_: _: {})) (hfinal: hprev: {
-        ...
-      });
-    });
 ```
 
 
