@@ -146,7 +146,7 @@ View [Examples](https://github.com/seanhess/web-view/blob/latest/example/app/Mai
 Contributors
 ------------
 
-* [Sean Hess](seanhess)
+* [Sean Hess](https://github.com/seanhess)
 * [Kamil Figiela](https://github.com/kfigiela)
 * [Pfalzgraf Martin](https://github.com/Skyfold)
 
