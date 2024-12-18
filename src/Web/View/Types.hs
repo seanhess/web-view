@@ -43,7 +43,7 @@ element n atts =
 
 -- | The Attributes for an 'Element'. Classes are merged and managed separately from the other attributes.
 data Attributes c = Attributes
-  { classes :: [Class]
+  { classes :: CSS
   , other :: Map Name AttValue
   }
   deriving (Show, Eq)
@@ -52,7 +52,7 @@ data Attributes c = Attributes
 instance Semigroup (Attributes c) where
   a1 <> a2 = Attributes (a1.classes <> a2.classes) (a1.other <> a2.other)
 instance Monoid (Attributes c) where
-  mempty = Attributes [] mempty
+  mempty = Attributes mempty mempty
 type Attribute = (Name, AttValue)
 type Name = Text
 type AttValue = Text
@@ -82,7 +82,7 @@ type Mod (context :: Type) = Attributes context -> Attributes context
 -- TODO: document atomic CSS here?
 
 -- | All the atomic classes used in a 'Web.View.View'
-type CSS = [Class]
+type CSS = Map Selector Class
 
 
 -- | Atomic classes include a selector and the corresponding styles

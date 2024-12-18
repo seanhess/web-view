@@ -91,12 +91,12 @@ viewModCss f = View $ do
   ES.modify $ \s -> s{css = f s.css}
 
 
-viewAddClasses :: [Class] -> View c ()
+viewAddClasses :: CSS -> View c ()
 viewAddClasses clss = do
   viewModCss $ \cm -> foldr addClsDef cm clss
  where
   addClsDef :: Class -> CSS -> CSS
-  addClsDef c = (c :)
+  addClsDef c = M.insert c.selector c
 
 
 viewAddContent :: Content -> View c ()

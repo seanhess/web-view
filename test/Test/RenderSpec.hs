@@ -55,8 +55,13 @@ renderSpec = do
       renderLines (renderCSS (runCSS view)) `shouldBe` ".bold { font-weight:bold }"
 
     it "should skip css element when no css rules" $ do
-      let res = renderText $ el (addClass $ cls "empty") "i have no css"
+      let res = renderText $ el empty "i have no css"
       res `shouldBe` "<div class='empty'>i have no css</div>"
+
+    it "should render classes only once" $ do
+      let single = el bold "test"
+      let double = el (bold . bold) "test"
+      renderText double `shouldBe` renderText single
 
   describe "inline" $ do
     it "renderLines should respect inline text " $ do
@@ -83,6 +88,8 @@ renderSpec = do
               el_ $ do
                 el_ "HI"
       out `shouldBe` golden
+ where
+  empty = addClass $ cls "empty"
 
 
 selectorSpec :: Spec

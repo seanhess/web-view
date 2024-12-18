@@ -8,7 +8,7 @@ module Web.View.Render where
 
 import Data.ByteString.Lazy qualified as BL
 import Data.Function ((&))
-import Data.List (foldl', sortOn)
+import Data.List (foldl')
 import Data.Map qualified as M
 import Data.Maybe (mapMaybe)
 import Data.String (fromString)
@@ -141,14 +141,14 @@ addIndent n (Line e ind t) = Line e (ind + n) t
 
 
 renderCSS :: CSS -> [Line]
-renderCSS = mapMaybe renderClass . sortOn (.selector)
-  where
-    renderClass :: Class -> Maybe Line
-    renderClass c | M.null c.properties = Nothing
-    renderClass c =
-        let sel = selectorText c.selector
-            props = intercalate "; " (map renderProp $ M.toList c.properties)
-         in Just $ Line Newline 0 $ [i|#{sel} { #{props} }|] & addMedia c.selector.media
+renderCSS = mapMaybe renderClass . M.elems
+ where
+  renderClass :: Class -> Maybe Line
+  renderClass c | M.null c.properties = Nothing
+  renderClass c =
+    let sel = selectorText c.selector
+        props = intercalate "; " (map renderProp $ M.toList c.properties)
+     in Just $ Line Newline 0 $ [i|#{sel} { #{props} }|] & addMedia c.selector.media
 
     addMedia Nothing css = css
     addMedia (Just m) css =
@@ -247,11 +247,12 @@ pseudoText p = toLower $ pack $ show p
 -- | The 'Web.View.Types.Attributes' for an element, inclusive of class.
 flatAttributes :: Element -> FlatAttributes
 flatAttributes t =
-    FlatAttributes $
-        addClass t.attributes.classes t.attributes.other
-  where
-    addClass [] atts = atts
-    addClass cx atts = M.insert "class" (classAttValue cx) atts
+  FlatAttributes $
+    addClass t.attributes.classes t.attributes.other
+ where
+  addClass css atts
+    | M.null css = atts
+    | otherwise = M.insert "class" (classAttValue $ M.elems css) atts
 
     classAttValue :: [Class] -> Text
     classAttValue cx =
