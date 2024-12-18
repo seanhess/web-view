@@ -46,12 +46,13 @@
             ghc982 = prev.haskell.packages.ghc982.override (old: {
               overrides = prev.lib.composeExtensions (old.overrides or (_: _: { })) (
                 hfinal: hprev: {
-                  # attoparsec-aeson = hfinal.callHackage "attoparsec-aeson" "2.2.0.0" { };
                   skeletest = hprev.skeletest.overrideAttrs (old: {
                     meta = old.meta // { broken = false; };
                   });
                   Diff = hfinal.callHackage "Diff" "0.5" { };
-                  # aeson = hfinal.callHackage "aeson" "2.2.2.0" { };
+                  http2 = hprev.http2.overrideAttrs (_: {
+                    doCheck = !(prev.stdenv.buildPlatform.isDarwin && prev.stdenv.build.isAarch64);
+                  });
                 }
               );
             });
@@ -64,6 +65,9 @@
                   });
                   Diff = hfinal.callHackage "Diff" "0.5" { };
                   aeson = hfinal.callHackage "aeson" "2.2.2.0" { };
+                  http2 = hprev.http2.overrideAttrs (_: {
+                    doCheck = !(prev.stdenv.buildPlatform.isDarwin && prev.stdenv.build.isAarch64);
+                  });
                 }
               );
             });
@@ -155,7 +159,7 @@
               }
               {
                 name = "ghc${version}-check-example";
-                value = examples."ghc${version}-example";
+                value = pkgs.haskell.lib.justStaticExecutables examples."ghc${version}-example";
               }
             ])
             ghcVersions
