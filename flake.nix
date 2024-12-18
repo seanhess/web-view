@@ -50,9 +50,6 @@
                     meta = old.meta // { broken = false; };
                   });
                   Diff = hfinal.callHackage "Diff" "0.5" { };
-                  http2 = hprev.http2.overrideAttrs (_: {
-                    doCheck = !prev.stdenv.buildPlatform.isDarwin;
-                  });
                 }
               );
             });
@@ -65,9 +62,6 @@
                   });
                   Diff = hfinal.callHackage "Diff" "0.5" { };
                   aeson = hfinal.callHackage "aeson" "2.2.2.0" { };
-                  http2 = hprev.http2.overrideAttrs (_: {
-                    doCheck = !prev.stdenv.buildPlatform.isDarwin;
-                  });
                 }
               );
             });
