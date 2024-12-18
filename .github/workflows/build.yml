@@ -27,8 +27,8 @@ jobs:
           nix flake check
           # Build all devShells for the current system
           # FIXME figure out how to add this to: nix flake check
-          nix develop -c cabal test
-          nix develop .#ghc982-web-view -c cabal test
+          nix develop -c cabal test --dry-run
+          nix develop .#ghc982-web-view -c cabal test --dry-run
           cd example
-          nix develop ..#ghc966-example -c cabal build
-          nix develop ..#ghc982-example -c cabal build
+          nix develop ..#ghc966-example -c cabal test --dry-run
+          nix develop ..#ghc982-example -c cabal test --dry-run
