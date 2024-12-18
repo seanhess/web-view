@@ -148,4 +148,5 @@ Contributors
 
 * [Sean Hess](seanhess)
 * [Kamil Figiela](https://github.com/kfigiela)
+* [Pfalzgraf Martin](https://github.com/Skyfold)
 
