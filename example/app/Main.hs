@@ -95,13 +95,27 @@ stacks = layout id $ do
 
 
 tests :: View c ()
-tests = col (gap 10) $ do
+tests = col (gap 10 . pad 20) $ do
   el (bg Warning . bg Error) "Error"
   el (bg Error . bg Warning) "Warning"
 
   el (pad 10) $ do
     el (parent "htmx-request" flexRow . hide) "Loading..."
     el (parent "htmx-request" hide . flexRow) "Normal Content"
+
+  el italic "Italic Text"
+  el underline "Underline Text"
+  el bold "Bold Text"
+
+  ol id $ do
+    li (list Decimal) "first"
+    li (list Decimal) "second"
+    li (list Decimal) "third"
+
+  ul id $ do
+    li (list Disc) "first"
+    li (list Disc) "second"
+    li (list None) "third"
 
 
 examples :: View c ()
