@@ -108,9 +108,11 @@ tests = col (gap 10 . pad 20) $ do
   el bold "Bold Text"
 
   ol id $ do
-    li (list Decimal) "first"
-    li (list Decimal) "second"
-    li (list Decimal) "third"
+    let nums = list Decimal
+    li nums "first"
+    li nums "second"
+    li nums "third"
+    col id "HELLO"
 
   ul id $ do
     li (list Disc) "first"

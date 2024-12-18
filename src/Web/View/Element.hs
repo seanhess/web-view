@@ -172,16 +172,24 @@ data TableColumn c dt = TableColumn
 -- * Lists
 
 
-data ListItem = ListItem
+data ListItem c = ListItem
 
 
-ul :: Mod c -> View ListItem () -> View c ()
-ul f cnt = tag "ul" f $ addContext ListItem cnt
+{- | List elements do not include any inherent styling but are useful for accessibility. See 'Web.View.Style.list'.
 
-
-ol :: Mod c -> View ListItem () -> View c ()
+> ol id $ do
+>  let nums = list Decimal
+>  li nums "one"
+>  li nums "two"
+>  li nums "three"
+-}
+ol :: Mod c -> View (ListItem c) () -> View c ()
 ol f cnt = tag "ol" f $ addContext ListItem cnt
 
 
-li :: Mod ListItem -> View ListItem () -> View ListItem ()
+ul :: Mod c -> View (ListItem c) () -> View c ()
+ul f cnt = tag "ul" f $ addContext ListItem cnt
+
+
+li :: Mod (ListItem c) -> View (ListItem c) () -> View (ListItem c) ()
 li = tag "li"
