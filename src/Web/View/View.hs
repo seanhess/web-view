@@ -49,7 +49,7 @@ runView ctx (View ef) =
   runPureEff . execState (ViewState [] []) . runReader ctx $ ef
 
 
-{- | Views have a `Reader` built-in for convienient access to static data, and to add type-safety to view functions. See 'Web.View.Element.table' and https://hackage.haskell.org/package/hyperbole/docs/Web-Hyperbole.html
+{- | Views have a `Reader` built-in for convienient access to static data, and to add type-safety to view functions. See 'Web.View.Element.ListItem and https://hackage.haskell.org/package/hyperbole/docs/Web-Hyperbole.html
 
 > numberView :: View Int ()
 > numberView = do

@@ -1,3 +1,6 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -120,12 +123,51 @@ flexCol =
       & prop @Text "flex-direction" "column"
 
 
+-- | Set container display to Block or none
+display :: (Style Display a, ToClassName a) => a -> Mod c
+display display =
+  addClass $
+    cls ("disp" -. display)
+      & prop "display" (styleValue @Display display)
+
+
+data Display
+  = Block
+  deriving (Show, ToClassName, ToStyleValue)
+instance Style Display Display
+instance Style Display None
+
+
+-- | Hide an element. See 'display'
+hide :: Mod c
+hide = display None
+
+
 -- | Adds a basic drop shadow to an element
 shadow :: Mod c
-shadow =
+shadow = shadow' ()
+
+
+shadow' :: (Style Shadow a, ToClassName a) => a -> Mod c
+shadow' a =
   addClass $
-    cls "shadow"
-      & prop @Text "box-shadow" "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)"
+    cls ("shadow" -. a)
+      & prop "box-shadow" (styleValue @Shadow a)
+
+
+-- "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)"
+
+data Shadow
+data Inner = Inner
+  deriving (Show, ToClassName)
+
+
+instance Style Shadow () where
+  styleValue _ = "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);"
+instance Style Shadow None where
+  styleValue _ = "0 0 #0000;"
+instance Style Shadow Inner where
+  styleValue _ = "inset 0 2px 4px 0 rgb(0 0 0 / 0.05);"
 
 
 -- | Round the corners of the element
@@ -150,12 +192,27 @@ bold :: Mod c
 bold = addClass $ cls "bold" & prop @Text "font-weight" "bold"
 
 
--- | Hide an element. See 'parent' and 'media'
-hide :: Mod c
-hide =
+italic :: Mod c
+italic = addClass $ cls "italic" & prop @Text "font-style" "italic"
+
+
+underline :: Mod c
+underline = addClass $ cls "underline" & prop @Text "text-decoration" "underline"
+
+
+list :: (ToClassName a, Style ListType a) => a -> Mod c
+list a =
   addClass $
-    cls "hide"
-      & prop @Text "display" "none"
+    cls ("list" -. a)
+      & prop "list-style-type" (styleValue @ListType a)
+
+
+data ListType
+  = Decimal
+  | Disc
+  deriving (Show, ToClassName, ToStyleValue)
+instance Style ListType ListType
+instance Style ListType None
 
 
 opacity :: Float -> Mod c
@@ -401,7 +458,17 @@ prop n v c =
 
 -- | Hyphenate classnames
 (-.) :: (ToClassName a) => ClassName -> a -> ClassName
-(ClassName n) -. a = (ClassName $ n <> "-") <> toClassName a
+(ClassName n) -. a =
+  case toClassName a of
+    "" -> ClassName n
+    suffix -> (ClassName $ n <> "-") <> suffix
 
 
 infixl 6 -.
+
+
+-- uniquely set the style value based on this
+class Style style value where
+  styleValue :: value -> StyleValue
+  default styleValue :: (ToStyleValue value) => value -> StyleValue
+  styleValue = toStyleValue

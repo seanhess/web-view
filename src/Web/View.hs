@@ -48,6 +48,7 @@ module Web.View
   , raw
   , none
   , pre
+  , code
 
     -- ** Inputs
   , form
@@ -57,6 +58,11 @@ module Web.View
   , label
   , link
   , button
+
+    -- ** Lists
+  , ol
+  , ul
+  , li
 
     -- ** Tables
   , table
@@ -78,6 +84,7 @@ module Web.View
   , minHeight
   , flexRow
   , flexCol
+  , display
   , pad
   , gap
   , hide
@@ -89,11 +96,14 @@ module Web.View
   , color
   , bg
   , bold
+  , italic
+  , underline
   , border
   , borderColor
   , pointer
   , transition
   , textAlign
+  , list
 
     -- ** Selector States
   , hover
@@ -121,6 +131,8 @@ module Web.View
   , ToColor (..)
   , HexColor (..)
   , Align (..)
+  , ListType (..)
+  , None (..)
 
     -- * Url
   , module Web.View.Types.Url

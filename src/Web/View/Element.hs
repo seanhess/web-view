@@ -61,6 +61,10 @@ pre :: Mod c -> Text -> View c ()
 pre f t = tag "pre" f (text t)
 
 
+code :: Mod c -> Text -> View c ()
+code f t = tag "code" f (text t)
+
+
 -- | A hyperlink to the given url
 link :: Url -> Mod c -> View c () -> View c ()
 link u f = tag "a" (att "href" (renderUrl u) . f)
@@ -163,3 +167,21 @@ data TableColumn c dt = TableColumn
   { headCell :: View (TableHead c) ()
   , dataCell :: dt -> View dt ()
   }
+
+
+-- * Lists
+
+
+data ListItem = ListItem
+
+
+ul :: Mod c -> View ListItem () -> View c ()
+ul f cnt = tag "ul" f $ addContext ListItem cnt
+
+
+ol :: Mod c -> View ListItem () -> View c ()
+ol f cnt = tag "ol" f $ addContext ListItem cnt
+
+
+li :: Mod ListItem -> View ListItem () -> View ListItem ()
+li = tag "li"

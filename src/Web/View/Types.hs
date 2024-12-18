@@ -170,6 +170,8 @@ instance ToClassName Text where
   toClassName = className
 instance ToClassName Float where
   toClassName f = className $ pack $ showFFloat (Just 3) f ""
+instance ToClassName () where
+  toClassName _ = ""
 
 
 {- | Psuedos allow for specifying styles that only apply in certain conditions. See `Web.View.Style.hover` etc
@@ -186,7 +188,7 @@ data Pseudo
 
 -- | The value of a css style property
 newtype StyleValue = StyleValue String
-  deriving newtype (IsString, Show, Eq)
+  deriving newtype (IsString, Show, Eq, Monoid, Semigroup)
 
 
 -- | Use a type as a css style property value
@@ -210,6 +212,10 @@ instance ToStyleValue Int
 instance ToStyleValue Float where
   -- this does not convert to a percent, just a ratio
   toStyleValue n = StyleValue $ showFFloat (Just 2) n ""
+
+
+instance ToStyleValue StyleValue where
+  toStyleValue = id
 
 
 data Length
@@ -348,3 +354,15 @@ instance ToClassName HexColor where
 data Align
   = Center
   deriving (Show, ToClassName, ToStyleValue)
+
+
+data None = None
+  deriving (Show, ToClassName, ToStyleValue)
+
+-- data Size
+--   = Sm
+--   | Md
+--   | Lg
+--   | Xl
+--   | Xl2
+--   deriving (Show, ToClassName)
