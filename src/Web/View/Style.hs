@@ -123,8 +123,8 @@ flexCol =
       & prop @Text "flex-direction" "column"
 
 
--- | Set container display to Block or none
-display :: (Style Display a, ToClassName a) => a -> Mod c
+-- | Set container display to Block or 'None'
+display :: (Style Display a, ToClassName a) =c> a -> Mod c
 display display =
   addClass $
     cls ("disp" -. display)
