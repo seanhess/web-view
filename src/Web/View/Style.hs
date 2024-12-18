@@ -346,7 +346,7 @@ mapModClass fc fm as =
   -- ignore
   let as' = fm $ Attributes [] []
    in as'
-        { classes = as.classes <> map fc as'.classes
+        { classes = as.classes <> fmap fc as'.classes
         , other = as.other <> as'.other
         }
 
@@ -375,7 +375,7 @@ important =
 addClass :: Class -> Mod c
 addClass c attributes =
   Attributes
-    { classes = c : attributes.classes
+    { classes = M.insert c.selector c attributes.classes
     , other = attributes.other
     }
 

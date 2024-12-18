@@ -8,7 +8,7 @@ module Web.View.Render where
 
 import Data.ByteString.Lazy qualified as BL
 import Data.Function ((&))
-import Data.List (foldl', sortOn)
+import Data.List (foldl')
 import Data.Map qualified as M
 import Data.Maybe (mapMaybe)
 import Data.String (fromString)
@@ -142,7 +142,7 @@ addIndent n (Line e ind t) = Line e (ind + n) t
 
 
 renderCSS :: CSS -> [Line]
-renderCSS = mapMaybe renderClass . sortOn (.selector)
+renderCSS = mapMaybe renderClass . M.elems
  where
   renderClass :: Class -> Maybe Line
   renderClass c | M.null c.properties = Nothing
@@ -251,8 +251,9 @@ flatAttributes t =
   FlatAttributes $
     addClass t.attributes.classes t.attributes.other
  where
-  addClass [] atts = atts
-  addClass cx atts = M.insert "class" (classAttValue cx) atts
+  addClass css atts
+    | M.null css = atts
+    | otherwise = M.insert "class" (classAttValue $ M.elems css) atts
 
   classAttValue :: [Class] -> Text
   classAttValue cx =
