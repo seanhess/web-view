@@ -124,7 +124,7 @@ flexCol =
 
 
 -- | Set container display to Block or 'None'
-display :: (Style Display a, ToClassName a) =c> a -> Mod c
+display :: (Style Display a, ToClassName a) => a -> Mod c
 display display =
   addClass $
     cls ("disp" -. display)
