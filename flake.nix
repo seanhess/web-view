@@ -87,24 +87,17 @@
           inherit system;
         };
 
-        pkgsOverlayed = import inputs.nixpkgs {
-          inherit system;
-          overlays = [ self.overlays.default ];
-        };
+        ghcPkgs =
+          (import inputs.nixpkgs {
+            inherit system;
+            overlays = [ self.overlays.default ];
+          }).haskell.packages;
 
         # Define GHC versions list
         ghcVersions = [
           "966"
           "982"
         ];
-
-        # Create an attrset of GHC packages
-        ghcPkgs = builtins.listToAttrs (
-          map (version: {
-            name = "ghc${version}";
-            value = pkgsOverlayed.haskell.packages."ghc${version}";
-          }) ghcVersions
-        );
 
         example-src = nix-filter.lib {
           root = ./example;
@@ -116,8 +109,23 @@
           ];
         };
 
+        pre-commit = git-hooks.lib.${system}.run {
+          src = src;
+          hooks = {
+            hlint.enable = true;
+            fourmolu.enable = true;
+            hpack.enable = true;
+            nixfmt-rfc-style.enable = true;
+            flake-checker = {
+              enable = true;
+              args = [ "--no-telemetry" ];
+            };
+            check-merge-conflicts.enable = true;
+          };
+        };
+
         shellCommon = version: {
-          inherit (self.checks.${system}.pre-commit-check) shellHook;
+          inherit (pre-commit) shellHook;
           buildInputs = with pkgs.haskell.packages."ghc${version}"; [
             cabal-install
             haskell-language-server
@@ -143,39 +151,22 @@
           version: pkgs.haskell.lib.justStaticExecutables self.packages.${system}."ghc${version}-example";
       in
       {
-        checks =
-          {
-            pre-commit-check = git-hooks.lib.${system}.run {
-              src = src;
-              hooks = {
-                # hlint.enable = true;
-                # fourmolu.enable = true;
-                hpack.enable = true;
-                nixfmt-rfc-style.enable = true;
-                flake-checker = {
-                  enable = true;
-                  args = [ "--no-telemetry" ];
-                };
-                check-merge-conflicts.enable = true;
-              };
-            };
-          }
-          // (builtins.listToAttrs (
-            builtins.concatMap (version: [
-              {
-                name = "ghc${version}-check-${packageName}";
-                value = pkgs.runCommand "ghc${version}-check-${packageName}" {
-                  buildInputs = [ self.packages.${system}."ghc${version}-${packageName}" ];
-                } "touch $out";
-              }
-              {
-                name = "ghc${version}-check-example";
-                value = pkgs.runCommand "ghc${version}-check-example" {
-                  buildInputs = [ (examples-exe version) ];
-                } "type example; touch $out";
-              }
-            ]) ghcVersions
-          ));
+        checks = builtins.listToAttrs (
+          builtins.concatMap (version: [
+            {
+              name = "ghc${version}-check-${packageName}";
+              value = pkgs.runCommand "ghc${version}-check-${packageName}" {
+                buildInputs = [ self.packages.${system}."ghc${version}-${packageName}" ];
+              } "touch $out";
+            }
+            {
+              name = "ghc${version}-check-example";
+              value = pkgs.runCommand "ghc${version}-check-example" {
+                buildInputs = [ (examples-exe version) ];
+              } "type example; touch $out";
+            }
+          ]) ghcVersions
+        );
 
         apps =
           {
