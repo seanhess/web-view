@@ -85,13 +85,45 @@ stacks = layout id $ do
   col (pad 10 . gap 10) $ do
     el_ "Stacks put contents on top of each other"
     stack (border 1) $ do
-      row (bg Light) $ el (pad 10) "In the background"
-      row (pad 10) $ do
+      layer $ el (bg Light . pad 10) "In the background"
+      layer $ row (pad 10) $ do
         space
         el (bg SecondaryLight . grow . pad 5) "Above"
-      row (pad (XY 15 5)) $ do
+      layer $ row (pad (XY 15 5)) $ do
         space
         el (bg Primary . pad 10 . color White) "Max Above!"
+
+    el_ "We can collapse items in a stack so they don't affect the width"
+    stack (bg Light . pad 10) $ do
+      layer $ el_ "WOOT"
+      popout (offset (R 0) . offset (B 0)) $ col (pad 10 . bg SecondaryLight) $ do
+        el_ "One"
+        el_ "Two"
+        el_ "Three"
+        el_ "Four"
+
+    el_ "Example Popup Search"
+    stack (border 1) $ do
+      layer $ row (bg Light . pad 10) "This is a search bar"
+      popout (offset (TRBL 43 5 5 5) . border 1) $ do
+        col (bg SecondaryLight . pad (L 50) . pad (R 50)) $ do
+          el (hover (bg White) . pointer) "I am a popup"
+          el_ "I am a popup"
+          el_ "I am a popup"
+          el_ "I am a popup"
+
+    col (gap 10) $ do
+      el_ "Content asldkjfalsdk jjklasd flkajsd flkjasd lfkjalskdfj alsdkjf "
+      el_ "Content asldkjfalsdk jjklasd flkajsd flkjasd lfkjalskdfj alsdkjf "
+      el_ "Content asldkjfalsdk jjklasd flkajsd flkjasd lfkjalskdfj alsdkjf "
+      el_ "Content asldkjfalsdk jjklasd flkajsd flkjasd lfkjalskdfj alsdkjf "
+      el_ "Content asldkjfalsdk jjklasd flkajsd flkjasd lfkjalskdfj alsdkjf "
+      el_ "Content asldkjfalsdk jjklasd flkajsd flkjasd lfkjalskdfj alsdkjf "
+      el_ "Content asldkjfalsdk jjklasd flkajsd flkjasd lfkjalskdfj alsdkjf "
+      el_ "Content asldkjfalsdk jjklasd flkajsd flkjasd lfkjalskdfj alsdkjf "
+      el_ "Content asldkjfalsdk jjklasd flkajsd flkjasd lfkjalskdfj alsdkjf "
+
+    col (border 1 . position Absolute . offset (R 0) . offset (T 0)) "I AM AN ELEMENT"
 
 
 tests :: View c ()
@@ -112,7 +144,6 @@ tests = col (gap 10 . pad 20) $ do
     li nums "first"
     li nums "second"
     li nums "third"
-    col id "HELLO"
 
   ul id $ do
     li (list Disc) "first"

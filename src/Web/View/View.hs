@@ -4,7 +4,7 @@
 
 module Web.View.View where
 
-import Data.Map qualified as M
+import Data.Map.Strict qualified as M
 import Data.String (IsString (..))
 import Data.Text (Text, pack)
 import Effectful

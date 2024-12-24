@@ -9,7 +9,7 @@
 module Web.View.Style where
 
 import Data.Function ((&))
-import Data.Map qualified as M
+import Data.Map.Strict qualified as M
 import Data.Text (Text)
 import Web.View.Types
 
@@ -77,13 +77,7 @@ pad (X n) =
     cls ("padx" -. n)
       & prop "padding-left" n
       & prop "padding-right" n
-pad (XY x y) =
-  addClass $
-    cls ("pad" -. x -. y)
-      & prop "padding-left" x
-      & prop "padding-right" x
-      & prop "padding-top" y
-      & prop "padding-bottom" y
+pad (XY x y) = pad (TRBL y x y x)
 pad (TRBL t r b l) =
   addClass $
     cls ("pad" -. t -. r -. b -. l)
@@ -91,6 +85,10 @@ pad (TRBL t r b l) =
       & prop "padding-right" r
       & prop "padding-bottom" b
       & prop "padding-left" l
+pad (T x) = addClass $ cls ("padt" -. x) & prop "padding-top" x
+pad (R x) = addClass $ cls ("padr" -. x) & prop "padding-right" x
+pad (B x) = addClass $ cls ("padb" -. x) & prop "padding-bottom" x
+pad (L x) = addClass $ cls ("padl" -. x) & prop "padding-left" x
 
 
 -- | The space between child elements. See 'pad'
@@ -105,51 +103,13 @@ fontSize n = addClass $ cls ("fs" -. n) & prop "font-size" n
 -- fontFamily :: Text -> Mod c
 -- fontFamily t = cls1 $ Class ("font" -. n) [("font-family", pxRem n)]
 
--- | Set container to be a row. Favor 'Web.View.Layout.row' when possible
-flexRow :: Mod c
-flexRow =
-  addClass $
-    cls "row"
-      & prop @Text "display" "flex"
-      & prop @Text "flex-direction" "row"
+{- | Add a drop shadow to an element
 
-
--- | Set container to be a column. Favor 'Web.View.Layout.col' when possible
-flexCol :: Mod c
-flexCol =
-  addClass $
-    cls "col"
-      & prop @Text "display" "flex"
-      & prop @Text "flex-direction" "column"
-
-
--- | Set container display to Block or 'None'
-display :: (Style Display a, ToClassName a) => a -> Mod c
-display display =
-  addClass $
-    cls ("disp" -. display)
-      & prop "display" (styleValue @Display display)
-
-
-data Display
-  = Block
-  deriving (Show, ToClassName, ToStyleValue)
-instance Style Display Display
-instance Style Display None
-
-
--- | Hide an element. See 'display'
-hide :: Mod c
-hide = display None
-
-
--- | Adds a basic drop shadow to an element
-shadow :: Mod c
-shadow = shadow' ()
-
-
-shadow' :: (Style Shadow a, ToClassName a) => a -> Mod c
-shadow' a =
+> input (shadow Inner) "Inset Shadow"
+> button (shadow ()) "Click Me"
+-}
+shadow :: (Style Shadow a, ToClassName a) => a -> Mod c
+shadow a =
   addClass $
     cls ("shadow" -. a)
       & prop "box-shadow" (styleValue @Shadow a)
@@ -200,6 +160,13 @@ underline :: Mod c
 underline = addClass $ cls "underline" & prop @Text "text-decoration" "underline"
 
 
+{- | Set the list style of an item
+
+> ol id $ do
+>   li (list Decimal) "First"
+>   li (list Decimal) "Second"
+>   li (list Decimal) "Third"
+-}
 list :: (ToClassName a, Style ListType a) => a -> Mod c
 list a =
   addClass $
@@ -243,13 +210,7 @@ border (X p) =
     cls ("brdx" -. p)
       & prop "border-left-width" p
       & prop "border-right-width" p
-border (XY x y) =
-  addClass $
-    cls ("brd" -. x -. y)
-      & prop "border-right-width" x
-      & prop "border-left-width" x
-      & prop "border-top-width" y
-      & prop "border-bottom-width" y
+border (XY x y) = border (TRBL y x y x)
 border (TRBL t r b l) =
   addClass $
     cls ("brd" -. t -. r -. b -. l)
@@ -257,6 +218,10 @@ border (TRBL t r b l) =
       & prop "border-right-width" r
       & prop "border-bottom-width" b
       & prop "border-left-width" l
+border (T x) = addClass $ cls ("bordert" -. x) & prop "border-top-width" x
+border (R x) = addClass $ cls ("borderr" -. x) & prop "border-right-width" x
+border (B x) = addClass $ cls ("borderb" -. x) & prop "border-bottom-width" x
+border (L x) = addClass $ cls ("borderl" -. x) & prop "border-left-width" x
 
 
 -- | Set a border color. See 'Web.View.Types.ToColor'
@@ -279,16 +244,6 @@ Button-like elements:
 -}
 pointer :: Mod c
 pointer = addClass $ cls "pointer" & prop @Text "cursor" "pointer"
-
-
--- | Cut off the contents of the element
-truncate :: Mod c
-truncate =
-  addClass $
-    cls "truncate"
-      & prop @Text "white-space" "nowrap"
-      & prop @Text "overflow" "hidden"
-      & prop @Text "text-overflow" "ellipsis"
 
 
 {- | Animate changes to the given property
@@ -325,6 +280,60 @@ textAlign a =
   addClass $
     cls ("ta" -. a)
       & prop "text-align" a
+
+
+-- | Set Top, Right, Bottom and Left. Requires 'position' Absolute or Fixed. Also see 'Web.View.Layout.popup'
+offset :: Sides Length -> Mod c
+offset (All n) = offset (TRBL n n n n)
+offset (Y n) = offset (XY 0 n)
+offset (X n) = offset (XY n 0)
+offset (XY x y) = offset (TRBL y x y x)
+offset (TRBL t r b l) =
+  addClass $
+    cls ("offset" -. t -. r -. b -. l)
+      & prop "top" t
+      & prop "right" r
+      & prop "bottom" b
+      & prop "left" l
+offset (T x) = addClass $ cls ("top" -. x) & prop "top" x
+offset (R x) = addClass $ cls ("right" -. x) & prop "right" x
+offset (B x) = addClass $ cls ("bottom" -. x) & prop "bottom" x
+offset (L x) = addClass $ cls ("left" -. x) & prop "left" x
+
+
+-- | position:absolute. See 'stack' and 'popout'
+position :: Position -> Mod c
+position p = addClass $ cls (toClassName p) & prop "position" p
+
+
+data Position
+  = Absolute
+  | Fixed
+  | Sticky
+  | Relative
+  deriving (Show, ToClassName, ToStyleValue)
+
+
+zIndex :: Int -> Mod c
+zIndex n = addClass $ cls ("z" -. n) & prop "z-index" n
+
+
+{- | Set container display
+
+el (display None) "HIDDEN"
+-}
+display :: (Style Display a, ToClassName a) => a -> Mod c
+display disp =
+  addClass $
+    cls ("disp" -. disp)
+      & prop "display" (styleValue @Display disp)
+
+
+data Display
+  = Block
+  deriving (Show, ToClassName, ToStyleValue)
+instance Style Display Display
+instance Style Display None
 
 
 -- * Selector Modifiers
@@ -467,7 +476,7 @@ prop n v c =
 infixl 6 -.
 
 
--- uniquely set the style value based on this
+-- uniquely set the stAyle value based on this
 class Style style value where
   styleValue :: value -> StyleValue
   default styleValue :: (ToStyleValue value) => value -> StyleValue

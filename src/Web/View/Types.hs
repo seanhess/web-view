@@ -4,8 +4,9 @@
 
 module Web.View.Types where
 
+import Data.Char (toLower)
 import Data.Kind (Type)
-import Data.Map (Map)
+import Data.Map.Strict (Map)
 import Data.String (IsString (..))
 import Data.Text (Text, pack, unpack)
 import Data.Text qualified as T
@@ -287,6 +288,10 @@ data Sides a
   | X a
   | Y a
   | XY a a
+  | T a
+  | R a
+  | B a
+  | L a
 
 
 -- Num instance is just to support literals
@@ -352,8 +357,13 @@ instance ToClassName HexColor where
 
 
 data Align
-  = Center
-  deriving (Show, ToClassName, ToStyleValue)
+  = AlignCenter
+  | AlignLeft
+  | AlignRight
+  | AlignJustify
+  deriving (Show, ToClassName)
+instance ToStyleValue Align where
+  toStyleValue a = StyleValue $ map toLower $ drop 5 $ show a
 
 
 data None = None

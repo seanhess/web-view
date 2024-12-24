@@ -1,6 +1,6 @@
 module Test.StyleSpec (spec) where
 
-import Data.Map qualified as M
+import Data.Map.Strict qualified as M
 import Skeletest
 import Web.View
 import Web.View.Style ((-.))

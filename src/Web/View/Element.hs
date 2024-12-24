@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Web.View.Element where
 
@@ -74,7 +76,7 @@ link u f = tag "a" (att "href" (renderUrl u) . f)
 
 
 form :: Mod c -> View c () -> View c ()
-form f = tag "form" (f . flexCol)
+form = tag "form"
 
 
 input :: Mod c -> View c ()
@@ -172,7 +174,8 @@ data TableColumn c dt = TableColumn
 -- * Lists
 
 
-data ListItem c = ListItem
+newtype ListItem c a = ListItem (View c a)
+  deriving newtype (Functor, Applicative, Monad)
 
 
 {- | List elements do not include any inherent styling but are useful for accessibility. See 'Web.View.Style.list'.
@@ -183,13 +186,16 @@ data ListItem c = ListItem
 >  li nums "two"
 >  li nums "three"
 -}
-ol :: Mod c -> View (ListItem c) () -> View c ()
-ol f cnt = tag "ol" f $ addContext ListItem cnt
+ol :: Mod c -> ListItem c () -> View c ()
+ol f (ListItem cnt) = do
+  tag "ol" f cnt
 
 
-ul :: Mod c -> View (ListItem c) () -> View c ()
-ul f cnt = tag "ul" f $ addContext ListItem cnt
+ul :: Mod c -> ListItem c () -> View c ()
+ul f (ListItem cnt) = do
+  tag "ul" f cnt
 
 
-li :: Mod (ListItem c) -> View (ListItem c) () -> View (ListItem c) ()
-li = tag "li"
+li :: Mod c -> View c () -> ListItem c ()
+li f cnt = ListItem $ do
+  tag "li" f cnt

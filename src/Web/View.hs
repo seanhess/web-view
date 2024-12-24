@@ -36,12 +36,18 @@ module Web.View
   , root
   , col
   , row
-  , stack
-  , grow
   , space
-  , collapse
-  , scroll
   , nav
+  , stack
+  , Layer
+  , layer
+  , popout
+  , scroll
+  , grow
+  , flexRow
+  , flexCol
+  , hide
+  , truncate
 
     -- ** Content
   , text
@@ -82,15 +88,12 @@ module Web.View
   , height
   , minWidth
   , minHeight
-  , flexRow
-  , flexCol
-  , display
   , pad
   , gap
-  , hide
   , opacity
-  , truncate
   , shadow
+  , Shadow
+  , Inner (..)
   , rounded
   , fontSize
   , color
@@ -101,9 +104,19 @@ module Web.View
   , border
   , borderColor
   , pointer
-  , transition
+  , position
+  , Position (..)
+  , offset
+  , zIndex
   , textAlign
+  , Align (..)
   , list
+  , ListType (..)
+  , display
+  , Display (..)
+  , transition
+  , TransitionProperty (..)
+  , Ms
 
     -- ** Selector States
   , hover
@@ -111,6 +124,7 @@ module Web.View
   , even
   , odd
   , media
+  , Media (..)
   , parent
 
     -- * View Context
@@ -123,15 +137,10 @@ module Web.View
 
     -- * Types
   , Sides (..)
-  , Media (..)
   , PxRem
   , Length (..)
-  , TransitionProperty (..)
-  , Ms
   , ToColor (..)
   , HexColor (..)
-  , Align (..)
-  , ListType (..)
   , None (..)
 
     -- * Url

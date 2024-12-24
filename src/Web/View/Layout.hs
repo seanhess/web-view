@@ -1,3 +1,6 @@
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Web.View.Layout where
 
 import Data.Function
@@ -94,11 +97,6 @@ space :: View c ()
 space = el grow none
 
 
--- | Allow items to become smaller than their contents. This is not the opposite of `grow`!
-collapse :: Mod c
-collapse = addClass $ cls "collapse" & prop @Int "min-width" 0
-
-
 {- | Make a fixed 'layout' by putting 'scroll' on a child-element
 
 > document = row root $ do
@@ -114,24 +112,83 @@ nav :: Mod c -> View c () -> View c ()
 nav f = tag "nav" (f . flexCol)
 
 
-{- | Stack children on top of each other. Each child has the full width
+{- | Stack children on top of each other. Each child has the full width. See 'popout'
 
 > stack id $ do
 >   row id "Background"
 >   row (bg Black . opacity 0.5) "Overlay"
 -}
-stack :: Mod c -> View c () -> View c ()
-stack f =
-  tag "div" (f . container . absChildren)
+stack :: Mod c -> Layer c () -> View c ()
+stack f (Layer children) = do
+  tag "div" (f . container . absChildren) children
  where
   container =
     addClass $
       cls "stack"
         & prop @Text "position" "relative"
         & prop @Text "display" "grid"
+        & prop @Text "overflow" "visible"
   absChildren =
     addClass $
       Class absSelector mempty
-        & prop @Text "position" "relative"
         & prop @Text "grid-area" "1 / 1"
+        & prop @Text "min-height" "fit-content"
   absSelector = (selector "abs-childs"){child = Just AllChildren}
+
+
+-- | A popout does not
+newtype Layer c a = Layer (View c a)
+  deriving newtype (Functor, Applicative, Monad)
+
+
+-- | A normal layer contributes to the size of the parent
+layer :: View c () -> Layer c ()
+layer = Layer
+
+
+{- | This child of a 'stack' can pop out of the parent, covering content outside of it. Only usable inside 'stack'
+
+> stack id $ do
+>   layer id $ input (value "Autocomplete Box")
+>   layer (popout (TRBL 50 0 0 0)) $ do
+>     el_ "Item 1"
+>     el_ "Item 2"
+>     el_ "Item 3"
+> el_ "This is covered by the menu"
+-}
+popout :: Mod c -> View c () -> Layer c () -- Sides Length -> Mod (Stack c)
+popout f cnt = Layer $ do
+  el (position Absolute . zIndex 1 . f) cnt
+
+
+-- | Hide an element. See 'display'
+hide :: Mod c
+hide = display None
+
+
+-- | Set container to be a row. Favor 'Web.View.Layout.row' when possible
+flexRow :: Mod c
+flexRow =
+  addClass $
+    cls "row"
+      & prop @Text "display" "flex"
+      & prop @Text "flex-direction" "row"
+
+
+-- | Set container to be a column. Favor 'Web.View.Layout.col' when possible
+flexCol :: Mod c
+flexCol =
+  addClass $
+    cls "col"
+      & prop @Text "display" "flex"
+      & prop @Text "flex-direction" "column"
+
+
+-- | Cut off the contents of the element
+truncate :: Mod c
+truncate =
+  addClass $
+    cls "truncate"
+      & prop @Text "white-space" "nowrap"
+      & prop @Text "overflow" "hidden"
+      & prop @Text "text-overflow" "ellipsis"
