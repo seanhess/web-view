@@ -78,21 +78,26 @@ If you want to get a feel for web-view without cloning the project run `nix run 
 Local Development
 -----------------
 
+### Recommended ghcid command
+
+If you want to work on both the web-view library and example code, this `ghcid` command will run and reload the examples server as you change any non-testing code.
+
+```
+ghcid --command="cabal repl exe:example lib:web-view" --run=Main.main --warnings
+```
+
+If you want to work on the test suite, this will run the tests each time any library code is changed.
+
+```
+ghcid --command="cabal repl test lib:web-view" --run=Main.main --warnings
+```
+
 ### Nix
 
 Prepend targets with ghc982 or ghc966 to use GHC 9.8.2 or GHC 9.6.6
 
-- `nix run` starts the example project with GHC 9.8.2
-- `nix develop` to get a shell with all dependencies installed for GHC 9.8.2. 
-- `nix develop .#ghc966-web-view` for GHC 9.6.6
-
-You can also get a development shell for the example project with:
-
-```
-cd example
-nix develop ../#ghc982-example
-cabal run
-```
+- `nix run` or `nix run .#ghc966-example` to start the example project with GHC 9.8.2
+- `nix develop` or `nix develop .#ghc982-shell` to get a shell with all dependencies installed for GHC 9.8.2. 
 
 You can import this flake's overlay to add `web-view` to all package sets and override ghc966 and ghc982 with the packages to satisfy `web-view`'s dependencies.
 
@@ -126,7 +131,6 @@ You can import this flake's overlay to add `web-view` to all package sets and ov
     );
 }
 ```
-
 
 Learn More
 ----------
