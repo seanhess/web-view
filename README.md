@@ -83,13 +83,13 @@ Local Development
 If you want to work on both the web-view library and example code, this `ghcid` command will run and reload the examples server as you change any non-testing code.
 
 ```
-ghcid --command="cabal repl exe:example lib:web-view" --run=Main.main --warnings
+ghcid --command="cabal repl exe:example lib:web-view" --run=Main.main --warnings --reload=./embed/preflight.css
 ```
 
 If you want to work on the test suite, this will run the tests each time any library code is changed.
 
 ```
-ghcid --command="cabal repl test lib:web-view" --run=Main.main --warnings
+ghcid --command="cabal repl test lib:web-view" --run=Main.main --warnings --reload=./embed/preflight.css
 ```
 
 ### Nix
