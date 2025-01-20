@@ -103,7 +103,8 @@ url t = runPureEff $ evalState t $ do
 
 
 renderUrl :: Url -> Text
-renderUrl u = u.scheme <> u.domain <> paths u.path <> decodeUtf8 (renderQuery True u.query)
- where
-  paths :: [Segment] -> Text
-  paths ss = "/" <> T.intercalate "/" (map cleanSegment ss)
+renderUrl u = u.scheme <> u.domain <> renderPath u.path <> decodeUtf8 (renderQuery True u.query)
+
+
+renderPath :: [Segment] -> Text
+renderPath ss = "/" <> T.intercalate "/" (map cleanSegment ss)
