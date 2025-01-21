@@ -89,6 +89,10 @@ pad (T x) = addClass $ cls ("padt" -. x) & prop "padding-top" x
 pad (R x) = addClass $ cls ("padr" -. x) & prop "padding-right" x
 pad (B x) = addClass $ cls ("padb" -. x) & prop "padding-bottom" x
 pad (L x) = addClass $ cls ("padl" -. x) & prop "padding-left" x
+pad (TR t r) = pad (TRBL t r 0 0)
+pad (TL t l) = pad (TRBL t 0 0 l)
+pad (BR b r) = pad (TRBL 0 r b 0)
+pad (BL b l) = pad (TRBL 0 0 b l)
 
 
 -- | The space between child elements. See 'pad'
@@ -218,10 +222,14 @@ border (TRBL t r b l) =
       & prop "border-right-width" r
       & prop "border-bottom-width" b
       & prop "border-left-width" l
-border (T x) = addClass $ cls ("bordert" -. x) & prop "border-top-width" x
-border (R x) = addClass $ cls ("borderr" -. x) & prop "border-right-width" x
-border (B x) = addClass $ cls ("borderb" -. x) & prop "border-bottom-width" x
-border (L x) = addClass $ cls ("borderl" -. x) & prop "border-left-width" x
+border (T x) = addClass $ cls ("brdt" -. x) & prop "border-top-width" x
+border (R x) = addClass $ cls ("brdr" -. x) & prop "border-right-width" x
+border (B x) = addClass $ cls ("brdb" -. x) & prop "border-bottom-width" x
+border (L x) = addClass $ cls ("brdl" -. x) & prop "border-left-width" x
+border (TR t r) = border (TRBL t r 0 0)
+border (TL t l) = border (TRBL t 0 0 l)
+border (BR b r) = border (TRBL 0 r b 0)
+border (BL b l) = border (TRBL 0 0 b l)
 
 
 -- | Set a border color. See 'Web.View.Types.ToColor'
@@ -282,26 +290,7 @@ textAlign a =
       & prop "text-align" a
 
 
--- | Set Top, Right, Bottom and Left. Requires 'position' Absolute or Fixed. Also see 'Web.View.Layout.popup'
-offset :: Sides Length -> Mod c
-offset (All n) = offset (TRBL n n n n)
-offset (Y n) = offset (XY 0 n)
-offset (X n) = offset (XY n 0)
-offset (XY x y) = offset (TRBL y x y x)
-offset (TRBL t r b l) =
-  addClass $
-    cls ("offset" -. t -. r -. b -. l)
-      & prop "top" t
-      & prop "right" r
-      & prop "bottom" b
-      & prop "left" l
-offset (T x) = addClass $ cls ("top" -. x) & prop "top" x
-offset (R x) = addClass $ cls ("right" -. x) & prop "right" x
-offset (B x) = addClass $ cls ("bottom" -. x) & prop "bottom" x
-offset (L x) = addClass $ cls ("left" -. x) & prop "left" x
-
-
--- | position:absolute. See 'stack' and 'popout'
+-- | position:absolute, relative, etc. See 'Web.View.Layout.stack' and 'Web.View.Layout.popup'
 position :: Position -> Mod c
 position p = addClass $ cls (toClassName p) & prop "position" p
 
@@ -316,6 +305,44 @@ data Position
 
 zIndex :: Int -> Mod c
 zIndex n = addClass $ cls ("z" -. n) & prop "z-index" n
+
+
+-- | Set top, bottom, right, and left. See 'Web.View.Layout.stack' and 'Web.View.Layout.popup'
+offset :: Sides Length -> Mod c
+offset sides = addClass (off sides)
+ where
+  off :: Sides Length -> Class
+  off = \case
+    All n -> off (TRBL n n n n)
+    Y n -> off (XY 0 n)
+    X n -> off (XY n 0)
+    XY x y -> off (TRBL y x y x)
+    TRBL t r b l ->
+      cls ("pop" -. t -. r -. b -. l)
+        & prop "top" t
+        & prop "right" r
+        & prop "bottom" b
+        & prop "left" l
+    T x -> cls ("popt" -. x) & prop "top" x
+    R x -> cls ("popr" -. x) & prop "right" x
+    B x -> cls ("popb" -. x) & prop "bottom" x
+    L x -> cls ("popl" -. x) & prop "left" x
+    TR t r ->
+      cls ("poptr" -. t -. r)
+        & prop "top" t
+        & prop "right" r
+    TL t l ->
+      cls ("poptl" -. t -. l)
+        & prop "top" t
+        & prop "left" l
+    BR b r ->
+      cls ("popbr" -. b -. r)
+        & prop "right" r
+        & prop "bottom" b
+    BL b l ->
+      cls ("popbl" -. b -. l)
+        & prop "bottom" b
+        & prop "left" l
 
 
 {- | Set container display
@@ -474,10 +501,3 @@ prop n v c =
 
 
 infixl 6 -.
-
-
--- uniquely set the stAyle value based on this
-class Style style value where
-  styleValue :: value -> StyleValue
-  default styleValue :: (ToStyleValue value) => value -> StyleValue
-  styleValue = toStyleValue

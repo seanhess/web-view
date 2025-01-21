@@ -1,4 +1,5 @@
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
 
@@ -37,9 +38,11 @@ data Element = Element
 element :: Name -> Attributes c -> [Content] -> Element
 element n atts =
   Element False n (stripContext atts)
- where
-  stripContext :: Attributes c -> Attributes ()
-  stripContext (Attributes cls other) = Attributes cls other
+
+
+-- | Internal. Convert an Attributes to any context
+stripContext :: Attributes a -> Attributes b
+stripContext (Attributes cls other) = Attributes cls other
 
 
 -- | The Attributes for an 'Element'. Classes are merged and managed separately from the other attributes.
@@ -219,6 +222,13 @@ instance ToStyleValue StyleValue where
   toStyleValue = id
 
 
+-- | Convert a type to a prop name
+class ToProp a where
+  toProp :: a -> Name
+  default toProp :: (Show a) => a -> Name
+  toProp = pack . kebab . show
+
+
 data Length
   = PxRem PxRem
   | Pct Float
@@ -292,6 +302,10 @@ data Sides a
   | R a
   | B a
   | L a
+  | TR a a
+  | TL a a
+  | BR a a
+  | BL a a
 
 
 -- Num instance is just to support literals
@@ -369,10 +383,12 @@ instance ToStyleValue Align where
 data None = None
   deriving (Show, ToClassName, ToStyleValue)
 
--- data Size
---   = Sm
---   | Md
---   | Lg
---   | Xl
---   | Xl2
---   deriving (Show, ToClassName)
+
+-- uniquely set the style value based on the style
+class Style cls value where
+  styleValue :: value -> StyleValue
+  default styleValue :: (ToStyleValue value) => value -> StyleValue
+  styleValue = toStyleValue
+
+class ToClass cls value where
+  toClass :: value -> Class
