@@ -3,6 +3,9 @@
 ## 0.7.0
 
 * stack, popup, offset, layer - more intuitive interface
+* added Web.View.Url.renderPath
+* Style class
+* added code, lists
 
 ## 0.6.0
 
