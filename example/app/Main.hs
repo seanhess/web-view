@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 module Main where
@@ -85,27 +86,42 @@ stacks = layout id $ do
   col (pad 10 . gap 10) $ do
     el_ "Stacks put contents on top of each other"
     stack (border 1) $ do
-      layer $ el (bg Light . pad 10) "In the background"
-      layer $ row (pad 10) $ do
-        space
-        el (bg SecondaryLight . grow . pad 5) "Above"
-      layer $ row (pad (XY 15 5)) $ do
-        space
-        el (bg Primary . pad 10 . color White) "Max Above!"
+      layer (bg Light . pad 10) "In the background"
+      layer (pad 10) $ do
+        row id $ do
+          space
+          el (bg SecondaryLight . grow . pad 5) "Above"
+      layer (pad (XY 15 5)) $ do
+        row id $ do
+          space
+          el (bg Primary . pad 10 . color White) "Max Above!"
 
     el_ "We can collapse items in a stack so they don't affect the width"
     stack (bg Light . pad 10) $ do
-      layer $ el_ "WOOT"
-      popout (offset (R 0) . offset (B 0)) $ col (pad 10 . bg SecondaryLight) $ do
+      layer id $ do
+        row (gap 5) $ do
+          el_ "Some"
+          el_ "Stuff"
+          el_ "Here"
+      layer (popup (BR 0 0)) $ col (pad 10 . bg SecondaryLight) $ do
         el_ "One"
         el_ "Two"
         el_ "Three"
         el_ "Four"
 
+    stack (border 1) $ do
+      layer (bg Light) "Background"
+      layer (bg SecondaryLight . opacity 0.8 . popup (X 50)) $ do
+        el_ "HMM"
+        el_ "OK"
+      layer (flexRow . bg Warning . opacity 0.8) $ do
+        space
+        el_ "Overlay"
+
     el_ "Example Popup Search"
     stack (border 1) $ do
-      layer $ row (bg Light . pad 10) "This is a search bar"
-      popout (offset (TRBL 43 5 5 5) . border 1) $ do
+      layer id $ row (bg Light . pad 10) "This is a search bar"
+      layer (popup (TRBL 43 5 5 5) . border 1) $ do
         col (bg SecondaryLight . pad (L 50) . pad (R 50)) $ do
           el (hover (bg White) . pointer) "I am a popup"
           el_ "I am a popup"
@@ -123,7 +139,7 @@ stacks = layout id $ do
       el_ "Content asldkjfalsdk jjklasd flkajsd flkjasd lfkjalskdfj alsdkjf "
       el_ "Content asldkjfalsdk jjklasd flkajsd flkjasd lfkjalskdfj alsdkjf "
 
-    col (border 1 . position Absolute . offset (R 0) . offset (T 0)) "I AM AN ELEMENT"
+    col (border 1 . popup (TR 5 5)) "I AM AN ELEMENT"
 
 
 tests :: View c ()

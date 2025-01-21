@@ -1,5 +1,7 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Web.View.Layout where
 
@@ -112,11 +114,11 @@ nav :: Mod c -> View c () -> View c ()
 nav f = tag "nav" (f . flexCol)
 
 
-{- | Stack children on top of each other. Each child has the full width. See 'popout'
+{- | Stack children on top of each other. Each child has the full width. See 'popup'
 
 > stack id $ do
->   row id "Background"
->   row (bg Black . opacity 0.5) "Overlay"
+>   layer id "Background"
+>   layer (bg Black . opacity 0.5) "Overlay"
 -}
 stack :: Mod c -> Layer c () -> View c ()
 stack f (Layer children) = do
@@ -136,29 +138,29 @@ stack f (Layer children) = do
   absSelector = (selector "abs-childs"){child = Just AllChildren}
 
 
--- | A popout does not
 newtype Layer c a = Layer (View c a)
   deriving newtype (Functor, Applicative, Monad)
 
 
--- | A normal layer contributes to the size of the parent
-layer :: View c () -> Layer c ()
-layer = Layer
+-- | A normal layer contributes to the size of the parent. See 'stack'
+layer :: Mod c -> View c () -> Layer c ()
+layer f cnt = Layer $ do
+  el (flexCol . f) cnt
 
 
-{- | This child of a 'stack' can pop out of the parent, covering content outside of it. Only usable inside 'stack'
+{- | This 'layer' is not included in the 'stack' size, and covers content outside of it. If used outside of stack, the popup is offset from the entire page.
 
 > stack id $ do
 >   layer id $ input (value "Autocomplete Box")
->   layer (popout (TRBL 50 0 0 0)) $ do
+>   layer (popup (TRBL 50 0 0 0)) $ do
 >     el_ "Item 1"
 >     el_ "Item 2"
 >     el_ "Item 3"
 > el_ "This is covered by the menu"
 -}
-popout :: Mod c -> View c () -> Layer c () -- Sides Length -> Mod (Stack c)
-popout f cnt = Layer $ do
-  el (position Absolute . zIndex 1 . f) cnt
+popup :: Sides Length -> Mod c
+popup sides =
+  position Absolute . offset sides
 
 
 -- | Hide an element. See 'display'

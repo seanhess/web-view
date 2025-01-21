@@ -41,7 +41,7 @@ module Web.View
   , stack
   , Layer
   , layer
-  , popout
+  , popup
   , scroll
   , grow
   , flexRow
@@ -106,8 +106,8 @@ module Web.View
   , pointer
   , position
   , Position (..)
-  , offset
   , zIndex
+  , offset
   , textAlign
   , Align (..)
   , list
@@ -142,6 +142,7 @@ module Web.View
   , ToColor (..)
   , HexColor (..)
   , None (..)
+  , Attributes
 
     -- * Url
   , module Web.View.Types.Url

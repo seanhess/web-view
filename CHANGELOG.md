@@ -1,5 +1,9 @@
 # Revision history for web-view
 
+## 0.7.0
+
+* stack, popup, offset, layer - more intuitive interface
+
 ## 0.6.0
 
 * stack - layout children on top of each other
