@@ -49,7 +49,7 @@
 
       overlay = final: prev: {
         # see https://github.com/NixOS/nixpkgs/issues/83098
-        cabal2nix-unwrapped = prev.haskell.lib.justStaticExecutables prev.haskell.packages.ghc965.cabal2nix;
+        cabal2nix-unwrapped = prev.haskell.lib.justStaticExecutables prev.haskell.packages.ghc948.cabal2nix;
         haskell = prev.haskell // {
           packageOverrides = prev.lib.composeExtensions prev.haskell.packageOverrides (
             hfinal: hprev: {
