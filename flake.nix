@@ -48,42 +48,35 @@
       };
 
       overlay = final: prev: {
-        # see https://github.com/NixOS/nixpkgs/issues/83098
-        cabal2nix-unwrapped = prev.haskell.lib.justStaticExecutables prev.haskell.packages.ghc948.cabal2nix;
-        haskell = prev.haskell // {
-          packageOverrides = prev.lib.composeExtensions prev.haskell.packageOverrides (
-            hfinal: hprev: {
-              "${packageName}" = hfinal.callCabal2nix packageName src { };
-            }
-          );
-          packages = prev.haskell.packages // {
-            ghc982 = prev.haskell.packages.ghc982.override (old: {
-              overrides = prev.lib.composeExtensions (old.overrides or (_: _: { })) (
-                hfinal: hprev: {
-                  skeletest = hprev.skeletest.overrideAttrs (old: {
-                    meta = old.meta // {
-                      broken = false;
-                    };
-                  });
-                  Diff = hfinal.callHackage "Diff" "0.5" { };
-                }
-              );
-            });
-            ghc966 = prev.haskell.packages.ghc966.override (old: {
-              overrides = prev.lib.composeExtensions (old.overrides or (_: _: { })) (
-                hfinal: hprev: {
-                  attoparsec-aeson = hfinal.callHackage "attoparsec-aeson" "2.2.0.0" { };
-                  skeletest = hprev.skeletest.overrideAttrs (old: {
-                    meta = old.meta // {
-                      broken = false;
-                    };
-                  });
-                  Diff = hfinal.callHackage "Diff" "0.5" { };
-                  aeson = hfinal.callHackage "aeson" "2.2.2.0" { };
-                }
-              );
-            });
-          };
+        overriddenHaskellPackages = {
+          ghc982 = prev.haskell.packages.ghc982.override (old: {
+            overrides = prev.lib.composeExtensions (old.overrides or (_: _: { })) (
+              hfinal: hprev: {
+                "${packageName}" = hfinal.callCabal2nix packageName src { };
+                skeletest = hprev.skeletest.overrideAttrs (old: {
+                  meta = old.meta // {
+                    broken = false;
+                  };
+                });
+                Diff = hfinal.callHackage "Diff" "0.5" { };
+              }
+            );
+          });
+          ghc966 = prev.haskell.packages.ghc966.override (old: {
+            overrides = prev.lib.composeExtensions (old.overrides or (_: _: { })) (
+              hfinal: hprev: {
+                "${packageName}" = hfinal.callCabal2nix packageName src { };
+                attoparsec-aeson = hfinal.callHackage "attoparsec-aeson" "2.2.0.0" { };
+                skeletest = hprev.skeletest.overrideAttrs (old: {
+                  meta = old.meta // {
+                    broken = false;
+                  };
+                });
+                Diff = hfinal.callHackage "Diff" "0.5" { };
+                aeson = hfinal.callHackage "aeson" "2.2.2.0" { };
+              }
+            );
+          });
         };
       };
     in
@@ -95,6 +88,7 @@
       let
         pkgs = import nixpkgs {
           inherit system;
+          overlays = [ self.overlays.default ];
         };
 
         example-src = nix-filter.lib {
@@ -112,16 +106,11 @@
           "982"
         ];
 
-        overridePkgs = import nixpkgs {
-          inherit system;
-          overlays = [ self.overlays.default ];
-        };
-
         ghcPkgs = builtins.listToAttrs (
           map (ghcVer: {
             name = "ghc${ghcVer}";
             value = (
-              overridePkgs.haskell.packages."ghc${ghcVer}".extend (
+              pkgs.overriddenHaskellPackages."ghc${ghcVer}".extend (
                 hfinal: hprev: {
                   ${examplesName} = hfinal.callCabal2nix examplesName example-src { };
                 }
@@ -175,8 +164,6 @@
             } "type example; CABAL_CONFIG=/dev/null cabal --dry-run repl; touch $out";
           }) ghcVersions
         );
-
-        inherit pkgs;
 
         apps =
           {
