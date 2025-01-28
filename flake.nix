@@ -150,8 +150,14 @@
         };
 
         exe =
+          with pkgs.haskell.lib;
           version:
-          pkgs.haskell.lib.justStaticExecutables self.packages.${system}."ghc${version}-${examplesName}";
+          #         # Added due to an issue building on macOS only
+          pkgs.haskell.lib.overrideCabal
+            (pkgs.haskell.lib.justStaticExecutables self.packages.${system}."ghc${version}-${examplesName}")
+            (drv: {
+              disallowGhcReference = false;
+            });
       in
       {
         checks = builtins.listToAttrs (
