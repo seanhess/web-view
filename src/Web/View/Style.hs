@@ -363,6 +363,49 @@ instance Style Display Display
 instance Style Display None
 
 
+data Wrap
+  = Wrap
+  | NoWrap
+  deriving (Show, ToClassName)
+instance ToStyleValue Wrap where
+  toStyleValue Wrap = "wrap"
+  toStyleValue NoWrap = "nowrap"
+
+
+data FlexWrap
+  = WrapReverse
+  deriving (Show, ToStyleValue)
+instance Style FlexWrap FlexWrap
+instance Style FlexWrap Wrap
+instance ToClassName FlexWrap where
+  toClassName WrapReverse = "rev"
+
+
+flexWrap :: (Style FlexWrap a, ToClassName a, ToStyleValue a) => a -> Mod c
+flexWrap w =
+  addClass $
+    cls ("fwrap" -. w)
+      & prop "flex-wrap" w
+
+
+data TextWrap
+
+
+--   = Balance
+--   | Pretty
+--   | Stable
+--   deriving (Show, ToStyleValue, ToClassName)
+-- instance Style TextWrap TextWrap
+instance Style TextWrap Wrap
+
+
+textWrap :: (Style TextWrap a, ToClassName a, ToStyleValue a) => a -> Mod c
+textWrap w =
+  addClass $
+    cls ("twrap" -. w)
+      & prop "text-wrap" w
+
+
 -- * Selector Modifiers
 
 

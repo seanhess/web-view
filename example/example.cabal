@@ -79,6 +79,7 @@ executable example
       web-view,
       http-types,
       string-interpolate,
+      text,
       wai,
       warp
 

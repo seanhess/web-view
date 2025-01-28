@@ -117,6 +117,11 @@ module Web.View
   , transition
   , TransitionProperty (..)
   , Ms
+  , flexWrap
+  , textWrap
+  , FlexWrap (..)
+  , TextWrap (..)
+  , Wrap (..)
 
     -- ** Selector States
   , hover
