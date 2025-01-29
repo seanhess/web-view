@@ -49,7 +49,7 @@
 
       overlay = final: prev: {
         overriddenHaskellPackages = {
-          ghc982 = prev.haskell.packages.ghc982.override (old: {
+          ghc982 = (prev.overriddenHaskellPackages.ghc982 or prev.haskell.packages.ghc982).override (old: {
             overrides = prev.lib.composeExtensions (old.overrides or (_: _: { })) (
               hfinal: hprev: {
                 "${packageName}" = hfinal.callCabal2nix packageName src { };
@@ -62,7 +62,7 @@
               }
             );
           });
-          ghc966 = prev.haskell.packages.ghc966.override (old: {
+          ghc966 = (prev.overriddenHaskellPackages.ghc966 or prev.haskell.packages.ghc966).override (old: {
             overrides = prev.lib.composeExtensions (old.overrides or (_: _: { })) (
               hfinal: hprev: {
                 "${packageName}" = hfinal.callCabal2nix packageName src { };
@@ -151,10 +151,10 @@
 
         exe =
           version:
-          # Added due to an issue building on macOS only
           pkgs.haskell.lib.overrideCabal
             (pkgs.haskell.lib.justStaticExecutables self.packages.${system}."ghc${version}-${examplesName}")
             (drv: {
+              # Added due to an issue building on macOS only
               postInstall = ''
                 ${drv.postInstall or ""}
                   echo "Contents of $out/bin:"
