@@ -150,13 +150,18 @@
         };
 
         exe =
-          with pkgs.haskell.lib;
           version:
-          #         # Added due to an issue building on macOS only
+          # Added due to an issue building on macOS only
           pkgs.haskell.lib.overrideCabal
             (pkgs.haskell.lib.justStaticExecutables self.packages.${system}."ghc${version}-${examplesName}")
             (drv: {
-              disallowGhcReference = false;
+              postInstall = ''
+                ${drv.postInstall or ""}
+                  echo "Contents of $out/bin:"
+                  ls -la $out/bin
+                  echo remove-references-to -t ${ghcPkgs."ghc${version}".warp}
+                  remove-references-to -t ${ghcPkgs."ghc${version}".warp} $out/bin/*
+              '';
             });
       in
       {
