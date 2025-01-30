@@ -75,26 +75,10 @@ el (width 100 . media (MinWidth 800) (width 400))
 
 If you want to get a feel for web-view without cloning the project run `nix run github:seanhess/web-view` to run the example webserver locally
 
-Local Development
------------------
+Import Flake
+------------
 
-### Nix
-
-Prepend targets with ghc982 or ghc966 to use GHC 9.8.2 or GHC 9.6.6
-
-- `nix run` starts the example project with GHC 9.8.2
-- `nix develop` to get a shell with all dependencies installed for GHC 9.8.2. 
-- `nix develop .#ghc966-web-view` for GHC 9.6.6
-
-You can also get a development shell for the example project with:
-
-```
-cd example
-nix develop ../#ghc982-example
-cabal run
-```
-
-You can import this flake's overlay to add `web-view` to all package sets and override ghc966 and ghc982 with the packages to satisfy `web-view`'s dependencies.
+You can import this flake's overlay to add `web-view` to `overriddenHaskellPackages` and which provides a ghc966 and ghc982 package set that satisfy `web-view`'s dependencies.
 
 ```nix
 {
@@ -112,7 +96,7 @@ You can import this flake's overlay to add `web-view` to all package sets and ov
           inherit system;
           overlays = [ web-view.overlays.default ];
         };
-        haskellPackagesOverride = pkgs.haskell.packages.ghc966.override (old: {
+        haskellPackagesOverride = pkgs.overriddenHaskellPackages.ghc966.override (old: {
           overrides = pkgs.lib.composeExtensions (old.overrides or (_: _: { })) (hfinal: hprev: {
             # your overrides here
           });
@@ -127,6 +111,55 @@ You can import this flake's overlay to add `web-view` to all package sets and ov
 }
 ```
 
+Local Development
+-----------------
+
+### Recommended ghcid command
+
+If you want to work on both the web-view library and example code, this `ghcid` command will run and reload the examples server as you change any non-testing code.
+
+```
+ghcid --command="cabal repl exe:example lib:web-view" --run=Main.main --warnings --reload=./embed/preflight.css
+```
+
+If you want to work on the test suite, this will run the tests each time any library code is changed.
+
+```
+ghcid --command="cabal repl test lib:web-view" --run=Main.main --warnings --reload=./embed/preflight.css
+```
+
+### Nix
+
+- `nix flake check` will build the library, example executable and devShell with ghc-9.8.2 and ghc-9.6.6
+    - This is what the CI on GitHub runs
+- `nix run` or `nix run .#ghc982-example` to start the example project with GHC 9.8.2
+    - `nix run .#ghc966-example` to start the example project with GHC 9.6.6
+- `nix develop` or `nix develop .#ghc982-shell` to get a shell with all dependencies installed for GHC 9.8.2. 
+    - `nix develop .#ghc966-shell` to get a shell with all dependencies installed for GHC 9.6.6. 
+- `nix build`, `nix build .#ghc982-web-view` and `nix build .#ghc966-web-view` builds the library with the `overriddenHaskellPackages`
+    - If you want to import this flake, use the overlay
+- `nix flake update nixpkgs` will update the Haskell package sets and development tools
+
+### Common Nix Issues
+
+#### Not Allowed to Refer to GHC
+
+If you get an error like:
+
+```
+error: output '/nix/store/64k8iw0ryz76qpijsnl9v87fb26v28z8-my-haskell-package-1.0.0.0' is not allowed to refer to the following paths:
+         /nix/store/5q5s4a07gaz50h04zpfbda8xjs8wrnhg-ghc-9.6.3
+```
+
+Follow these [instructions](https://nixos.org/manual/nixpkgs/unstable/#haskell-packaging-helpers)
+
+#### Dependencies Incorrect
+
+You will need to update the overlay, look for where it says `"${packageName}" = hfinal.callCabal2nix packageName src { };` and add a line like `Diff = hfinal.callHackage "Diff" "0.5" { };` with the package and version you need.
+
+#### Missing Files
+
+Check the `include` inside the `nix-filter.lib` to see if all files needed by cabal are there.
 
 Learn More
 ----------
