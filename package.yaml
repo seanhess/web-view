@@ -62,5 +62,4 @@ tests:
     - -F -pgmF=skeletest-preprocessor
     dependencies:
       - web-view
-      - Diff >= 0.5 && <1.0
       - skeletest
