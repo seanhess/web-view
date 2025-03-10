@@ -38,6 +38,14 @@ buttons = col (gap 10 . pad 20) $ do
   button' c = button (btn c)
 
 
+inputs :: View c ()
+inputs = do
+  layout (pad 20 . gap 10) $ do
+    el bold "INPUT"
+    input (border 1 . pad 10 . bg White . placeholder "Not Focused")
+    input (border 1 . pad 10 . bg White . placeholder "Should Focus" . autofocus)
+
+
 responsive :: View c ()
 responsive = do
   layout (big flexRow) $ do
@@ -201,6 +209,7 @@ examples = col (pad 20 . gap 15) $ do
   link "holygrail" lnk "Holy Grail"
   link "stacks" lnk "Stacks"
   link "text" lnk "Text"
+  link "inputs" lnk "Inputs"
  where
   lnk = color Primary
 
@@ -214,6 +223,7 @@ app req respond = do
     ["holygrail"] -> view holygrail
     ["stacks"] -> view stacks
     ["text"] -> view texts
+    ["inputs"] -> view inputs
     _ -> notFound
  where
   html h =

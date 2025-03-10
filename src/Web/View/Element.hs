@@ -99,6 +99,14 @@ button :: Mod c -> View c () -> View c ()
 button = tag "button"
 
 
+placeholder :: Text -> Mod id
+placeholder = att "placeholder"
+
+
+autofocus :: Mod c
+autofocus = att "autofocus" ""
+
+
 -- * Document Metadata
 
 

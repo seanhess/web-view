@@ -61,6 +61,8 @@ module Web.View
   , input
   , name
   , value
+  , placeholder
+  , autofocus
   , label
   , link
   , button
@@ -120,7 +122,7 @@ module Web.View
   , flexWrap
   , textWrap
   , FlexWrap (..)
-  , TextWrap (..)
+  , TextWrap
   , Wrap (..)
 
     -- ** Selector States
